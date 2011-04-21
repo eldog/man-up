@@ -2,20 +2,12 @@ from google.appengine.api import users
 from google.appengine.ext import db
 
 class Member(db.Model):
-
     user_id = db.StringProperty(required=True)
     email = db.StringProperty(default='')
     handle = db.StringProperty(required=True)
     bio = db.TextProperty(default='')
     real_name = db.StringProperty(default='')
-    score_cache = db.IntegerProperty(default= -1)
-
-    @property
-    def score(self):
-        if self.score_cache == -1:
-            self.score_cache = sum(award.badge.value for award in self.awards)
-            self.save()
-        return self.score_cache
+    score = db.IntegerProperty(default=0)
 
     @classmethod
     def get_current_member(cls):

@@ -142,7 +142,7 @@ class AdminHandler(BaseHandler):
                     proof=post['proof']
                 )
                 award.save()
-                member.score_cache = member.score + badge.value
+                member.score += badge.value
                 member.save()
         elif post['kind'] == 'talk':
             talk = Talk(
