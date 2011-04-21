@@ -137,19 +137,15 @@ th {
 }
 
 
-td {
+.form td {
     vertical-align:  top;
     text-align: right;
     padding: 5px;
     margin: 0px;
 }
 
-input, textarea, select {
+.form input, textarea, select {
     width: 250px;
-    background-color: #ffffff;
-    border-width: 3px;
-    border-style: double;
-    border-color: #111111;
     padding: 1px;
     margin: 0px;
 }
