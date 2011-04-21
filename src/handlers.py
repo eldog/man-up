@@ -1,6 +1,5 @@
 import datetime
 import os
-import utils
 import urllib
 
 from google.appengine.api import users
