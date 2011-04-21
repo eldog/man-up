@@ -33,10 +33,6 @@ handlers:
     script: main.py
     login: admin
     
-  - url: /admin/hacker_migration
-    script: main.py
-    login: admin
-    
   # Logged in requests
   - url: /account
     script: main.py

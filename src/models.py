@@ -29,10 +29,6 @@ class Member(db.Model):
             member.put()
         return member
 
-# Ironic hack, so that we can do data migration. Will need to be deleted in future
-# Release    
-class Hacker(Member):
-    pass
 
 class Badge(db.Model):
     name = db.StringProperty(required=True)

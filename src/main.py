@@ -12,13 +12,10 @@ from handlers import AccountHandler, AdminHandler, BadgeHandler, \
     ManualHandler, MemberHandler, MembersHandler, \
     MessagesHandler, NewsHandler, TalksHandler
 
-from migration.hacker_migration import HackerMigrator
-
 application = WSGIApplication(
     (('/'                           , NewsHandler),
      ('/account'                    , AccountHandler),
      ('/admin'                      , AdminHandler),
-     ('/admin/hacker_migration'     , HackerMigrator),
      ('/badges/'                    , BadgesHandler),
      ('/badges/([^/]+)'             , BadgeHandler),
      ('/badge_application'          , BadgeApplicationHandler),
