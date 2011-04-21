@@ -13,8 +13,6 @@ from models import Award, Badge, Member, NewsArticle, Talk
 
 get_path = utils.path_getter(__file__)
 
-template.register_template_library('templatetags.customtags')
-
 class BaseHandler(RequestHandler):
 
     login_required = False

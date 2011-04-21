@@ -4,6 +4,7 @@ from google.appengine.dist import use_library
 use_library('django', '1.2')
 
 from google.appengine.ext.webapp import WSGIApplication
+from google.appengine.ext.webapp.template import register_template_library
 from google.appengine.ext.webapp.util import run_wsgi_app
 
 from handlers import AccountHandler, AdminHandler, BadgeHandler, \
@@ -11,6 +12,8 @@ from handlers import AccountHandler, AdminHandler, BadgeHandler, \
     FAQHandler, FileNotFoundHandler, HackathonHandler, LoginHandler, \
     ManualHandler, MemberHandler, MembersHandler, \
     MessagesHandler, NewsHandler, TalksHandler
+
+register_template_library('templatetags.customtags')
 
 application = WSGIApplication(
     (('/'                           , NewsHandler),
