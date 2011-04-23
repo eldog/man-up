@@ -4,14 +4,39 @@
     <p>THIS IS THE GOD PAGE. I'VE NOT WRITTEN ANY SAFETY INTO THIS, SO BE CAREFUL.</P>
 
     <div id="tab-links">
+        <div id="general" class="tab-link">General</div>
         <div id="news" class="tab-link">News</div>
         <div id="badge" class="tab-link">Badge</div>
         <div id="award" class="tab-link">Award</div>
         <div id="talk" class="tab-link">Talk</div>
     </div>
     
-    <div id="news-tab-page" class="tab-page" style="display: block;">
-        <h2>News Article</h2>
+    <div id="general-tab-page" class="tab-page" style="display: block;">
+        <h2>General</h2>
+        
+        <ul>
+            <li><a href="/admin/news">Edit news articles</a></li>
+            <li><!--<a href="/admin/talks">-->Edit Talks<!--</a>--></li>
+            <li><!--<a href="/admin/talks">-->Edit Messages<!--</a>--></li>
+        </ul>
+        
+        <form action="/admin" method="post">
+            <input type="hidden" name="kind" value="taglineform"/>
+            <table class="form">
+                <tr>
+                    <td>Tag Line:</td> 
+                    <td><input type="text" name="tagline" /></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td><input type="submit" value="Submit" /></td>
+                </tr>
+            </table>
+        </form>       
+    </div>
+    
+    <div id="news-tab-page" class="tab-page">
+        <h2>Add News Article</h2>
         <form action="/admin" method="post">
             <input type="hidden" name="kind" value="article"/>
             <table class="form">

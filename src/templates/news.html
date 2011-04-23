@@ -5,7 +5,7 @@
 	{% for news_item in news_list %}
 		<div class="newsitem">
 			<h2>{{ news_item.title }}</h2>
-			<p>Author: {{ news_item.author }}, Date: {{ news_item.date }}</p>
+			<p>Author: {{ news_item.author }}, Date: {{ news_item.date }}{% if is_admin %}, <a href="/edit/{{ news_item.key }}">Edit</a> {% endif %}</p>
 			{% autoescape off %}
 				{{ news_item.body }}
 			{% endautoescape %}

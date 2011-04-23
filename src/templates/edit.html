@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block main %}
+    <div id="edit_news_item">
+        <h2>Edit News Article</h2>
+        {% if is_admin %}
+            {% if edit_successful %}
+                <p>{{ edit_successful }}</p>
+            {% else %}
+                <form action="/edit/{{ news_item.key }}" method="post">
+                    <input type="hidden" name="kind" value="article"/>
+                    <table class="form">
+                        <tr>
+                            <td>Title:</td> 
+                            <td><input type="text" name="title" value="{{ news_item.title }}"/></td>
+                        </tr>
+                        <tr>
+                            <td>Author:</td>
+                            <td><input type="text" name="author" value="{{ news_item.author }}"/></td>
+                        </tr>
+				        <tr>
+					        <td>Date</td>
+					        <td>
+						        <input type="text" name="date" id="news_date" value="{{ news_item.date|date:"Y-m-d" }}"/>
+						        <script>$('#news_date').datepicker({dateFormat: 'yy-mm-dd'})</script>
+		            		</td>
+		            	</tr>                
+                        <tr>
+                            <td>Body:</td>
+                            <td><textarea name="body">{{ news_item.body }}</textarea></td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td><input type="checkbox" name="delete_article" value="plsDelete" />Delete article <input type="submit" value="Submit" /></td>
+                        </tr>
+                    </table>
+                </form>
+            {% endif %}
+        {% else %}
+            <p>Naughty naughty, you shouldn't be here.</p>
+        {% endif %}
+    </div>
+{% endblock %}
