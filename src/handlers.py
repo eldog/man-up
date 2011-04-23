@@ -8,7 +8,7 @@ from google.appengine.ext.webapp import RequestHandler, template
 from google.appengine.ext.db import GqlQuery
 
 import utils
-from models import Award, Badge, Member, NewsArticle, Talk
+from models import Award, Badge, Member, NewsArticle, Talk, GeneralSiteProperties
 
 get_path = utils.path_getter(__file__)
 
@@ -18,7 +18,10 @@ class BaseHandler(RequestHandler):
     title = None
 
     def render_template(self, template_name, template_dict=None):
-        tag_line = 'Next meeting coming soon'
+        try:
+            tag_line = GeneralSiteProperties.all().get().tag_line
+        except:
+            tag_line = 'no tag lines here'
 
         if template_dict is None:
             template_dict = {}
@@ -153,6 +156,15 @@ class AdminHandler(BaseHandler):
                 video=post['video']
             )
             talk.put()
+        elif post['kind'] == 'taglineform':
+            properties = GeneralSiteProperties.all().get()
+            if properties == None:
+                properties = GeneralSiteProperties(tag_line=post['tagline'])
+                properties.put()
+            else:
+                new_properties = GeneralSiteProperties(tag_line=post['tagline'])
+                properties.delete()
+                new_properties.put()
         self.get()
 
     def get(self):
