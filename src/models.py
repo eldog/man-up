@@ -3,6 +3,7 @@ from google.appengine.ext import db
 
 class GeneralSiteProperties(db.Model):
     tag_line = db.StringProperty(required=True)
+    
 
 class Member(db.Model):
     user_id = db.StringProperty(required=True)
