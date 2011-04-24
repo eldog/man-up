@@ -2,13 +2,13 @@ import datetime
 import os
 import urllib
 
-from google.appengine.api import users
+from google.appengine.api import users, datastore_errors
 from google.appengine.api.mail import send_mail
 from google.appengine.ext.webapp import RequestHandler, template
-from google.appengine.ext.db import GqlQuery
+from google.appengine.ext.db import GqlQuery, Key, BadKeyError
 
 import utils
-from models import Award, Badge, Member, NewsArticle, Talk
+from models import Award, Badge, Member, NewsArticle, Talk, GeneralSiteProperties
 
 get_path = utils.path_getter(__file__)
 
@@ -18,7 +18,10 @@ class BaseHandler(RequestHandler):
     title = None
 
     def render_template(self, template_name, template_dict=None):
-        tag_line = 'Next meeting coming soon'
+        try:
+            tag_line = GeneralSiteProperties.all().get().tag_line
+        except:
+            tag_line = 'no tag lines here'
 
         if template_dict is None:
             template_dict = {}
@@ -153,6 +156,14 @@ class AdminHandler(BaseHandler):
                 video=post['video']
             )
             talk.put()
+        elif post['kind'] == 'taglineform':
+            properties = GeneralSiteProperties.all().get()
+            if properties == None:
+                properties = GeneralSiteProperties(tag_line=post['tagline'])
+                properties.put()
+            else:
+                properties.tag_line = post['tagline']
+                properties.put()
         self.get()
 
     def get(self):
@@ -160,6 +171,13 @@ class AdminHandler(BaseHandler):
             'badges': Badge.all(),
             'members': Member.all(),
         })
+
+
+class AdminNewsHandler(BaseHandler):
+
+    def get(self):
+        news_list = GqlQuery('SELECT * FROM NewsArticle ORDER BY date ASC');    
+        self.render_template('admin_news', { 'news_list' : news_list })
 
 
 class BadgeHandler(BaseHandler):
@@ -232,6 +250,57 @@ class ContactHandler(BaseHandler):
 
     def get(self):
         self.render_template('contact')
+        
+
+class EditHandler(BaseHandler):
+
+    def post(self,news_key):
+        #add stuff to store/delete page
+        article = None
+        try:
+            article = NewsArticle.get(Key(news_key))
+        except BadKeyError:
+            article = None
+        
+        if article == None:
+            self.render_template('404', {'url' : 'Article %s' % news_key})
+        else:
+            try:
+                message = ''
+                post = self.request.POST
+                if 'delete_article' in post:
+                #if post['delete_article'] == 'plsDelete':
+                    article.delete()
+                    message = 'Article deleted.'
+                    self.render_template('edit', { 'edit_successful' : message })
+                else:
+                    date = datetime.datetime.strptime(post['date'], '%Y-%m-%d').date()
+                    article.title=post['title']
+                    article.author=post['author']
+                    article.body=post['body']
+                    article.date=date
+                    article.put()
+                    message = 'News article edit stored.'
+                    self.render_template('edit', {
+                        'news_item': article, 'edit_successful' : message
+                        })
+            except datastore_errors.Error:
+                message = 'Edit failed.'
+                self.render_template('edit', {
+                    'news_item': article, 'edit_successful' : message
+                    })
+    
+    def get(self,news_key):
+        article = None
+        try:
+            article = NewsArticle.get(Key(news_key))
+        except BadKeyError:
+            article = None
+        finally:
+            if article == None:
+                self.render_template('404', {'url' : 'Article %s' % news_key})
+            else:
+                self.render_template('edit', {'news_item': article})
 
 
 class FAQHandler(BaseHandler):
@@ -241,6 +310,7 @@ class FAQHandler(BaseHandler):
 
 
 class FileNotFoundHandler(BaseHandler):
+
     def get(self, handler_name=''):
         self.render_template('404', {
             'url' : handler_name
@@ -323,7 +393,7 @@ class MessagesHandler(BaseHandler):
 class NewsHandler(BaseHandler):
 
     def get(self):
-        news_list = GqlQuery('SELECT * FROM NewsArticle ORDER BY date DESC');
+        news_list = GqlQuery('SELECT * FROM NewsArticle ORDER BY date DESC');        
         self.render_template('news', {
             'news_list': news_list
         })

@@ -7,23 +7,25 @@ from google.appengine.ext.webapp import WSGIApplication
 from google.appengine.ext.webapp.template import register_template_library
 from google.appengine.ext.webapp.util import run_wsgi_app
 
-from handlers import AccountHandler, AdminHandler, BadgeHandler, \
-    BadgesHandler, BadgeApplicationHandler, CalendarHandler, ContactHandler, \
-    FAQHandler, FileNotFoundHandler, HackathonHandler, LoginHandler, \
-    ManualHandler, MemberHandler, MembersHandler, \
-    MessagesHandler, NewsHandler, TalksHandler
+from handlers import AccountHandler, AdminNewsHandler, AdminHandler, \
+    BadgeHandler, BadgesHandler, BadgeApplicationHandler, CalendarHandler, \
+    ContactHandler, EditHandler, FAQHandler, FileNotFoundHandler, \
+    HackathonHandler, LoginHandler, ManualHandler, MemberHandler, \
+    MembersHandler, MessagesHandler, NewsHandler, TalksHandler
 
 register_template_library('templatetags.customtags')
 
 application = WSGIApplication(
     (('/'                           , NewsHandler),
      ('/account'                    , AccountHandler),
+     ('/admin/news'                 , AdminNewsHandler),
      ('/admin'                      , AdminHandler),
      ('/badges/'                    , BadgesHandler),
      ('/badges/([^/]+)'             , BadgeHandler),
      ('/badge_application'          , BadgeApplicationHandler),
      ('/calendar'                   , CalendarHandler),
      ('/contact'                    , ContactHandler),
+     ('/edit/([^/]+)'               , EditHandler),
      ('/faq'                        , FAQHandler),
      ('/hack-a-thon'                , HackathonHandler),
      ('/login'                      , LoginHandler),
