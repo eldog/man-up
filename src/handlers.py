@@ -166,7 +166,6 @@ class AdminHandler(BaseHandler):
 
 
 class AdminNewsHandler(BaseHandler):
-<<<<<<< HEAD
 
     def post(self):
         post = self.request.POST
@@ -183,11 +182,9 @@ class AdminNewsHandler(BaseHandler):
                 message = 'Database error, a subset of your selection might have been deleted'
         else:
             message = 'No articles selected, congratulations, you wasted some CPU time.'
-        news_list = GqlQuery('SELECT * FROM NewsArticle ORDER BY date ASC'); 
+        news_list = NewsArticle.all().order('-date'); 
         self.render_template('admin_news', { 'news_list' : news_list, 'delete_successful' : message })
 
-=======
->>>>>>> upstream/news-article-crud
     def get(self):
         self.render_template('admin_news',
             {'news_list' : NewsArticle.all().order('-date')})
@@ -266,6 +263,7 @@ class ContactHandler(BaseHandler):
 
 
 class EditHandler(BaseHandler):
+
     def get(self, key):
         template_dict = {'key': key, 'show_form' : True}
         if key == 'new':

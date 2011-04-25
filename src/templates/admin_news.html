@@ -1,32 +1,21 @@
 {% extends "base.html" %} 
 
 {% block main %}
-<<<<<<< HEAD
-    {% if is_admin %} 
-	    <h1>Select a news article</h1>
-        {% if delete_successful %}
-            <p>{{ delete_successful }}</p>
-        {% endif %}
-	    <div class="news_article_list">
-            <form action="/admin/news" method="post">
-            <input type="hidden" name="kind" value="news_article_list"/>
-		    <ol>
-	        {% for news_item in news_list %}
-		        <li><h2>{{ news_item.title }}</h2> <a href="/edit/{{ news_item.key }}">Edit</a> <input type="checkbox" name="delete_article" value="{{ news_item.key }}" />Delete article</li>
-	        {% endfor %}
-	        </ol>
-	        <input type="submit" value="Delete Selected" />
-	    </div>
-	{% endif %}
-=======
     <h1>News article</h1>
-    <a href="/admin/news/new">New article</a>
-    <ol>
+    <a href="/admin/news/new">Add New article</a>
+    {% if delete_successful %}
+        <p>{{ delete_successful }}</p>
+    {% endif %}
+    <h3>Article List</h3>
+    <div class="news_article_list">
+        
+        <form action="/admin/news" method="post">
+        <input type="hidden" name="kind" value="news_article_list"/>
+	    <table>
         {% for news_item in news_list %}
-            <li>
-                <a href="/admin/news/{{ news_item.key }}">{{ news_item.title }}</a>
-            </li>
+	        <tr><td><a href="/admin/news/{{ news_item.key }}">{{ news_item.title }}</a></td><td><input type="checkbox" name="delete_article" value="{{ news_item.key }}" />Delete article</td></tr>
         {% endfor %}
-    </ol>
->>>>>>> upstream/news-article-crud
+        </table>
+        <input type="submit" value="Delete Selected" />
+    </div>
 {% endblock %}
