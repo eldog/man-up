@@ -8,8 +8,8 @@
     {% endif %}
     
 	<div class="pagedata">
-	    {% if pagedata.hasPrev %}<a href="/news?page={{ pagedata.prev }}">Previous Page</a>{% endif %}
-	    {% if pagedata.hasNext %}<a href="/news?page={{ pagedata.next }}">Next Page</a>{% endif %}
+	    {% if pagedata.hasPrev %}<a href="/talks?page={{ pagedata.prev }}">Previous Page</a>{% endif %}
+	    {% if pagedata.hasNext %}<a href="/talks?page={{ pagedata.next }}">Next Page</a>{% endif %}
     </div>
     {% for talk in content_list %}
         <div class="talks">
@@ -23,7 +23,7 @@
     {% endfor %}
 	
 	<div class="pagedata">
-	    {% if pagedata.hasPrev %}<a href="/news?page={{ pagedata.prev }}">Previous Page</a>{% endif %}
-	    {% if pagedata.hasNext %}<a href="/news?page={{ pagedata.next }}">Next Page</a>{% endif %}
+	    {% if pagedata.hasPrev %}<a href="/talks?page={{ pagedata.prev }}">Previous Page</a>{% endif %}
+	    {% if pagedata.hasNext %}<a href="/talks?page={{ pagedata.next }}">Next Page</a>{% endif %}
     </div>
 {% endblock %}

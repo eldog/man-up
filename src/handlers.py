@@ -451,6 +451,7 @@ class TalksHandler(BaseHandler):
 
     def get(self):
         page_num = None
+        message = None
         try:
             page_num = self.request.GET['page']
             if page_num == None:
