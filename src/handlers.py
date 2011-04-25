@@ -425,7 +425,7 @@ class MessagesHandler(BaseHandler):
 
 class NewsHandler(BaseHandler):
 
-    def get(self,page_num = None):
+    def get(self):
         page_num = None
         message = None
         try:
