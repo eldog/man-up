@@ -15,6 +15,7 @@ get_path = utils.path_getter(__file__)
 
 #MAGIC NUMBERS
 NEWS_ITEMS_PER_PAGE = 5
+TALK_ITEMS_PER_PAGE = 5
 
 class BaseHandler(RequestHandler):
 
@@ -425,32 +426,45 @@ class MessagesHandler(BaseHandler):
 class NewsHandler(BaseHandler):
 
     def get(self,page_num = None):
-        if page_num == None:
+        page_num = None
+        message = None
+        try:
+            page_num = self.request.GET['page']
+            if page_num == None:
+                page_num = 0
+            else:
+                page_num = int(page_num)
+        except KeyError:
             page_num = 0
-        else:
-            page_num = int(page_num)
-        news_query = NewsArticle.all().order('-date');
-        count = news_query.count();
+        except ValueError:
+            page_num = 0
+            message = 'Please don\'t try and break the appengine, Google will get angry.'
+            
+                    
+        content = utils.generate_content_dict(NewsArticle,page_num,
+                                              NEWS_ITEMS_PER_PAGE,message)
         
-        #will need fixing if they ever move to Python3
-        max_num = count / NEWS_ITEMS_PER_PAGE
-        
-        range_min = page_num * NEWS_ITEMS_PER_PAGE
-        range_max = (page_num + 1) * NEWS_ITEMS_PER_PAGE
-        
-        news_list = news_query.fetch(range_max,range_min)
-        pagination_dict = { 'num' : page_num, 
-                            'prev' : (page_num-1), 
-                            'next' : (page_num+1),
-                            'max' : max_num }
-        
-        self.render_template('news',
-            {'news_list': news_list, 'pagedata' : pagination_dict })
+        self.render_template('news', content)
 
 
 class TalksHandler(BaseHandler):
 
     def get(self):
-        self.render_template('talks', {
-            'talks' : Talk.all()
-        })
+        page_num = None
+        try:
+            page_num = self.request.GET['page']
+            if page_num == None:
+                page_num = 0
+            else:
+                page_num = int(page_num)
+        except KeyError:
+            page_num = 0
+        except ValueError:
+            page_num = 0
+            message = 'Please don\'t try and break the appengine, Google will get angry.'
+                    
+        content = utils.generate_content_dict(Talk,page_num,
+                                              TALK_ITEMS_PER_PAGE,message)
+        
+        self.render_template('talks', content)
+

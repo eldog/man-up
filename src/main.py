@@ -17,7 +17,7 @@ register_template_library('templatetags.customtags')
 
 application = WSGIApplication(
     ((r'^/$'                   , NewsHandler),
-     (r'^/news/(\d+)$'         , NewsHandler),
+     (r'^/news$'               , NewsHandler),
      (r'^/account$'            , AccountHandler),
      (r'^/admin$'              , AdminHandler),
      (r'^/admin/news$'         , AdminNewsHandler),
