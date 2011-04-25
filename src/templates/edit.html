@@ -2,42 +2,39 @@
 
 {% block main %}
     <div id="edit_news_item">
-        <h2>Edit News Article</h2>
-        {% if is_admin %}
-            {% if edit_successful %}
-                <p>{{ edit_successful }}</p>
-            {% else %}
-                <form action="/edit/{{ news_item.key }}" method="post">
-                    <input type="hidden" name="kind" value="article"/>
-                    <table class="form">
-                        <tr>
-                            <td>Title:</td> 
-                            <td><input type="text" name="title" value="{{ news_item.title }}"/></td>
-                        </tr>
-                        <tr>
-                            <td>Author:</td>
-                            <td><input type="text" name="author" value="{{ news_item.author }}"/></td>
-                        </tr>
-				        <tr>
-					        <td>Date</td>
-					        <td>
-						        <input type="text" name="date" id="news_date" value="{{ news_item.date|date:"Y-m-d" }}"/>
-						        <script>$('#news_date').datepicker({dateFormat: 'yy-mm-dd'})</script>
-		            		</td>
-		            	</tr>                
-                        <tr>
-                            <td>Body:</td>
-                            <td><textarea name="body">{{ news_item.body }}</textarea></td>
-                        </tr>
-                        <tr>
-                            <td></td>
-                            <td><input type="checkbox" name="delete_article" value="plsDelete" />Delete article <input type="submit" value="Submit" /></td>
-                        </tr>
-                    </table>
-                </form>
-            {% endif %}
-        {% else %}
-            <p>Naughty naughty, you shouldn't be here.</p>
+        <h2>Edit News Article</h2><a href="/admin/news">Back to new article</a>
+        {% if message %}
+            <p>{{ message }}</p>
+        {% endif %}
+        {% if show_form %}
+            <form action="/admin/news/{{ key }}" method="post">
+                <input type="hidden" name="kind" value="article"/>
+                <table class="form">
+                    <tr>
+                        <td>Title:</td>
+                        <td><input type="text" name="title" value="{{ form_data.title }}"/></td>
+                    </tr>
+                    <tr>
+                        <td>Author:</td>
+                        <td><input type="text" name="author" value="{{ form_data.author }}"/></td>
+                    </tr>
+                    <tr>
+                        <td>Date:</td>
+                        <td>
+                            <input type="text" name="date" id="news_date" value="{{ form_data.date|date:"Y-m-d" }}"/>
+                            <script>$('#news_date').datepicker({dateFormat: 'yy-mm-dd'})</script>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Body:</td>
+                        <td><textarea name="body">{{ form_data.body }}</textarea></td>
+                    </tr>
+                    <tr>
+                        <td/>
+                        <td>{% ifnotequal key "new" %}<input type="checkbox" name="delete_article" value="delete" />Delete article {% endifnotequal %}<input type="submit" value="Submit" /></td>
+                    </tr>
+                </table>
+            </form>
         {% endif %}
     </div>
 {% endblock %}

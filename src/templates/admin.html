@@ -5,7 +5,6 @@
 
     <div id="tab-links">
         <div id="general" class="tab-link">General</div>
-        <div id="news" class="tab-link">News</div>
         <div id="badge" class="tab-link">Badge</div>
         <div id="award" class="tab-link">Award</div>
         <div id="talk" class="tab-link">Talk</div>
@@ -16,8 +15,6 @@
         
         <ul>
             <li><a href="/admin/news">Edit news articles</a></li>
-            <li><!--<a href="/admin/talks">-->Edit Talks<!--</a>--></li>
-            <li><!--<a href="/admin/talks">-->Edit Messages<!--</a>--></li>
         </ul>
         
         <form action="/admin" method="post">
@@ -33,38 +30,6 @@
                 </tr>
             </table>
         </form>       
-    </div>
-    
-    <div id="news-tab-page" class="tab-page">
-        <h2>Add News Article</h2>
-        <form action="/admin" method="post">
-            <input type="hidden" name="kind" value="article"/>
-            <table class="form">
-                <tr>
-                    <td>Title:</td> 
-                    <td><input type="text" name="title" /></td>
-                </tr>
-                <tr>
-                    <td>Author:</td>
-                    <td><input type="text" name="author" /></td>
-                </tr>
-				<tr>
-					<td>Date</td>
-					<td>
-						<input type="text" name="date" id="news_date" />
-						<script>$('#news_date').datepicker({dateFormat: 'yy-mm-dd'})</script>
-		    		</td>
-		    	</tr>                
-                <tr>
-                    <td>Body:</td>
-                    <td><textarea name="body"></textarea></td>
-                </tr>
-                <tr>
-                    <td></td>
-                    <td><input type="submit" value="Submit" /></td>
-                </tr>
-            </table>
-        </form>
     </div>
     
     <div id="badge-tab-page" class="tab-page">
@@ -157,7 +122,7 @@
                     </td>
                 </tr>                
                 <tr>
-                    <td>Date</td>
+                    <td>Date:</td>
                     <td>
                         <input type="text" name="date" id="talk_date" />
                         <script>$('#talk_date').datepicker({dateFormat: 'yy-mm-dd'})</script>
