@@ -175,6 +175,24 @@ class AdminHandler(BaseHandler):
 
 class AdminNewsHandler(BaseHandler):
 
+    def post(self):
+        post = self.request.POST
+        if "delete_article" in post:
+            output = post.getall('delete_article')
+            try:
+                counter = 0
+                for articleKey in output:
+                    article = NewsArticle.get(Key(articleKey))
+                    article.delete()
+                    counter += 1
+                message = '%d Article(s) deleted.' % counter
+            except datastore_errors.Error:
+                message = 'Database error, a subset of your selection might have been deleted'
+        else:
+            message = 'No articles selected, congratulations, you wasted some CPU time.'
+        news_list = GqlQuery('SELECT * FROM NewsArticle ORDER BY date ASC'); 
+        self.render_template('admin_news', { 'news_list' : news_list, 'delete_successful' : message })
+
     def get(self):
         news_list = GqlQuery('SELECT * FROM NewsArticle ORDER BY date ASC');    
         self.render_template('admin_news', { 'news_list' : news_list })
