@@ -13,6 +13,9 @@ from models import Award, Badge, Member, NewsArticle, Talk, \
 
 get_path = utils.path_getter(__file__)
 
+#MAGIC NUMBERS
+NEWS_ITEMS_PER_PAGE = 5
+
 class BaseHandler(RequestHandler):
 
     login_required = False
@@ -405,6 +408,7 @@ class MemberHandler(BaseHandler):
 
 
 class MessagesHandler(BaseHandler):
+
     def get(self, message_index):
         message_file = None
         try:
@@ -419,9 +423,29 @@ class MessagesHandler(BaseHandler):
 
 
 class NewsHandler(BaseHandler):
-    def get(self):
+
+    def get(self,page_num = None):
+        if page_num == None:
+            page_num = 0
+        else:
+            page_num = int(page_num)
+        news_query = NewsArticle.all().order('-date');
+        count = news_query.count();
+        
+        #will need fixing if they ever move to Python3
+        max_num = count / NEWS_ITEMS_PER_PAGE
+        
+        range_min = page_num * NEWS_ITEMS_PER_PAGE
+        range_max = (page_num + 1) * NEWS_ITEMS_PER_PAGE
+        
+        news_list = news_query.fetch(range_max,range_min)
+        pagination_dict = { 'num' : page_num, 
+                            'prev' : (page_num-1), 
+                            'next' : (page_num+1),
+                            'max' : max_num }
+        
         self.render_template('news',
-            {'news_list': NewsArticle.all().order('-date')})
+            {'news_list': news_list, 'pagedata' : pagination_dict })
 
 
 class TalksHandler(BaseHandler):

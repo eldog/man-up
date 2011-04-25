@@ -2,6 +2,11 @@
 
 {% block main %}
 	<h1>News</h1>
+	<div class="pagedata">
+	    {% if pagedata.num > 0 %}<a href="/news/{{ pagedata.prev }}">Previous Page</a>{% endif %}
+	    {% if pagedata.max > pagedata.num %}<a href="/news/{{ pagedata.next }}">Next Page</a>{% endif %}
+    </div>
+    
 	{% for news_item in news_list %}
 		<div class="newsitem">
 			<h2>{{ news_item.title }}</h2>
@@ -11,4 +16,9 @@
 			{% endautoescape %}
 		</div>
 	{% endfor %}
+	
+	<div class="pagedata">
+	    {% if pagedata.num > 0 %}<a href="/news/{{ pagedata.prev }}">Previous Page</a>{% endif %}
+	    {% if pagedata.max > pagedata.num %}<a href="/news/{{ pagedata.next }}">Next Page</a>{% endif %}
+    </div>
 {% endblock %}

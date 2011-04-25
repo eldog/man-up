@@ -81,6 +81,14 @@ body {
 	text-align: center;
 }
 
+#pagedata {
+    text-align: right;
+}
+
+.pagedata a {
+    text-align: right;
+}
+
 table {
 	width: 100%;
 }
