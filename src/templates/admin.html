@@ -9,19 +9,19 @@
         <div id="award" class="tab-link">Award</div>
         <div id="talk" class="tab-link">Talk</div>
     </div>
-    
+
     <div id="general-tab-page" class="tab-page" style="display: block;">
         <h2>General</h2>
-        
+
         <ul>
             <li><a href="/admin/news">Edit news articles</a></li>
         </ul>
-        
+
         <form action="/admin" method="post">
             <input type="hidden" name="kind" value="taglineform"/>
             <table class="form">
                 <tr>
-                    <td>Tag Line:</td> 
+                    <td>Tag Line:</td>
                     <td><input type="text" name="tagline" /></td>
                 </tr>
                 <tr>
@@ -29,9 +29,9 @@
                     <td><input type="submit" value="Submit" /></td>
                 </tr>
             </table>
-        </form>       
+        </form>
     </div>
-    
+
     <div id="badge-tab-page" class="tab-page">
         <h2>Badge</h2>
         <form action="/admin" method="post">
@@ -64,14 +64,14 @@
             </table>
         </form>
     </div>
-    
+
     <div id="award-tab-page" class="tab-page">
         <h2>Award</h2>
         <form action="/admin" method="post">
             <input type="hidden" name="kind" value="award"/>
             <table class="form">
                 <tr>
-                    <td>Member:</td> 
+                    <td>Member:</td>
                     <td>
                         <select name="members" size="20" multiple="multiple">
                             {% for member in members %}
@@ -112,7 +112,7 @@
                     <td><input type="text" name="title"/></td>
                 </tr>
                 <tr>
-                    <td>Member:</td> 
+                    <td>Member:</td>
                     <td>
                         <select name="member">
                             {% for member in members %}
@@ -120,14 +120,14 @@
                             {% endfor %}
                         </select>
                     </td>
-                </tr>                
+                </tr>
                 <tr>
                     <td>Date:</td>
                     <td>
                         <input type="text" name="date" id="talk_date" />
                         <script>$('#talk_date').datepicker({dateFormat: 'yy-mm-dd'})</script>
                     </td>
-                </tr>                 
+                </tr>
                 <tr>
                     <td>Video:</td>
                     <td><input type="text" name="video"/></td>
