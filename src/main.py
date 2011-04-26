@@ -7,32 +7,35 @@ from google.appengine.ext.webapp import WSGIApplication
 from google.appengine.ext.webapp.template import register_template_library
 from google.appengine.ext.webapp.util import run_wsgi_app
 
-from handlers import AccountHandler, AdminHandler, BadgeHandler, \
-    BadgesHandler, BadgeApplicationHandler, CalendarHandler, ContactHandler, \
-    FAQHandler, FileNotFoundHandler, HackathonHandler, LoginHandler, \
-    ManualHandler, MemberHandler, MembersHandler, \
-    MessagesHandler, NewsHandler, TalksHandler
+from handlers import AccountHandler, AdminNewsHandler, AdminHandler, \
+    BadgeHandler, BadgesHandler, BadgeApplicationHandler, CalendarHandler, \
+    ContactHandler, EditHandler, FAQHandler, FileNotFoundHandler, \
+    HackathonHandler, LoginHandler, ManualHandler, MemberHandler, \
+    MembersHandler, MessagesHandler, NewsHandler, TalksHandler
 
 register_template_library('templatetags.customtags')
 
 application = WSGIApplication(
-    (('/'                           , NewsHandler),
-     ('/account'                    , AccountHandler),
-     ('/admin'                      , AdminHandler),
-     ('/badges/'                    , BadgesHandler),
-     ('/badges/([^/]+)'             , BadgeHandler),
-     ('/badge_application'          , BadgeApplicationHandler),
-     ('/calendar'                   , CalendarHandler),
-     ('/contact'                    , ContactHandler),
-     ('/faq'                        , FAQHandler),
-     ('/hack-a-thon'                , HackathonHandler),
-     ('/login'                      , LoginHandler),
-     ('/manual'                     , ManualHandler),
-     ('/members/'                   , MembersHandler),
-     ('/members/([^/]+)'            , MemberHandler),
-     ('/messages/([^/]+)'           , MessagesHandler),
-     ('/talks'                      , TalksHandler),
-     ('/(.+)'                       , FileNotFoundHandler)),
+    ((r'^/$'                   , NewsHandler),
+     (r'^/news$'               , NewsHandler),
+     (r'^/account$'            , AccountHandler),
+     (r'^/admin$'              , AdminHandler),
+     (r'^/admin/news$'         , AdminNewsHandler),
+     (r'^/admin/news/([^/]+)$' , EditHandler),
+     (r'^/badges/$'            , BadgesHandler),
+     (r'^/badges/([^/]+)$'     , BadgeHandler),
+     (r'^/badge_application$'  , BadgeApplicationHandler),
+     (r'^/calendar$'           , CalendarHandler),
+     (r'^/contact$'            , ContactHandler),
+     (r'^/faq$'                , FAQHandler),
+     (r'^/hack-a-thon$'        , HackathonHandler),
+     (r'^/login$'              , LoginHandler),
+     (r'^/manual$'             , ManualHandler),
+     (r'^/members/$'           , MembersHandler),
+     (r'^/members/([^/]+)$'    , MemberHandler),
+     (r'^/messages/(\d+)$'     , MessagesHandler),
+     (r'^/talks$'              , TalksHandler),
+     (r'(.*)'                  , FileNotFoundHandler)),
     debug=True)
 
 def main(argv=None):

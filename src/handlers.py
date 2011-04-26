@@ -2,13 +2,14 @@ import datetime
 import os
 import urllib
 
-from google.appengine.api import users
+from google.appengine.api import users, datastore_errors
 from google.appengine.api.mail import send_mail
 from google.appengine.ext.webapp import RequestHandler, template
-from google.appengine.ext.db import GqlQuery
+from google.appengine.ext.db import Key, BadKeyError
 
 import utils
-from models import Award, Badge, Member, NewsArticle, Talk
+from models import Award, Badge, Member, NewsArticle, Talk, \
+                   GeneralSiteProperties
 
 get_path = utils.path_getter(__file__)
 
@@ -18,7 +19,10 @@ class BaseHandler(RequestHandler):
     title = None
 
     def render_template(self, template_name, template_dict=None):
-        tag_line = 'Next meeting coming soon'
+        try:
+            tag_line = GeneralSiteProperties.get_properties().tag_line
+        except:
+            tag_line = 'Next meeting soon!'
 
         if template_dict is None:
             template_dict = {}
@@ -122,15 +126,6 @@ class AdminHandler(BaseHandler):
                 value=int(post['value'])
             )
             badge.save()
-        elif post['kind'] == 'article':
-            date = datetime.datetime.strptime(post['date'], '%Y-%m-%d').date()
-            article = NewsArticle(
-                title=post['title'],
-                author=post['author'],
-                body=post['body'],
-                date=date
-            )
-            article.save()
         elif post['kind'] == 'award':
             badge = Badge.get_by_id(int(post['badge']))
             for member in post.getall('members'):
@@ -147,12 +142,20 @@ class AdminHandler(BaseHandler):
         elif post['kind'] == 'talk':
             talk = Talk(
                 title=post['title'],
-                date=datetime.datetime.strptime(post['date'], '%Y-%m-%d').date(),
+                date=utils.parse_date(post['date']),
                 description=post['description'],
                 member=Member.get_by_id(int(post['member'])),
                 video=post['video']
             )
             talk.put()
+        elif post['kind'] == 'taglineform':
+            properties = GeneralSiteProperties.all().get()
+            if properties == None:
+                properties = GeneralSiteProperties(tag_line=post['tagline'])
+                properties.put()
+            else:
+                properties.tag_line = post['tagline']
+                properties.put()
         self.get()
 
     def get(self):
@@ -160,6 +163,30 @@ class AdminHandler(BaseHandler):
             'badges': Badge.all(),
             'members': Member.all(),
         })
+
+
+class AdminNewsHandler(BaseHandler):
+    def get(self):
+        self.render_template('admin_news',
+            {'news_list' : NewsArticle.all().order('-date')})
+
+    def post(self):
+        articles_deleted = 0
+        for article_key in self.request.POST.getall('delete_article'):
+            try:
+                article_key = Key(article_key)
+            except BadKeyError:
+                # Wrong syntax for a key, move on to next key.
+                continue
+            article = NewsArticle.get(article_key)
+            if article:
+                article.delete()
+                articles_deleted += 1
+            # Else, not article has this key.
+
+        self.render_template('admin_news',
+            {'news_list': NewsArticle.all().order('-date'),
+             'delete_successful': '%d article(s) deleted.' % articles_deleted})
 
 
 class BadgeHandler(BaseHandler):
@@ -234,6 +261,81 @@ class ContactHandler(BaseHandler):
         self.render_template('contact')
 
 
+class EditHandler(BaseHandler):
+
+    def get(self, key):
+        template_dict = {'key': key, 'show_form' : True}
+        if key == 'new':
+            template_dict['form_data'] = {
+                'title': '',
+                'author': Member.get_current_member().handle,
+                'date': datetime.date.today(),
+                'body': ''}
+        else:
+            try:
+                template_dict['form_data'] = NewsArticle.get(Key(key))
+            except BadKeyError:
+                template_dict['message'] = \
+                    'Could not find article with key %r.' % key
+                template_dict['show_form'] = False
+        self.render_template('edit', template_dict)
+
+    def post(self, key):
+        post = self.request.POST
+        form_data = dict((k, post.get(k, ''))
+                          for k in ('title', 'author', 'date', 'body'))
+        template_dict = {'form_data': form_data, 'key': key, 'show_form' : True}
+        if 'delete_article' in post:
+            try:
+                NewsArticle.get(Key(key)).delete()
+            except datastore_errors.Error:
+                template_dict['message'] = \
+                    'Could not delete article with key %r.' % key
+            else:
+                template_dict['message'] = 'Article deleted.'
+                template_dict['show_form'] = False
+        else:
+            try:
+                date = utils.parse_date(form_data['date'])
+            except ValueError:
+                template_dict['message'] = \
+                    'Date is not in the correct format (YYYY-MM-DD).'
+            else:
+                if key == 'new':
+                    try:
+                        article = NewsArticle(title=form_data['title'],
+                                              author=form_data['author'],
+                                              date=date,
+                                              body=form_data['body'])
+                        article.put()
+                    except datastore_errors.Error:
+                        template_dict['message'] = \
+                            'Could not create new article.'
+                    else:
+                        template_dict['message'] = 'Article created.'
+                        template_dict['show_form'] = False
+                else:
+                    try:
+                        article = NewsArticle.get(Key(key))
+                    except BadKeyError:
+                        template_dict['message'] = \
+                            'Could not find article with key %r.' % key
+                    else:
+                        article.title = form_data['title']
+                        article.author = form_data['author']
+                        article.date = date
+                        article.body = form_data['body']
+                        try:
+                            article.put()
+                        except datastore_errors.Error:
+                            template_dict['message'] = \
+                                'Could not save changes to article.'
+                        else:
+                            template_dict['form_data'] = article
+                            template_dict['message'] = 'Changes saved.'
+        self.render_template('edit', template_dict)
+
+
 class FAQHandler(BaseHandler):
 
     def get(self):
@@ -241,22 +343,14 @@ class FAQHandler(BaseHandler):
 
 
 class FileNotFoundHandler(BaseHandler):
-    def get(self, handler_name=''):
-        self.render_template('404', {
-            'url' : handler_name
-        })
+    def get(self, url=None):
+        self.render_template('404', {'url': url})
+
 
 class HackathonHandler(BaseHandler):
 
     def get(self):
         self.render_template('hack-a-thon')
-
-
-class ManualHandler(BaseHandler):
-
-    def get(self):
-        self.render_template('manual')
-
 
 # This handler is a hack to force people to select handles.
 class LoginHandler(BaseHandler):
@@ -270,6 +364,12 @@ class LoginHandler(BaseHandler):
                 self.redirect(self.request.GET.getall('url')[0])
         else:
             self.redirect('/')
+
+
+class ManualHandler(BaseHandler):
+
+    def get(self):
+        self.render_template('manual')
 
 
 class MembersHandler(BaseHandler):
@@ -304,34 +404,65 @@ class MemberHandler(BaseHandler):
 
 class MessagesHandler(BaseHandler):
 
-    def get(self, message_index=None):
-        if message_index == None:
-            self.render_template('404', {'url' : 'message number ' + message_index})
+    def get(self, message_index):
+        message_file = None
+        try:
+            message_file = open('static/messages/%s.html' % message_index)
+            self.response.out.write(message_file.read())
+        except:
+            self.render_template('404',
+                {'url': 'message number %s' % message_index})
+        finally:
+            if message_file is not None:
+                message_file.close()
+
+
+class PaginationHandler(BaseHandler):
+    DEF_ERROR_MESSAGE = "That page doesn't exist, why not look at this."
+    ITEM_PER_PAGE = 5
+    _model = None
+    _template = None
+
+    def get(self):
+        try:
+            page_num = int(self.request.GET.get('page', 0))
+        except ValueError:
+            page_num = 0
+            message = self._DEF_ERROR_MESSAGE
         else:
-            message_path = 'static/messages/%s.html' % message_index
-            cur_file = None
-            try:
-                cur_file = open(message_path)
-                self.response.out.write(cur_file.read())
-            except IOError:
-                self.render_template('404', {'url' : 'message number ' + message_index})
-            finally:
-                if cur_file:
-                    cur_file.close()
+            message = None
+
+        items = self._model.all().order('-date');
+
+        last_page = items.count() // self.ITEM_PER_PAGE
+
+        if page_num > last_page:
+            page_num = last_page
+            message = self._DEF_ERROR_MESSAGE
+        elif page_num < 0:
+            page_num = 0
+            message = self._DEF_ERROR_MESSAGE
+
+        pagination_dict = {'num': page_num,
+                           'prev': page_num - 1,
+                           'next': page_num + 1,
+                           'hasNext': page_num != last_page,
+                           'hasPrev': page_num != 0}
+
+        first_page_item = page_num * self.ITEM_PER_PAGE
+        last_page_item = (page_num + 1) * self.ITEM_PER_PAGE
+
+        self.render_template(self._template,
+            {'content_list': items.fetch(last_page_item, first_page_item),
+             'message': message,
+             'pagedata': pagination_dict})
 
 
-class NewsHandler(BaseHandler):
-
-    def get(self):
-        news_list = GqlQuery('SELECT * FROM NewsArticle ORDER BY date DESC');
-        self.render_template('news', {
-            'news_list': news_list
-        })
+class NewsHandler(PaginationHandler):
+    _model = NewsArticle
+    _template = 'news'
 
 
-class TalksHandler(BaseHandler):
-
-    def get(self):
-        self.render_template('talks', {
-            'talks' : Talk.all()
-        })
+class TalksHandler(PaginationHandler):
+    _model = Talk
+    _template = 'talks'
