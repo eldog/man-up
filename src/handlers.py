@@ -13,10 +13,6 @@ from models import Award, Badge, Member, NewsArticle, Talk, \
 
 get_path = utils.path_getter(__file__)
 
-#MAGIC NUMBERS
-NEWS_ITEMS_PER_PAGE = 5
-TALK_ITEMS_PER_PAGE = 5
-
 class BaseHandler(RequestHandler):
 
     login_required = False
@@ -170,28 +166,27 @@ class AdminHandler(BaseHandler):
 
 
 class AdminNewsHandler(BaseHandler):
-
-    def post(self):
-        post = self.request.POST
-        if "delete_article" in post:
-            output = post.getall('delete_article')
-            try:
-                counter = 0
-                for articleKey in output:
-                    article = NewsArticle.get(Key(articleKey))
-                    article.delete()
-                    counter += 1
-                message = '%d Article(s) deleted.' % counter
-            except datastore_errors.Error:
-                message = 'Database error, a subset of your selection might have been deleted'
-        else:
-            message = 'No articles selected, congratulations, you wasted some CPU time.'
-        news_list = NewsArticle.all().order('-date'); 
-        self.render_template('admin_news', { 'news_list' : news_list, 'delete_successful' : message })
-
     def get(self):
         self.render_template('admin_news',
             {'news_list' : NewsArticle.all().order('-date')})
+
+    def post(self):
+        articles_deleted = 0
+        for article_key in self.request.POST.getall('delete_article'):
+            try:
+                article_key = Key(article_key)
+            except BadKeyError:
+                # Wrong syntax for a key, move on to next key.
+                continue
+            article = NewsArticle.get(article_key)
+            if article:
+                article.delete()
+                articles_deleted += 1
+            # Else, not article has this key.
+
+        self.render_template('admin_news',
+            {'news_list': NewsArticle.all().order('-date'),
+             'delete_successful': '%d article(s) deleted.' % articles_deleted})
 
 
 class BadgeHandler(BaseHandler):
@@ -357,13 +352,6 @@ class HackathonHandler(BaseHandler):
     def get(self):
         self.render_template('hack-a-thon')
 
-
-class ManualHandler(BaseHandler):
-
-    def get(self):
-        self.render_template('manual')
-
-
 # This handler is a hack to force people to select handles.
 class LoginHandler(BaseHandler):
 
@@ -376,6 +364,12 @@ class LoginHandler(BaseHandler):
                 self.redirect(self.request.GET.getall('url')[0])
         else:
             self.redirect('/')
+
+
+class ManualHandler(BaseHandler):
+
+    def get(self):
+        self.render_template('manual')
 
 
 class MembersHandler(BaseHandler):
@@ -423,49 +417,52 @@ class MessagesHandler(BaseHandler):
                 message_file.close()
 
 
-class NewsHandler(BaseHandler):
+class PaginationHandler(BaseHandler):
+    DEF_ERROR_MESSAGE = "That page doesn't exist, why not look at this."
+    ITEM_PER_PAGE = 5
+    _model = None
+    _template = None
 
     def get(self):
-        page_num = None
-        message = None
         try:
-            page_num = self.request.GET['page']
-            if page_num == None:
-                page_num = 0
-            else:
-                page_num = int(page_num)
-        except KeyError:
-            page_num = 0
+            page_num = int(self.request.GET.get('page', 0))
         except ValueError:
             page_num = 0
-            message = 'Please don\'t try and break the appengine, Google will get angry.'
-            
-                    
-        content = utils.generate_content_dict(NewsArticle,page_num,
-                                              NEWS_ITEMS_PER_PAGE,message)
-        
-        self.render_template('news', content)
+            message = self._DEF_ERROR_MESSAGE
+        else:
+            message = None
 
+        items = self._model.all().order('-date');
 
-class TalksHandler(BaseHandler):
+        last_page = items.count() // self.ITEM_PER_PAGE
 
-    def get(self):
-        page_num = None
-        message = None
-        try:
-            page_num = self.request.GET['page']
-            if page_num == None:
-                page_num = 0
-            else:
-                page_num = int(page_num)
-        except KeyError:
+        if page_num > last_page:
+            page_num = last_page
+            message = self._DEF_ERROR_MESSAGE
+        elif page_num < 0:
             page_num = 0
-        except ValueError:
-            page_num = 0
-            message = 'Please don\'t try and break the appengine, Google will get angry.'
-                    
-        content = utils.generate_content_dict(Talk,page_num,
-                                              TALK_ITEMS_PER_PAGE,message)
-        
-        self.render_template('talks', content)
+            message = self._DEF_ERROR_MESSAGE
 
+        pagination_dict = {'num': page_num,
+                           'prev': page_num - 1,
+                           'next': page_num + 1,
+                           'hasNext': page_num != last_page,
+                           'hasPrev': page_num != 0}
+
+        first_page_item = page_num * self.ITEM_PER_PAGE
+        last_page_item = (page_num + 1) * self.ITEM_PER_PAGE
+
+        self.render_template(self._template,
+            {'content_list': items.fetch(last_page_item, first_page_item),
+             'message': message,
+             'pagedata': pagination_dict})
+
+
+class NewsHandler(PaginationHandler):
+    _model = NewsArticle
+    _template = 'news'
+
+
+class TalksHandler(PaginationHandler):
+    _model = Talk
+    _template = 'talks'
