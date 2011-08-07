@@ -152,15 +152,16 @@ public class Signature extends Activity {
 		}
 	}
 
-	private static final int SUBMIT = Menu.FIRST;
-	private static final int CLEAR = 2;
+	private static final int SUBMIT = Menu.FIRST, CLEAR = 2, LIST = 3;
 
+	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		super.onCreateOptionsMenu(menu);
 
 		menu.add(0, SUBMIT, 0, "Submit").setShortcut('7', 's');
 		menu.add(0, CLEAR, 0, "Clear").setShortcut('3', 'c');
+		menu.add(0, LIST, 0, "Not uploaded").setShortcut('4', 'd');
 		return true;
 	}
 
@@ -181,6 +182,9 @@ public class Signature extends Activity {
 			return true;
 		case CLEAR:
 			setContentView(myView = new MyView(this));
+			return true;
+		case LIST:
+			startActivity(new Intent(this, SigsNotUploaded.class));
 			return true;
 		}
 		return super.onOptionsItemSelected(item);
@@ -239,7 +243,8 @@ public class Signature extends Activity {
 			Toast.makeText(this, "Cannot write to external storage", Toast.LENGTH_SHORT).show();
 	}
 	File output;
-	long student_id = 0;
+	// Temp solution to id
+	static long student_id = 0;
 	private boolean writeToExternalStorage(Bitmap b){
 		try{
 			File rootPath = Environment.getExternalStorageDirectory();
@@ -247,6 +252,7 @@ public class Signature extends Activity {
 			manupPath.mkdirs();
 			FileOutputStream fos;
 			try {
+				student_id++;
 				output = new File(manupPath, student_id + ".jpg");
 				output.createNewFile();
 				fos = new FileOutputStream(output);

@@ -1,6 +1,8 @@
 package com.appspot.manup.signature;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import android.content.ContentValues;
@@ -70,42 +72,48 @@ public class DataHelper {
 		this.db.close();
 	}
 
-	public Map<String, Object> selectAll() {
+	public List<Map<String, Object>> selectAll() {
 		this.db = openHelper.getReadableDatabase();
-		Map<String, Object> map = new HashMap<String, Object>();
+		List<Map<String, Object>> list = new ArrayList<Map<String, Object>>();
+		Map<String, Object> map;
 		Cursor cursor = this.db.query(TABLE_NAME, new String[] { ID, FILEPATH, UPLOADED }, null,
 				null, null, null, null);
 		if (cursor.moveToFirst()) {
 			do {
+				map = new HashMap<String, Object>();
 				map.put(ID, cursor.getLong(0));
 				map.put(FILEPATH, cursor.getString(1));
 				map.put(UPLOADED, cursor.getInt(2));
+				list.add(map);
 			} while (cursor.moveToNext());
 		}
 		if (cursor != null && !cursor.isClosed()) {
 			cursor.close();
 		}
 		this.db.close();
-		return map;
+		return list;
 	}
 
-	public Map<String, Object> selectAllNotUploaded() {
+	public List<Map<String, Object>> selectAllNotUploaded() {
 		this.db = openHelper.getReadableDatabase();
-		Map<String, Object> map = new HashMap<String, Object>();
+		List<Map<String, Object>> list = new ArrayList<Map<String,Object>>();
+		Map<String, Object> map;
 		Cursor cursor = this.db.query(TABLE_NAME, new String[] { ID, FILEPATH, UPLOADED }, UPLOADED + "=?",
 				new String[] {"" + 0}, null, null, null);
 		if (cursor.moveToFirst()) {
 			do {
+				map = new HashMap<String, Object>();
 				map.put(ID, cursor.getLong(0));
 				map.put(FILEPATH, cursor.getString(1));
 				map.put(UPLOADED, cursor.getInt(2));
+				list.add(map);
 			} while (cursor.moveToNext());
 		}
 		if (cursor != null && !cursor.isClosed()) {
 			cursor.close();
 		}
 		this.db.close();
-		return map;
+		return list;
 	}
 	private static class OpenHelper extends SQLiteOpenHelper {
 
