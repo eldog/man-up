@@ -4,18 +4,14 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
-import android.graphics.BlurMaskFilter;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.EmbossMaskFilter;
-import android.graphics.MaskFilter;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.os.Bundle;
@@ -33,11 +29,8 @@ import android.widget.Toast;
  *
  */
 public class Signature extends Activity {
-    private static final String TAG = "MANUP Signature";
     private MyView myView;
 	private Paint mPaint;
-	private MaskFilter mEmboss;
-	private MaskFilter mBlur;
 	private DataHelper dh;
 
 	@Override
@@ -53,9 +46,6 @@ public class Signature extends Activity {
 		mPaint.setStrokeJoin(Paint.Join.ROUND);
 		mPaint.setStrokeCap(Paint.Cap.ROUND);
 		mPaint.setStrokeWidth(10);
-
-		mEmboss = new EmbossMaskFilter(new float[] { 1, 1, 1 }, 0.4f, 6, 3.5f);
-		mBlur = new BlurMaskFilter(8, BlurMaskFilter.Blur.NORMAL);
 		
 		dh = new DataHelper(this);
 		startWatchingExternalStorage();
@@ -267,4 +257,5 @@ public class Signature extends Activity {
 		} catch (IOException e) { e.printStackTrace(); }
 		return false;
 	}
+	
 }
