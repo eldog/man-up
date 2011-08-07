@@ -113,7 +113,7 @@ public class DataHelper {
 			super(context, DATABASE_NAME, null, DATABASE_VERSION);
 		}
 		
-		private static final String createTbl = "CREATE TABLE" +
+		private static final String createTbl = "CREATE TABLE " +
 				TABLE_NAME + " (id INTEGER PRIMARY KEY AUTOINCREMENT, " 
 				+ ID + " NUMERIC, " + FILEPATH + " TEXT, " + UPLOADED
 				+ " INTEGER)";

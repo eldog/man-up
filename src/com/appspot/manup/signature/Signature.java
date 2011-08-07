@@ -228,14 +228,13 @@ public class Signature extends Activity {
 	
 	private void onSubmit(){
 		Bitmap sigBitmap = myView.getBitMap();
-		if (mExternalStorageWriteable){
+		if (mExternalStorageWriteable)
 			if (writeToExternalStorage(sigBitmap))
-			//	dh.insert(student_id, output.getAbsolutePath(), false);
+				dh.insert(student_id, output.getAbsolutePath(), false);
 				// This is also in datahelper so delete when using insert
-				Toast.makeText(this, "Write success", Toast.LENGTH_SHORT).show();
+				//Toast.makeText(this, "Write success", Toast.LENGTH_SHORT).show();
 			else
 				Toast.makeText(this, "Write failed", Toast.LENGTH_SHORT).show();
-		}
 		else
 			Toast.makeText(this, "Cannot write to external storage", Toast.LENGTH_SHORT).show();
 	}
