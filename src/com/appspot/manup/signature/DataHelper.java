@@ -9,6 +9,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
+import android.widget.Toast;
 
 public class DataHelper {
 
@@ -38,6 +39,7 @@ public class DataHelper {
 		try{
 			this.db.insert(TABLE_NAME, null, cv);
 			this.db.setTransactionSuccessful();
+			Toast.makeText(this.context, "Write successful", Toast.LENGTH_SHORT).show();
 		}finally{ this.db.endTransaction();}
 		this.db.close();
 	}
@@ -57,6 +59,7 @@ public class DataHelper {
 		try{
 			this.db.update(TABLE_NAME, cv, "id=?", new String[]{""+id});
 			this.db.setTransactionSuccessful();
+			Toast.makeText(this.context, "Update successful", Toast.LENGTH_SHORT).show();
 		}finally{ this.db.endTransaction();}
 		this.db.close();
 	}
