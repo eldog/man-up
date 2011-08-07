@@ -11,7 +11,6 @@ import android.graphics.MaskFilter;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -29,6 +28,7 @@ public class Signature extends Activity {
 	private Paint mPaint;
 	private MaskFilter mEmboss;
 	private MaskFilter mBlur;
+	private DataHelper dh;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -46,6 +46,8 @@ public class Signature extends Activity {
 
 		mEmboss = new EmbossMaskFilter(new float[] { 1, 1, 1 }, 0.4f, 6, 3.5f);
 		mBlur = new BlurMaskFilter(8, BlurMaskFilter.Blur.NORMAL);
+		
+		dh = new DataHelper(this);
 	}
 	
 	public class MyView extends View {
