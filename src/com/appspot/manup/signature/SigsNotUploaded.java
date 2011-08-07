@@ -8,7 +8,7 @@ import android.os.Bundle;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-
+// Temporary solution to see database entries
 public class SigsNotUploaded extends Activity {
 	private DataHelper dh;
 	@Override

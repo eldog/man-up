@@ -76,7 +76,7 @@ public class Signature extends Activity {
 
 		public MyView(Context c) {
 			super(c);
-
+			
 			mBitmap = Bitmap.createBitmap(320, 480, Bitmap.Config.ARGB_8888);
 			mCanvas = new Canvas(mBitmap);
 			mPath = new Path();
@@ -161,6 +161,7 @@ public class Signature extends Activity {
 
 		menu.add(0, SUBMIT, 0, "Submit").setShortcut('7', 's');
 		menu.add(0, CLEAR, 0, "Clear").setShortcut('3', 'c');
+		// Temp solution
 		menu.add(0, LIST, 0, "Not uploaded").setShortcut('4', 'd');
 		return true;
 	}
@@ -190,8 +191,8 @@ public class Signature extends Activity {
 		return super.onOptionsItemSelected(item);
 	}
 	
-	
 	// Monitor state of external storage
+	// Not auto updating yet
 	BroadcastReceiver mExternalStorageReceiver;
 	boolean mExternalStorageAvailable = false;
 	boolean mExternalStorageWriteable = false;
@@ -231,12 +232,11 @@ public class Signature extends Activity {
 	}
 	
 	private void onSubmit(){
-		Bitmap sigBitmap = myView.getBitMap();
 		if (mExternalStorageWriteable)
-			if (writeToExternalStorage(sigBitmap))
+			if (writeToExternalStorage(myView.getBitMap())){
 				dh.insert(student_id, output.getAbsolutePath(), false);
-				// This is also in datahelper so delete when using insert
-				//Toast.makeText(this, "Write success", Toast.LENGTH_SHORT).show();
+				setContentView(myView = new MyView(this));
+			}
 			else
 				Toast.makeText(this, "Write failed", Toast.LENGTH_SHORT).show();
 		else
@@ -253,10 +253,10 @@ public class Signature extends Activity {
 			FileOutputStream fos;
 			try {
 				student_id++;
-				output = new File(manupPath, student_id + ".jpg");
+				output = new File(manupPath, student_id + ".png");
 				output.createNewFile();
 				fos = new FileOutputStream(output);
-			    b.compress(Bitmap.CompressFormat.JPEG, 100, fos);
+			    b.compress(Bitmap.CompressFormat.PNG, 100, fos);
 			    fos.flush();
 			    fos.close();
 			    return true;
