@@ -50,7 +50,7 @@ public class DataHelper {
 		return cv;
 	}
 	
-	public void update(long student_id, String filepath, boolean uploaded, int id) {
+	public void update(int id, long student_id, String filepath, boolean uploaded) {
 		this.db = openHelper.getWritableDatabase();
 		ContentValues cv = makeCV(student_id, filepath, uploaded);
 		this.db.beginTransaction();
