@@ -33,11 +33,31 @@ public class DataHelper {
 
 	public void insert(long student_id, String filepath, boolean uploaded) {
 		this.db = openHelper.getWritableDatabase();
+		ContentValues cv = makeCV(student_id, filepath, uploaded);
+		this.db.beginTransaction();
+		try{
+			this.db.insert(TABLE_NAME, null, cv);
+			this.db.setTransactionSuccessful();
+		}finally{ this.db.endTransaction();}
+		this.db.close();
+	}
+	
+	private ContentValues makeCV(long student_id, String filepath, boolean uploaded){
 		ContentValues cv = new ContentValues();
 		cv.put(ID, student_id);
 		cv.put(FILEPATH, filepath);
 		cv.put(UPLOADED, (uploaded) ? 1 : 0);
-		this.db.insert(TABLE_NAME, null, cv);
+		return cv;
+	}
+	
+	public void update(long student_id, String filepath, boolean uploaded, int id) {
+		this.db = openHelper.getWritableDatabase();
+		ContentValues cv = makeCV(student_id, filepath, uploaded);
+		this.db.beginTransaction();
+		try{
+			this.db.update(TABLE_NAME, cv, "id=?", new String[]{""+id});
+			this.db.setTransactionSuccessful();
+		}finally{ this.db.endTransaction();}
 		this.db.close();
 	}
 
@@ -70,7 +90,7 @@ public class DataHelper {
 		this.db = openHelper.getReadableDatabase();
 		Map<String, Object> map = new HashMap<String, Object>();
 		Cursor cursor = this.db.query(TABLE_NAME, new String[] { ID, FILEPATH, UPLOADED }, UPLOADED + "=?",
-				new String[] {"0"}, null, null, null);
+				new String[] {"" + 0}, null, null, null);
 		if (cursor.moveToFirst()) {
 			do {
 				map.put(ID, cursor.getLong(0));
