@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+
+import com.appspot.manup.signature.SignatureUploadService.UploadCompleteListener;
+
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -23,15 +26,13 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
 
-/**
- * 
- * Code from com.appspot.manup.FingerPaint
- *
- */
+// Code from com.appspot.manup.FingerPaint
 public class Signature extends Activity {
+    private static final String TAG = Signature.class.getSimpleName();
     private MyView myView;
 	private Paint mPaint;
 	private DataHelper dh;
+	static boolean clearCanvas; 
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -54,8 +55,8 @@ public class Signature extends Activity {
 	@Override
 	protected void onDestroy() {
 		// TODO Auto-generated method stub
-		super.onDestroy();
 		stopWatchingExternalStorage();
+		super.onDestroy();
 	}
 	
 	public class MyView extends View {
@@ -67,6 +68,7 @@ public class Signature extends Activity {
 		public MyView(Context c) {
 			super(c);
 			
+			clearCanvas = true;
 			mBitmap = Bitmap.createBitmap(320, 480, Bitmap.Config.ARGB_8888);
 			mCanvas = new Canvas(mBitmap);
 			mPath = new Path();
@@ -113,6 +115,7 @@ public class Signature extends Activity {
 			mCanvas.drawPath(mPath, mPaint);
 			// kill this so we don't double draw
 			mPath.reset();
+			clearCanvas = false;
 		}
 
 		@Override
@@ -143,7 +146,6 @@ public class Signature extends Activity {
 	}
 
 	private static final int SUBMIT = Menu.FIRST, CLEAR = 2, LIST = 3;
-
 	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
@@ -222,9 +224,18 @@ public class Signature extends Activity {
 	}
 	
 	private void onSubmit(){
+		if (clearCanvas){
+			Toast.makeText(this, "A signature is required", Toast.LENGTH_SHORT).show();
+			return;
+		}
 		if (mExternalStorageWriteable)
 			if (writeToExternalStorage(myView.getBitMap())){
 				dh.insert(student_id, output.getAbsolutePath(), false);
+				try {
+					upload(output.getAbsolutePath(), student_id);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 				setContentView(myView = new MyView(this));
 			}
 			else
@@ -232,6 +243,7 @@ public class Signature extends Activity {
 		else
 			Toast.makeText(this, "Cannot write to external storage", Toast.LENGTH_SHORT).show();
 	}
+	
 	File output;
 	// Temp solution to id
 	static long student_id = 0;
@@ -257,5 +269,42 @@ public class Signature extends Activity {
 		} catch (IOException e) { e.printStackTrace(); }
 		return false;
 	}
+	
+	// Upload files
+	
+	private final UploadCompleteListener mListener = new UploadCompleteListener() {
+        public void onUploadComplete(final Intent intent) {
+            Log.d(TAG, "Got callback.");
+            final String studentId = intent.getStringExtra(SignatureUploadService.EXTRA_STUDENT_ID);
+            final boolean successful =
+                    intent.getBooleanExtra(SignatureUploadService.EXTRA_SUCCESSFUL, false);
+            Log.d(TAG, studentId + " upload complete. Successful? " + successful);
+            final String s = studentId + ": " + ((successful) ? "successfully uploaded" : "upload failed");
+            if (successful)
+            	dh.delete(studentId);
+            runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					Log.d(TAG, "upload message thread started");
+					// TODO Auto-generated method stub
+					Toast.makeText(Signature.this, s, Toast.LENGTH_SHORT).show();
+				}
+			});
+        } // onUploadComplete
+    };
+    
+    
+    @Override
+    protected void onPause() {
+    	if (output != null)
+    		SignatureUploadService.unregister(mListener, output.getAbsolutePath());
+        super.onPause();
+    }
+
+    public void upload(final String path, long id) throws IOException {
+        SignatureUploadService.uploadSignature(this, mListener, path, ""+id);
+    } // upload
+
+
 	
 }

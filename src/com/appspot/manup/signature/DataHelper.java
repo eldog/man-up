@@ -54,24 +54,40 @@ public class DataHelper {
 		return cv;
 	}
 	
-	public void update(int id, long student_id, String filepath, boolean uploaded) {
+	public void update(long student_id, String filepath, boolean uploaded) {
 		this.db = openHelper.getWritableDatabase();
 		ContentValues cv = makeCV(student_id, filepath, uploaded);
 		this.db.beginTransaction();
 		try{
-			this.db.update(TABLE_NAME, cv, "id=?", new String[]{""+id});
+			this.db.update(TABLE_NAME, cv, ID + "=?", new String[]{""+student_id});
 			this.db.setTransactionSuccessful();
 			Toast.makeText(this.context, "Update successful", Toast.LENGTH_SHORT).show();
 		}finally{ this.db.endTransaction();}
 		this.db.close();
 	}
-
-	public void deleteAll() {
+	
+	public void delete(String student_id){
 		this.db = openHelper.getWritableDatabase();
-		this.db.delete(TABLE_NAME, null, null);
+		this.db.beginTransaction();
+		try{
+			this.db.delete(TABLE_NAME, ID + "=?", new String[]{student_id});
+			this.db.setTransactionSuccessful();
+		}finally { this.db.endTransaction(); }
 		this.db.close();
 	}
 
+	public void deleteAll() {
+		this.db = openHelper.getWritableDatabase();
+		this.db.beginTransaction();
+		try{
+			this.db.delete(TABLE_NAME, null, null);
+			this.db.setTransactionSuccessful();
+		} finally { this.db.endTransaction(); }
+		this.db.close();
+	}
+
+	
+	
 	public List<Map<String, Object>> selectAll() {
 		this.db = openHelper.getReadableDatabase();
 		List<Map<String, Object>> list = new ArrayList<Map<String, Object>>();
