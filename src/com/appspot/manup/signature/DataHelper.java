@@ -86,7 +86,19 @@ public class DataHelper {
 		this.db.close();
 	}
 
-	
+	public String selectImagePath(String student_id){
+		this.db = openHelper.getReadableDatabase();
+		String path = null;
+		Cursor cursor = this.db.query(TABLE_NAME, new String[] { FILEPATH }, ID + "=?",
+				new String[] {student_id}, null, null, null);
+		if (cursor.moveToFirst())
+			path = cursor.getString(0);
+		if (cursor != null && !cursor.isClosed()) {
+			cursor.close();
+		}
+		this.db.close();		
+		return path;
+	}
 	
 	public List<Map<String, Object>> selectAll() {
 		this.db = openHelper.getReadableDatabase();

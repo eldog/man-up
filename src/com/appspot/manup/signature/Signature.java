@@ -280,8 +280,18 @@ public class Signature extends Activity {
                     intent.getBooleanExtra(SignatureUploadService.EXTRA_SUCCESSFUL, false);
             Log.d(TAG, studentId + " upload complete. Successful? " + successful);
             final String s = studentId + ": " + ((successful) ? "successfully uploaded" : "upload failed");
-            if (successful)
+            if (successful){
+            	try {
+            		String filePath = dh.selectImagePath(studentId);
+            		if (filePath != null){
+            			File f = new File(filePath);
+            			if (!f.delete())
+            				throw new IOException("Delete failed");
+            			Log.d(TAG, studentId + " " + filePath + ": Deleted file from external storage");
+            		}
+            	} catch (IOException e) { e.printStackTrace();}
             	dh.delete(studentId);
+            }
             runOnUiThread(new Runnable() {
 				@Override
 				public void run() {
