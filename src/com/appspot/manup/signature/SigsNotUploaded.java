@@ -23,7 +23,7 @@ public class SigsNotUploaded extends Activity {
 		List<Map<String, Object>> list = dh.selectAllNotUploaded();
 		for (Map<String,Object> map : list){
 			TextView tv = new TextView(this);
-			tv.setText(map.get(DataHelper.FILEPATH).toString());
+			tv.setText(map.get(DataHelper.ID).toString() + ": " + map.get(DataHelper.FILEPATH).toString());
 			tv.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT));
 			v.addView(tv);
 		}
