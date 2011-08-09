@@ -30,14 +30,12 @@ public final class SignatureUploadService extends IntentService
     private static final String MIME_PNG = "image/png";
 
     private static final String ACTION_UPLOAD = SignatureUploadService.class.getName() + ".UPLOAD";
-    public static final String EXTRA_PATH = SignatureUploadService.class.getName() + ".PATH";
-    public static final String EXTRA_STUDENT_ID =
-            SignatureUploadService.class.getName() + ".STUDENT_ID";
+    public static final String EXTRA_ID = SignatureUploadService.class.getName() + ".ID";
     public static final String EXTRA_SUCCESSFUL = SignatureUploadService.class.getName()
             + ".RESULT";
 
-    private static final Map<String, Set<UploadCompleteListener>> sListeners =
-            new HashMap<String, Set<UploadCompleteListener>>();
+    private static final Map<Long, Set<UploadCompleteListener>> sListeners =
+            new HashMap<Long, Set<UploadCompleteListener>>();
 
     public interface UploadCompleteListener
     {
@@ -45,32 +43,30 @@ public final class SignatureUploadService extends IntentService
     }
 
     public static void uploadSignature(final Context context,
-            final UploadCompleteListener listener, final String path, final String studentId)
+            final UploadCompleteListener listener, final long id)
     {
         synchronized (sListeners)
         {
-            if (sListeners.containsKey(path))
+            if (sListeners.containsKey(id))
             {
-                sListeners.get(path).add(listener);
+                sListeners.get(id).add(listener);
                 return;
             } // if
             final Set<UploadCompleteListener> listeners = new HashSet<UploadCompleteListener>();
             listeners.add(listener);
-            sListeners.put(path, listeners);
+            sListeners.put(id, listeners);
             final Intent intent = new Intent(context, SignatureUploadService.class);
             intent.setAction(ACTION_UPLOAD);
-            intent.putExtra(EXTRA_PATH, path);
-            intent.putExtra(EXTRA_STUDENT_ID, studentId);
-            Log.d(TAG, path + " " + studentId);
+            intent.putExtra(EXTRA_ID, id);
             context.startService(intent);
         } // synchronized
     } // uploadSignature
 
-    public static void unregister(final UploadCompleteListener listener, final String path)
+    public static void unregister(final UploadCompleteListener listener, final long id)
     {
         synchronized (sListeners)
         {
-            final Set<UploadCompleteListener> listeners = sListeners.get(path);
+            final Set<UploadCompleteListener> listeners = sListeners.get(id);
             if (listeners != null)
             {
                 listeners.remove(listener);
@@ -80,15 +76,15 @@ public final class SignatureUploadService extends IntentService
 
     private static void notifyListeners(final Intent intent)
     {
-        final String path = intent.getStringExtra(EXTRA_PATH);
+        final long id = intent.getLongExtra(EXTRA_ID, -1);
 
         synchronized (sListeners)
         {
-            for (final UploadCompleteListener listener : sListeners.get(path))
+            for (final UploadCompleteListener listener : sListeners.get(id))
             {
                 listener.onUploadComplete(intent);
             } // for
-            sListeners.remove(path);
+            sListeners.remove(id);
         } // synchronized
     } // notifyListeners
 
@@ -112,33 +108,37 @@ public final class SignatureUploadService extends IntentService
         boolean successful = true;
         try
         {
-            successful = upload(intent.getStringExtra(EXTRA_PATH),
-                    intent.getStringExtra(EXTRA_STUDENT_ID));
+            successful = upload(intent.getLongExtra(EXTRA_ID, -1));
         } // try
         catch (final IOException e)
         {
-            Log.w(TAG, "Upload failed.", e);
+            Log.d(TAG, "Upload failed.", e);
             successful = false;
         } // catch
         intent.putExtra(EXTRA_SUCCESSFUL, successful);
-        notifyListeners(intent); 
+        notifyListeners(intent);
     } // onHandleIntent
 
-    private boolean upload(final String path, final String studentId) throws IOException
+    private boolean upload(final long id) throws IOException
     {
-
+        final SignatureDatabase db = SignatureDatabase.getInstance(this);
         final URI uri;
         try
         {
             uri = new URI("http", null /* userInfo */, "192.168.1.3", 8080,
-                    "/members/" + studentId, null /* query */, null /* fragment */);
+                    "/members/" + db.getStudentId(id), null /* query */, null /* fragment */);
         } // try
         catch (final URISyntaxException e)
         {
             throw new AssertionError(e);
         } // catch
 
-        final File pngFile = new File(path);
+        final File pngFile = db.getImageFile(id);
+        if (pngFile == null)
+        {
+            Log.d(TAG, "Failed to get image file for " + id);
+            return false;
+        } // if
 
         FileInputStream pngStream = null;
         HttpResponse response = null;

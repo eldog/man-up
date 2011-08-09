@@ -28,7 +28,7 @@ public class Signature extends DataUploadHelperActivity {
     private static final String TAG = Signature.class.getSimpleName();
     private MyView myView;
 	private Paint mPaint;
-	static boolean clearCanvas; 
+	static boolean clearCanvas;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -43,17 +43,17 @@ public class Signature extends DataUploadHelperActivity {
 		mPaint.setStrokeJoin(Paint.Join.ROUND);
 		mPaint.setStrokeCap(Paint.Cap.ROUND);
 		mPaint.setStrokeWidth(10);
-		
+
 		startWatchingExternalStorage();
 	}
-	
+
 	@Override
 	protected void onDestroy() {
 		// TODO Auto-generated method stub
 		stopWatchingExternalStorage();
 		super.onDestroy();
 	}
-	
+
 	public class MyView extends View {
 		private Bitmap mBitmap;
 		private Canvas mCanvas;
@@ -62,7 +62,7 @@ public class Signature extends DataUploadHelperActivity {
 
 		public MyView(Context c) {
 			super(c);
-			
+
 			clearCanvas = true;
 			mBitmap = Bitmap.createBitmap(320, 480, Bitmap.Config.ARGB_8888);
 			mCanvas = new Canvas(mBitmap);
@@ -141,7 +141,7 @@ public class Signature extends DataUploadHelperActivity {
 	}
 
 	private static final int SUBMIT = Menu.FIRST, CLEAR = 2, LIST = 3;
-	
+
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		super.onCreateOptionsMenu(menu);
@@ -170,7 +170,7 @@ public class Signature extends DataUploadHelperActivity {
 		}
 		return super.onOptionsItemSelected(item);
 	}
-	
+
 	// Monitor state of external storage
 	// Not auto updating yet
 	BroadcastReceiver mExternalStorageReceiver;
@@ -210,33 +210,37 @@ public class Signature extends DataUploadHelperActivity {
 	void stopWatchingExternalStorage() {
 	    unregisterReceiver(mExternalStorageReceiver);
 	}
-	
+
 	private void onSubmit(){
 		if (clearCanvas){
 			Toast.makeText(this, "A signature is required", Toast.LENGTH_SHORT).show();
 			return;
 		}
 		if (mExternalStorageWriteable)
-			if (writeToExternalStorage(myView.getBitMap())){
+		{
+		    final long id = dh.addSignature(Long.toString(student_id));
+			if (writeToExternalStorage(myView.getBitMap(), id)){
 				filePath = output.getAbsolutePath();
-				dh.insert(student_id, filePath, false);
-				try {
-					upload(filePath, "" + student_id);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+
+				dh.signatureCaptured(id);
+				upload(id);
 				setContentView(myView = new MyView(this));
 			}
 			else
+			{
 				Toast.makeText(this, "Write failed", Toast.LENGTH_SHORT).show();
+			}
+		}
 		else
+		{
 			Toast.makeText(this, "Cannot write to external storage", Toast.LENGTH_SHORT).show();
+		}
 	}
-	
+
 	File output;
 	// Temp solution to id
 	static long student_id = 0;
-	private boolean writeToExternalStorage(Bitmap b){
+	private boolean writeToExternalStorage(Bitmap b, long id){
 		try{
 			File rootPath = Environment.getExternalStorageDirectory();
 			File manupPath = new File(rootPath, "manup/");
@@ -244,23 +248,23 @@ public class Signature extends DataUploadHelperActivity {
 			FileOutputStream fos;
 			try {
 				student_id++;
-				output = new File(manupPath, student_id + ".png");
+				output = dh.getImageFile(id);
 				output.createNewFile();
 				fos = new FileOutputStream(output);
 			    b.compress(Bitmap.CompressFormat.PNG, 100, fos);
 			    fos.flush();
 			    fos.close();
 			    return true;
-			} 
+			}
 			catch (FileNotFoundException e) {
 				e.printStackTrace();
 			}
 		} catch (IOException e) { e.printStackTrace(); }
 		return false;
 	}
-	
+
 	@Override
-	public void runToastMessageOnUiThread(final String s){ 
+	public void runToastMessageOnUiThread(final String s){
     	runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
