@@ -24,7 +24,7 @@ import android.widget.Toast;
 public class SigsNotUploaded extends DataUploadHelperActivity {
 	private static final String TAG = SigsNotUploaded.class.getSimpleName();
 	private TableLayout tl;
-	private Button uploadAllButton; 
+	private Button uploadAllButton;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -61,7 +61,7 @@ public class SigsNotUploaded extends DataUploadHelperActivity {
 	}
 
 	private void reloadActivity() {
-		tl.removeAllViews();
+/*		tl.removeAllViews();
 		final List<Map<String, Object>> notUploadedList = dh.selectAllNotUploaded();
 		uploadAllButton.setOnClickListener(new OnClickListener() {
 			@Override
@@ -69,7 +69,7 @@ public class SigsNotUploaded extends DataUploadHelperActivity {
 				Log.d(TAG, "Upload all button clicked");
 				for (Map<String, Object> map : notUploadedList)
 					try{
-						upload(map.get(DataHelper.FILEPATH).toString(), map.get(DataHelper.ID).toString());
+						upload(map.get(SignatureDatabase.Signature.FILEPATH).toString(), map.get(SignatureDatabase.Signature.STUDENT_ID).toString());
 					} catch (IOException e) { e.printStackTrace(); }
 			}
 		});
@@ -77,9 +77,9 @@ public class SigsNotUploaded extends DataUploadHelperActivity {
 			TableRow tr = new TableRow(this);
 			TextView tv = new TextView(this);
 			tv.setTextColor(Color.BLACK);
-			String studentId = map.get(DataHelper.ID).toString();
+			String studentId = map.get(SignatureDatabase.Signature.STUDENT_ID).toString();
 			tv.setText(studentId + ": "
-					+ map.get(DataHelper.FILEPATH).toString());
+					+ map.get(SignatureDatabase.Signature.FILEPATH).toString());
 			tr.addView(tv);
 
 			Button b = new Button(this);
@@ -98,11 +98,11 @@ public class SigsNotUploaded extends DataUploadHelperActivity {
 			});
 			tr.addView(b);
 			tl.addView(tr);
-		}
+		}*/
 	}
 
 	@Override
-	public void runToastMessageOnUiThread(final String s){ 
+	public void runToastMessageOnUiThread(final String s){
     	runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
@@ -112,7 +112,7 @@ public class SigsNotUploaded extends DataUploadHelperActivity {
 			}
 		});
 	}
-	
+
 	private static final int UPLOAD = Menu.FIRST;
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
@@ -132,5 +132,5 @@ public class SigsNotUploaded extends DataUploadHelperActivity {
 		return super.onOptionsItemSelected(item);
 	}
 
-	
+
 }
