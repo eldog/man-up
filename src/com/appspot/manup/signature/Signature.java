@@ -14,6 +14,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
@@ -219,8 +220,9 @@ public class Signature extends DataUploadHelperActivity {
 		if (mExternalStorageWriteable)
 		{
 		    final long id = dh.addSignature(Long.toString(student_id));
-			if (writeToExternalStorage(myView.getBitMap(), id)){
-				filePath = output.getAbsolutePath();
+		    new WriteToExternalStorage().execute(myView.getBitMap(), id);
+/*			if (writeToExternalStorage(myView.getBitMap(), id)){
+			//    filePath = output.getAbsolutePath();
 
 				dh.signatureCaptured(id);
 				upload(id);
@@ -230,18 +232,18 @@ public class Signature extends DataUploadHelperActivity {
 			{
 				Toast.makeText(this, "Write failed", Toast.LENGTH_SHORT).show();
 			}
-		}
+*/		}
 		else
 		{
 			Toast.makeText(this, "Cannot write to external storage", Toast.LENGTH_SHORT).show();
 		}
 	}
 
-	File output;
+	//File output;
 	// Temp solution to id
 	static long student_id = 0;
-	private boolean writeToExternalStorage(Bitmap b, long id){
-		try{
+//	private boolean writeToExternalStorage(Bitmap b, long id){
+	/*	try{
 			File rootPath = Environment.getExternalStorageDirectory();
 			File manupPath = new File(rootPath, "manup/");
 			manupPath.mkdirs();
@@ -260,8 +262,9 @@ public class Signature extends DataUploadHelperActivity {
 				e.printStackTrace();
 			}
 		} catch (IOException e) { e.printStackTrace(); }
-		return false;
-	}
+	*///	return false;
+//	}
+
 
 	@Override
 	public void runToastMessageOnUiThread(final String s){
@@ -274,4 +277,51 @@ public class Signature extends DataUploadHelperActivity {
 		});
 	}
 	String filePath = null;
+
+	private class WriteToExternalStorage extends AsyncTask<Object,Void, Long>
+	{
+        @Override
+        protected Long doInBackground(Object... params)
+        {
+            File output;
+            FileOutputStream fos;
+            try {
+                // only increment student_id while still using it for testing
+                student_id++;
+                long id = (Long) params[1];
+                output = dh.getImageFile(id);
+                output.createNewFile();
+                fos = new FileOutputStream(output);
+                Bitmap b = (Bitmap) params[0];
+                b.compress(Bitmap.CompressFormat.PNG, 100, fos);
+                fos.flush();
+                fos.close();
+                return id;
+            }
+            catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Long id)
+        {
+            if (id != null)
+            {
+                dh.signatureCaptured(id);
+                upload(id);
+                setContentView(myView = new MyView(Signature.this));
+            }
+            else
+                Toast.makeText(Signature.this, "Write failed", Toast.LENGTH_SHORT).show();
+        }
+
+	}
+
+
+
 }
