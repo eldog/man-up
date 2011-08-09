@@ -148,6 +148,7 @@ public final class SignatureDatabase
             {
                 return c.getString(0);
             } // if
+            Log.e(TAG, "Failed to get student ID for " + id);
             return null;
         } // try
         finally
