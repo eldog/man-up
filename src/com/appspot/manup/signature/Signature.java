@@ -232,7 +232,7 @@ public class Signature extends Activity {
 			if (writeToExternalStorage(myView.getBitMap())){
 				dh.insert(student_id, output.getAbsolutePath(), false);
 				try {
-					upload(output.getAbsolutePath(), student_id);
+					upload(output.getAbsolutePath(), "" + student_id);
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -311,8 +311,8 @@ public class Signature extends Activity {
         super.onPause();
     }
 
-    public void upload(final String path, long id) throws IOException {
-        SignatureUploadService.uploadSignature(this, mListener, path, ""+id);
+    public void upload(final String path, String id) throws IOException {
+        SignatureUploadService.uploadSignature(this, mListener, path, id);
     } // upload
 
 
