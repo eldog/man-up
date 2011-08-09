@@ -1,12 +1,9 @@
 package com.appspot.manup.signature;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import android.app.Activity;
-import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
@@ -21,18 +18,15 @@ import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.appspot.manup.signature.SignatureUploadService.UploadCompleteListener;
-
 // Upload images that failed on first attempt
-public class SigsNotUploaded extends Activity {
-	private DataHelper dh;
+public class SigsNotUploaded extends DataUploadHelperActivity {
+	private static final String TAG = SigsNotUploaded.class.getSimpleName();
 	private TableLayout tl;
 	private Button uploadAllButton; 
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		dh = new DataHelper(this);
 
 		LinearLayout v = new LinearLayout(this);
 		final int padding_in_dp = 10;
@@ -104,49 +98,15 @@ public class SigsNotUploaded extends Activity {
 		}
 	}
 
-	private static final String TAG = SigsNotUploaded.class.getSimpleName();
-	private final UploadCompleteListener mListener = new UploadCompleteListener() {
-		public void onUploadComplete(final Intent intent) {
-			Log.d(TAG, "Got callback.");
-			final String studentId = intent
-					.getStringExtra(SignatureUploadService.EXTRA_STUDENT_ID);
-			final boolean successful = intent.getBooleanExtra(
-					SignatureUploadService.EXTRA_SUCCESSFUL, false);
-			Log.d(TAG, studentId + " upload complete. Successful? "
-					+ successful);
-			final String s = studentId
-					+ ": "
-					+ ((successful) ? "successfully uploaded" : "upload failed");
-			if (successful) {
-				try {
-					String filePath = dh.selectImagePath(studentId);
-					if (filePath != null) {
-						File f = new File(filePath);
-						if (!f.delete())
-							throw new IOException("Delete failed");
-						Log.d(TAG, studentId + " " + filePath
-								+ ": Deleted file from external storage");
-					}
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-				dh.delete(studentId);
+	@Override
+	public void runToastMessageOnUiThread(final String s){ 
+    	runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				Log.d(TAG, "upload message thread started");
+				Toast.makeText(SigsNotUploaded.this, s, Toast.LENGTH_SHORT).show();
+				reloadActivity();
 			}
-			runOnUiThread(new Runnable() {
-				@Override
-				public void run() {
-					Log.d(TAG, "upload message thread started");
-					// TODO Auto-generated method stub
-					Toast.makeText(SigsNotUploaded.this, s, Toast.LENGTH_SHORT)
-							.show();
-					reloadActivity();
-				}
-			});
-		} // onUploadComplete
-	};
-
-	public void upload(final String path, String id) throws IOException {
-		SignatureUploadService.uploadSignature(this, mListener, path, id);
-	} // upload
-
+		});
+	}
 }
