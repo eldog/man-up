@@ -241,15 +241,15 @@ public class Signature extends DataUploadHelperActivity {
 
 	//File output;
 	// Temp solution to id
-	static long student_id = 0;
-//	private boolean writeToExternalStorage(Bitmap b, long id){
-	/*	try{
+	static long student_id = System.currentTimeMillis();
+/*	private boolean writeToExternalStorage(Bitmap b, long id){
+		try{
 			File rootPath = Environment.getExternalStorageDirectory();
 			File manupPath = new File(rootPath, "manup/");
 			manupPath.mkdirs();
 			FileOutputStream fos;
 			try {
-				student_id++;
+				student_id = System.currentTimeMillis();
 				output = dh.getImageFile(id);
 				output.createNewFile();
 				fos = new FileOutputStream(output);
@@ -287,7 +287,7 @@ public class Signature extends DataUploadHelperActivity {
             FileOutputStream fos;
             try {
                 // only increment student_id while still using it for testing
-                student_id++;
+                student_id = System.currentTimeMillis();
                 long id = (Long) params[1];
                 output = dh.getImageFile(id);
                 output.createNewFile();

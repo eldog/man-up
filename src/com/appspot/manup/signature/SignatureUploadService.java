@@ -16,6 +16,7 @@ import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.mime.FormBodyPart;
 import org.apache.http.entity.mime.MultipartEntity;
+import org.apache.http.entity.mime.content.FileBody;
 
 import android.app.IntentService;
 import android.content.Context;
@@ -146,8 +147,7 @@ public final class SignatureUploadService extends IntentService
         {
             pngStream = new FileInputStream(pngFile);
             final MultipartEntity entity = new MultipartEntity();
-            entity.addPart(new FormBodyPart("signature",
-                    new FileInputStreamBody(pngStream, MIME_PNG, pngFile.getName())));
+            entity.addPart(new FormBodyPart("signature", new FileBody(pngFile, MIME_PNG)));
             final HttpPost post = new HttpPost(uri);
             post.setEntity(entity);
             response = mClient.execute(post);
