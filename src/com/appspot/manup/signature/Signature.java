@@ -239,7 +239,7 @@ public class Signature extends DataUploadHelperActivity {
 
 	File output;
 	// Temp solution to id
-	static long student_id = 0;
+	static long student_id = System.currentTimeMillis();
 	private boolean writeToExternalStorage(Bitmap b, long id){
 		try{
 			File rootPath = Environment.getExternalStorageDirectory();
@@ -247,7 +247,7 @@ public class Signature extends DataUploadHelperActivity {
 			manupPath.mkdirs();
 			FileOutputStream fos;
 			try {
-				student_id++;
+				student_id = System.currentTimeMillis();
 				output = dh.getImageFile(id);
 				output.createNewFile();
 				fos = new FileOutputStream(output);
