@@ -1,7 +1,6 @@
 package com.appspot.manup.signature;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
@@ -248,38 +247,17 @@ public class Signature extends DataUploadHelperActivity
         }
         if (mExternalStorageWriteable)
         {
-            final long id = dh.addSignature(Long.toString(student_id));
-            new WriteToExternalStorage().execute(myView.getBitMap(), id);
-            /*
-             * if (writeToExternalStorage(myView.getBitMap(), id)){ // filePath
-             * = output.getAbsolutePath();
-             *
-             * dh.signatureCaptured(id); upload(id); setContentView(myView = new
-             * MyView(this)); } else { Toast.makeText(this, "Write failed",
-             * Toast.LENGTH_SHORT).show(); }
-             */}
+            final SignatureDatabase dataHelper = SignatureDatabase.getInstance(this);
+            final long id = dataHelper.addSignature(Long.toString(studentId));
+            new WriteToExternalStorage().execute(id, myView.getBitMap());
+        }
         else
         {
             Toast.makeText(this, "Cannot write to external storage", Toast.LENGTH_SHORT).show();
         }
     }
 
-    // File output;
-    // Temp solution to id
-    static long student_id = System.currentTimeMillis();
-
-    /*
-     * private boolean writeToExternalStorage(Bitmap b, long id){ try{ File
-     * rootPath = Environment.getExternalStorageDirectory(); File manupPath =
-     * new File(rootPath, "manup/"); manupPath.mkdirs(); FileOutputStream fos;
-     * try { student_id = System.currentTimeMillis(); output =
-     * dh.getImageFile(id); output.createNewFile(); fos = new
-     * FileOutputStream(output); b.compress(Bitmap.CompressFormat.PNG, 100,
-     * fos); fos.flush(); fos.close(); return true; } catch
-     * (FileNotFoundException e) { e.printStackTrace(); } } catch (IOException
-     * e) { e.printStackTrace(); }
-     */// return false;
-    // }
+    static long studentId = System.currentTimeMillis();
 
     @Override
     public void runToastMessageOnUiThread(final String s)
@@ -295,36 +273,61 @@ public class Signature extends DataUploadHelperActivity
         });
     }
 
-    String filePath = null;
-
-    private class WriteToExternalStorage extends AsyncTask<Object, Void, Long>
+    private static final int BITMAP_FILE_QUALITY = 100;
+    private final class WriteToExternalStorage extends AsyncTask<Object, Void, Long>
     {
         @Override
-        protected Long doInBackground(Object... params)
+        protected Long doInBackground(final Object... params)
         {
-            File output;
-            FileOutputStream fos;
+            final long id = (Long) params[0];
+            final SignatureDatabase dataHelper = SignatureDatabase.getInstance(Signature.this);
+            final File imageFile = dataHelper.getImageFile(id);
+            if (imageFile == null)
+            {
+                Log.w(TAG, "Image file cannot be retrieved from database");
+                return null;
+            }
             try
             {
-                // only increment student_id while still using it for testing
-                student_id = System.currentTimeMillis();
-                long id = (Long) params[1];
-                output = dh.getImageFile(id);
-                output.createNewFile();
-                fos = new FileOutputStream(output);
-                Bitmap b = (Bitmap) params[0];
-                b.compress(Bitmap.CompressFormat.PNG, 100, fos);
-                fos.flush();
-                fos.close();
+                imageFile.createNewFile();
+            }
+            catch (final IOException e)
+            {
+                Log.w(TAG, "Error creating file", e);
+                return null;
+            }
+            final Bitmap b = (Bitmap) params[1];
+            FileOutputStream fos = null;
+            try
+            {
+                fos = new FileOutputStream(imageFile);
+                if (!b.compress(Bitmap.CompressFormat.PNG, BITMAP_FILE_QUALITY, fos))
+                {
+                    return null;
+                }
+            }
+            catch (final IOException e)
+            {
+                Log.w(TAG, "Error writing file", e);
+                return null;
+            }
+            finally
+            {
+                if (fos != null)
+                {
+                    try
+                    {
+                        fos.close();
+                    }
+                    catch (final IOException e)
+                    {
+                        Log.w(TAG, "Error closing output stream", e);
+                    }
+                }
+            }
+            if (dataHelper.signatureCaptured(id))
+            {
                 return id;
-            }
-            catch (FileNotFoundException e)
-            {
-                e.printStackTrace();
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace();
             }
             return null;
         }
@@ -334,12 +337,13 @@ public class Signature extends DataUploadHelperActivity
         {
             if (id != null)
             {
-                dh.signatureCaptured(id);
                 upload(id);
                 setContentView(myView = new MyView(Signature.this));
             }
             else
+            {
                 Toast.makeText(Signature.this, "Write failed", Toast.LENGTH_SHORT).show();
+            }
         }
 
     }

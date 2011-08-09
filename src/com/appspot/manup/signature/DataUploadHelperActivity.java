@@ -10,7 +10,6 @@ import com.appspot.manup.signature.SignatureUploadService.UploadCompleteListener
 
 public class DataUploadHelperActivity extends Activity
 {
-    protected SignatureDatabase dh;
     @SuppressWarnings("unused")
     private static final String TAG = DataUploadHelperActivity.class.getSimpleName();
 
@@ -18,7 +17,6 @@ public class DataUploadHelperActivity extends Activity
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        dh = SignatureDatabase.getInstance(this);
     }
 
     @Override
