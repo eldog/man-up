@@ -7,6 +7,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
 import android.widget.Toast;
 
 import com.appspot.manup.signature.SignatureUploadService.UploadCompleteListener;
@@ -20,6 +21,12 @@ public class DataUploadHelperActivity extends Activity {
 		dh = new DataHelper(this);
 	}
 	
+	@Override
+	public boolean onPrepareOptionsMenu(Menu menu) {
+		super.onPrepareOptionsMenu(menu);
+		return true;
+	}
+	
 	String filePath = null;
 	
 	protected final UploadCompleteListener mListener = new UploadCompleteListener() {
@@ -29,7 +36,7 @@ public class DataUploadHelperActivity extends Activity {
             final boolean successful =
                     intent.getBooleanExtra(SignatureUploadService.EXTRA_SUCCESSFUL, false);
             Log.d(TAG, studentId + " upload complete. Successful? " + successful);
-            final String s = studentId + ": " + ((successful) ? "successfully uploaded" : "upload failed");
+            final String s = studentId + ": " + ((successful) ? "Successfully uploaded" : "Upload failed");
             if (successful){
             	try {
             		filePath = dh.selectImagePath(studentId);
@@ -50,7 +57,6 @@ public class DataUploadHelperActivity extends Activity {
     	runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				Log.d(TAG, "upload message thread started");
 				Toast.makeText(DataUploadHelperActivity.this, s, Toast.LENGTH_SHORT).show();
 			}
 		});

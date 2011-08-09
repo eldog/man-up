@@ -7,6 +7,8 @@ import java.util.Map;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup.LayoutParams;
@@ -64,6 +66,7 @@ public class SigsNotUploaded extends DataUploadHelperActivity {
 		uploadAllButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
+				Log.d(TAG, "Upload all button clicked");
 				for (Map<String, Object> map : notUploadedList)
 					try{
 						upload(map.get(DataHelper.FILEPATH).toString(), map.get(DataHelper.ID).toString());
@@ -109,4 +112,25 @@ public class SigsNotUploaded extends DataUploadHelperActivity {
 			}
 		});
 	}
+	
+	private static final int UPLOAD = Menu.FIRST;
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		super.onCreateOptionsMenu(menu);
+
+		menu.add(0, UPLOAD, 0, "Upload all").setShortcut('8', 'u');
+		return true;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+		case UPLOAD:
+			uploadAllButton.performClick();
+			return true;
+		}
+		return super.onOptionsItemSelected(item);
+	}
+
+	
 }

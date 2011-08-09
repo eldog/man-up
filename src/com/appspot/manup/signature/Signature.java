@@ -148,14 +148,7 @@ public class Signature extends DataUploadHelperActivity {
 
 		menu.add(0, SUBMIT, 0, "Submit").setShortcut('7', 's');
 		menu.add(0, CLEAR, 0, "Clear").setShortcut('3', 'c');
-		// Temp solution
-		menu.add(0, LIST, 0, "Not uploaded").setShortcut('4', 'd');
-		return true;
-	}
-
-	@Override
-	public boolean onPrepareOptionsMenu(Menu menu) {
-		super.onPrepareOptionsMenu(menu);
+		menu.add(0, LIST, 0, "Failed uploads").setShortcut('4', 'f');
 		return true;
 	}
 
