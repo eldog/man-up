@@ -15,7 +15,7 @@
             </intent-filter>
         </activity>
 		<activity android:name=".SigsNotUploaded"></activity>
-		<service android:name=".SignatureUploadService"></service>
+		<service android:name=".UploadService"></service>
 		<activity android:name=".SignaturePreferenceActivity"></activity>
     </application>
 </manifest>

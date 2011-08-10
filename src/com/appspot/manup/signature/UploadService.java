@@ -24,15 +24,15 @@ import android.content.Intent;
 import android.os.IBinder;
 import android.util.Log;
 
-public final class SignatureUploadService extends IntentService
+public final class UploadService extends IntentService
 {
-    private static final String TAG = SignatureUploadService.class.getSimpleName();
+    private static final String TAG = UploadService.class.getSimpleName();
 
     private static final String MIME_PNG = "image/png";
 
-    private static final String ACTION_UPLOAD = SignatureUploadService.class.getName() + ".UPLOAD";
-    public static final String EXTRA_ID = SignatureUploadService.class.getName() + ".ID";
-    public static final String EXTRA_SUCCESSFUL = SignatureUploadService.class.getName()
+    private static final String ACTION_UPLOAD = UploadService.class.getName() + ".UPLOAD";
+    public static final String EXTRA_ID = UploadService.class.getName() + ".ID";
+    public static final String EXTRA_SUCCESSFUL = UploadService.class.getName()
             + ".RESULT";
 
     private static final Map<Long, Set<UploadCompleteListener>> sListeners =
@@ -56,7 +56,7 @@ public final class SignatureUploadService extends IntentService
             final Set<UploadCompleteListener> listeners = new HashSet<UploadCompleteListener>();
             listeners.add(listener);
             sListeners.put(id, listeners);
-            final Intent intent = new Intent(context, SignatureUploadService.class);
+            final Intent intent = new Intent(context, UploadService.class);
             intent.setAction(ACTION_UPLOAD);
             intent.putExtra(EXTRA_ID, id);
             context.startService(intent);
@@ -91,7 +91,7 @@ public final class SignatureUploadService extends IntentService
 
     private SignatureHttpClient mClient = null;
 
-    public SignatureUploadService()
+    public UploadService()
     {
         super(TAG);
     } // SignatureUploadService
