@@ -126,6 +126,7 @@ public final class CaptureSignatureActivity extends Activity
         {
             return mBitmap;
         }
+
     } // MyView
 
     private final class WriteToExternalStorage extends AsyncTask<Object, Void, Long>
@@ -275,3 +276,4 @@ public final class CaptureSignatureActivity extends Activity
     } // onSubmit
 
 } // CaptureSignatureActivity
+
