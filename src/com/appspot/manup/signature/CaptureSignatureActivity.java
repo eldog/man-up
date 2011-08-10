@@ -238,7 +238,7 @@ public final class CaptureSignatureActivity extends Activity
     };
 
     public static final String ACTION_CONTENTS = CaptureSignatureActivity.class.getName()
-                + ".CONTENTS";
+            + ".CONTENTS";
     public static final String EXTRA_ID = WriteSignatureService.class.getName() + ".ID";
     public static final String EXTRA_BITMAP = WriteSignatureService.class.getName() + ".BITMAP";
 
@@ -253,7 +253,7 @@ public final class CaptureSignatureActivity extends Activity
         parcel.setDataPosition(0);
         try
         {
-            m = (Bitmap)Bitmap.CREATOR.createFromParcel(parcel);
+            m = (Bitmap) Bitmap.CREATOR.createFromParcel(parcel);
         }
         catch (RuntimeException e)
         {

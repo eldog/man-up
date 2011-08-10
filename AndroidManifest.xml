@@ -14,8 +14,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <service android:name=".SignatureUploadService"></service>
         <service android:name=".WriteSignatureService"></service>
+        <service android:name=".UploadService"></service>
         <activity android:name=".SignaturePreferenceActivity"></activity>
     </application>
 </manifest>

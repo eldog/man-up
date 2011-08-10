@@ -1,6 +1,8 @@
 package com.appspot.manup.signature;
 
 import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -14,7 +16,12 @@ public final class SignatureDatabase
 {
     private static final String TAG = SignatureDatabase.class.getSimpleName();
 
-    private static final class Signature implements BaseColumns
+    public interface SignatureCapturedListener
+    {
+        void onSignatureCaptured(long id);
+    } // SignatureCapturedListener
+
+    public static final class Signature implements BaseColumns
     {
         private static final String TABLE_NAME = "signature";
 
@@ -84,9 +91,11 @@ public final class SignatureDatabase
         return sDataHelper;
     } // getInstance
 
-    private final Object mLock = new Object();
+    private final Set<SignatureCapturedListener> mListeners =
+            new HashSet<SignatureCapturedListener>();
+
     private final Context mContext;
-    private volatile SQLiteDatabase mDb = null;
+    private SQLiteDatabase mDb = null;
     private volatile OpenHelper mOpenHelper = null;
 
     private SignatureDatabase(final Context context)
@@ -97,15 +106,12 @@ public final class SignatureDatabase
 
     } // DataHelper
 
-    private SQLiteDatabase getDatabase()
+    private synchronized SQLiteDatabase getDatabase()
     {
-        synchronized (mLock)
+        if (mDb == null)
         {
-            if (mDb == null)
-            {
-                mDb = mOpenHelper.getWritableDatabase();
-            } // if
-        } // synchronized
+            mDb = mOpenHelper.getWritableDatabase();
+        } // if
         return mDb;
     } // getDatabase
 
@@ -163,27 +169,60 @@ public final class SignatureDatabase
 
     public boolean signatureCaptured(final long id)
     {
-        return updateSignatureState(id, Signature.SIGNATURE_CAPTURED);
+        final boolean stateChanged = updateSignatureState(id, Signature.SIGNATURE_CAPTURED);
+        if (stateChanged)
+        {
+            synchronized (mListeners)
+            {
+                for (final SignatureCapturedListener listener : mListeners)
+                {
+                    listener.onSignatureCaptured(id);
+                } // for
+            } // synchronized
+        } // if
+        return stateChanged;
     } // signatureCaptured
 
     public boolean signatureUploaded(final long id)
     {
-        return updateSignatureState(id, Signature.SIGNATURE_UPLOADED);
+        final boolean stateChanged = updateSignatureState(id, Signature.SIGNATURE_UPLOADED);
+        if (stateChanged)
+        {
+            deleteSignature(id);
+        } // if
+        return stateChanged;
     } // signatureUploaded
 
     private boolean updateSignatureState(final long id, final String newState)
     {
-        final SQLiteDatabase db = getDatabase();
-        final ContentValues cv = new ContentValues(1);
-        cv.put(Signature.SIGNATURE_STATE, newState);
-        final int rowsUpdated = db.update(Signature.TABLE_NAME, cv, Signature._ID + "=?",
+        final ContentValues newSignatureState = new ContentValues(1);
+        newSignatureState.put(Signature.SIGNATURE_STATE, newState);
+        final int rowsUpdated = getDatabase().update(
+                Signature.TABLE_NAME,
+                newSignatureState,
+                Signature._ID + "=?",
                 new String[] { Long.toString(id) });
         return rowsUpdated == 1;
     } // update
 
-    public boolean deleteSignature(final long id)
+    public void registerSignatureCapturedListener(final SignatureCapturedListener listener)
     {
-        final SQLiteDatabase db = getDatabase();
+        synchronized (mListeners)
+        {
+            mListeners.add(listener);
+        } // synchronized
+    } // registerSignatureCapturedListener
+
+    public void unregisterSignatureCapturedListener(final SignatureCapturedListener listener)
+    {
+        synchronized (mListeners)
+        {
+            mListeners.remove(listener);
+        } // synchronized
+    } // unregisterSignatureCapturedListener
+
+    private boolean deleteSignature(final long id)
+    {
         final File image = getImageFile(id);
         if (image == null)
         {
@@ -192,7 +231,9 @@ public final class SignatureDatabase
 
         if (image.delete())
         {
-            final int signaturesDeleted = db.delete(Signature.TABLE_NAME, Signature._ID + "=?",
+            final int signaturesDeleted = getDatabase().delete(
+                    Signature.TABLE_NAME,
+                    Signature._ID + "=?",
                     new String[] { Long.toString(id) });
             return signaturesDeleted == 1;
         } // if
@@ -206,5 +247,17 @@ public final class SignatureDatabase
 
         return false;
     } // deleteSignature
+
+    public Cursor getCapturedSignatures()
+    {
+        return getDatabase().query(
+                Signature.TABLE_NAME,
+                null /* columns */,
+                Signature.SIGNATURE_STATE + "=?",
+                new String[] { Signature.SIGNATURE_CAPTURED },
+                null /* groupBy */,
+                null /* having */,
+                null /* orderBy */);
+    } // getCapturedSignatures
 
 } // SignatureDatabase

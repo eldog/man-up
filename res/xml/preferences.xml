@@ -6,6 +6,5 @@
     <EditTextPreference
         android:key="port"
         android:inputType="number"
-        android:numeric="integer"
         android:title="Port" />
 </PreferenceScreen>
