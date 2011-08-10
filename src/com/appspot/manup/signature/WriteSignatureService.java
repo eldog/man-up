@@ -12,8 +12,6 @@ import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.os.Bundle;
-import android.os.Parcel;
 import android.util.Log;
 
 public class WriteSignatureService extends IntentService
@@ -25,11 +23,15 @@ public class WriteSignatureService extends IntentService
     public static final String EXTRA_BITMAP = WriteSignatureService.class.getName() + ".BITMAP";
     public static final String EXTRA_SUCCESSFUL = WriteSignatureService.class.getName()
             + ".RESULT";
+    public static final String EXTRA_DB_CAP_SUCCESSFUL = WriteSignatureService.class.getName()
+            + ".DBRESULT";
 
     private static final int BITMAP_FILE_QUALITY = 100;
 
     private static final Map<Long, Set<WriteCompleteListener>> sListeners =
             new HashMap<Long, Set<WriteCompleteListener>>();
+
+    public static final Map<Long, Bitmap> sBitmaps = new HashMap<Long, Bitmap>();
 
     public interface WriteCompleteListener
     {
@@ -37,7 +39,7 @@ public class WriteSignatureService extends IntentService
     }
 
     public static void writeSignature(final Context context,
-            final WriteCompleteListener listener, final long id, Parcel parcel)
+            final WriteCompleteListener listener, final long id)
     {
         synchronized (sListeners)
         {
@@ -51,32 +53,10 @@ public class WriteSignatureService extends IntentService
             listeners.add(listener);
             sListeners.put(id, listeners);
 
-            parcel.setDataPosition(0);
-            Bitmap b = null;
-            try
-            {
-                b = (Bitmap)Bitmap.CREATOR.createFromParcel(parcel);
-            }
-            catch (RuntimeException e)
-            {
-                Log.e(TAG, "Fatal error unmarshalling parcel");
-                e.printStackTrace();
-                b = null;
-            }
-            parcel.recycle();
             final Intent intent = new Intent(context, WriteSignatureService.class);
             intent.setAction(ACTION_WRITE);
             intent.putExtra(EXTRA_ID, id);
-            if (b == null)
-            {
-                intent.putExtra(EXTRA_SUCCESSFUL, false);
-                notifyListeners(intent);
-            }
-            else
-            {
-                intent.putExtra(EXTRA_BITMAP, b);
-                context.startService(intent);
-            }
+            context.startService(intent);
         } // synchronized
     } // uploadSignature
 
@@ -114,19 +94,38 @@ public class WriteSignatureService extends IntentService
     @Override
     protected void onHandleIntent(Intent intent)
     {
-        boolean successful = false;
-        /*
-        Bitmap b = (Bitmap) intent.getParcelableExtra(EXTRA_BITMAP);
-        if (b != null)
+        synchronized (sBitmaps)
         {
-            successful = write(intent.getLongExtra(EXTRA_ID, -1), b);
+            boolean writeSuccessful = false;
+            boolean databaseCapturedSuccessful = false;
+            final long id = intent.getLongExtra(EXTRA_ID, -1);
+            if (sBitmaps.containsKey(id))
+            {
+                Bitmap b = sBitmaps.get(id);
+                writeSuccessful = write(id, b);
+                if (writeSuccessful)
+                {
+                    SignatureDatabase dataHelper =
+                            SignatureDatabase.getInstance(WriteSignatureService.this);
+                    if (dataHelper.signatureCaptured(id))
+                    {
+                        databaseCapturedSuccessful = true;
+                        sBitmaps.remove(id);
+                    }
+                    else
+                    {
+                        Log.w(TAG, id + ": Could not update database");
+                    }
+                }
+            }
+            else
+            {
+                Log.w(TAG, "Bitmap could not be retrieved");
+            }
+            intent.putExtra(EXTRA_SUCCESSFUL, writeSuccessful);
+            intent.putExtra(EXTRA_DB_CAP_SUCCESSFUL, databaseCapturedSuccessful);
+            notifyListeners(intent);
         }
-        else
-        {
-            Log.w(TAG, "Bitmap could not be retrieved");
-        }
-     */   intent.putExtra(EXTRA_SUCCESSFUL, successful);
-        notifyListeners(intent);
     }
 
     private boolean write(final long id, final Bitmap b)

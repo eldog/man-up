@@ -9,8 +9,6 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.os.Bundle;
-import android.os.Parcel;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -216,12 +214,13 @@ public final class CaptureSignatureActivity extends Activity
 
             if (successful)
             {
-                SignatureDatabase dataHelper =
-                        SignatureDatabase.getInstance(CaptureSignatureActivity.this);
+                final boolean dbSuccess =
+                        intent.getBooleanExtra(WriteSignatureService.EXTRA_DB_CAP_SUCCESSFUL,
+                                false);
                 final String success = "Database entry " + id + ": Signature capture "
-                        + ((dataHelper.signatureCaptured(id)) ? "successful" : "failed");
-                // Temp solution return Toast message, need to use broadcast
-                // receiver here
+                        + ((dbSuccess) ? "successful" : "failed");
+
+                // Temp solution return Toast message
                 runOnUiThread(new Runnable()
                 {
                     @Override
@@ -237,39 +236,10 @@ public final class CaptureSignatureActivity extends Activity
         } // onWriteComplete
     };
 
-    public static final String ACTION_CONTENTS = CaptureSignatureActivity.class.getName()
-            + ".CONTENTS";
-    public static final String EXTRA_ID = WriteSignatureService.class.getName() + ".ID";
-    public static final String EXTRA_BITMAP = WriteSignatureService.class.getName() + ".BITMAP";
-
     private void write(final long id, final Bitmap bitmap)
     {
-        Parcel parcel = Parcel.obtain();
-        bitmap.writeToParcel(parcel, 0);
-
-        // Testing parcels
-
-        Bitmap m = null;
-        parcel.setDataPosition(0);
-        try
-        {
-            m = (Bitmap) Bitmap.CREATOR.createFromParcel(parcel);
-        }
-        catch (RuntimeException e)
-        {
-            Log.e(TAG, "Fatal error unmarshalling parcel");
-            e.printStackTrace();
-        }
-        if (m == null)
-        {
-            Log.d(TAG, "fail");
-            return;
-        }
-        else
-        {
-            Log.d(TAG, "works");
-            WriteSignatureService.writeSignature(this, mWriteListener, id, parcel);
-        }
+        WriteSignatureService.sBitmaps.put(id, bitmap);
+        WriteSignatureService.writeSignature(this, mWriteListener, id);
     }
 
 } // CaptureSignatureActivity
