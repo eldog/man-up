@@ -1,9 +1,5 @@
 package com.appspot.manup.signature;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -13,7 +9,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
@@ -22,6 +17,8 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
+
+import com.appspot.manup.signature.ImageWriteToStorageService.WriteCompleteListener;
 
 // Code from com.appspot.manup.FingerPaint
 public class Signature extends DataUploadHelperActivity
@@ -253,12 +250,38 @@ public class Signature extends DataUploadHelperActivity
         {
             final SignatureDatabase dataHelper = SignatureDatabase.getInstance(this);
             final long id = dataHelper.addSignature(Long.toString(studentId));
-            new WriteToExternalStorage().execute(id, myView.getBitMap());
+            writeImage(id, myView.getBitMap());
+            setContentView(myView = new MyView(this));
         }
         else
         {
             Toast.makeText(this, "Cannot write to external storage", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private final WriteCompleteListener mWriteListener = new WriteCompleteListener()
+    {
+        public void onWriteComplete(final Intent intent)
+        {
+            final long id = intent.getLongExtra(ImageWriteToStorageService.EXTRA_ID, -1);
+            final boolean successful =
+                    intent.getBooleanExtra(ImageWriteToStorageService.EXTRA_SUCCESSFUL, false);
+            String s = id + ": " + ((successful) ? "Successfully written" : "Write failed");
+            runToastMessageOnUiThread(s);
+            if (successful)
+            {
+                SignatureDatabase dataHelper = SignatureDatabase.getInstance(Signature.this);
+                s = "Database entry " + id + ": Signature capture "
+                        + ((dataHelper.signatureCaptured(id)) ? "successful" : "failed");
+                // Temp solution return Toast message, need to use broadcast receiver here
+                runToastMessageOnUiThread(s);
+            }
+
+        } // onUploadComplete
+    };
+    private void writeImage(final long id, final Bitmap b)
+    {
+        ImageWriteToStorageService.writeSignature(this, mWriteListener, id, b);
     }
 
     static long studentId = System.currentTimeMillis();
@@ -275,81 +298,6 @@ public class Signature extends DataUploadHelperActivity
                 Toast.makeText(Signature.this, s, Toast.LENGTH_SHORT).show();
             }
         });
-    }
-
-    private static final int BITMAP_FILE_QUALITY = 100;
-    private final class WriteToExternalStorage extends AsyncTask<Object, Void, Long>
-    {
-        @Override
-        protected Long doInBackground(final Object... params)
-        {
-            final long id = (Long) params[0];
-            final SignatureDatabase dataHelper = SignatureDatabase.getInstance(Signature.this);
-            final File imageFile = dataHelper.getImageFile(id);
-            if (imageFile == null)
-            {
-                Log.w(TAG, "Image file cannot be retrieved from database");
-                return null;
-            }
-            try
-            {
-                imageFile.createNewFile();
-            }
-            catch (final IOException e)
-            {
-                Log.w(TAG, "Error creating file", e);
-                return null;
-            }
-            final Bitmap b = (Bitmap) params[1];
-            FileOutputStream fos = null;
-            try
-            {
-                fos = new FileOutputStream(imageFile);
-                if (!b.compress(Bitmap.CompressFormat.PNG, BITMAP_FILE_QUALITY, fos))
-                {
-                    return null;
-                }
-            }
-            catch (final IOException e)
-            {
-                Log.w(TAG, "Error writing file", e);
-                return null;
-            }
-            finally
-            {
-                if (fos != null)
-                {
-                    try
-                    {
-                        fos.close();
-                    }
-                    catch (final IOException e)
-                    {
-                        Log.w(TAG, "Error closing output stream", e);
-                    }
-                }
-            }
-            if (dataHelper.signatureCaptured(id))
-            {
-                return id;
-            }
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Long id)
-        {
-            if (id != null)
-            {
-                upload(id);
-                setContentView(myView = new MyView(Signature.this));
-            }
-            else
-            {
-                Toast.makeText(Signature.this, "Write failed", Toast.LENGTH_SHORT).show();
-            }
-        }
-
     }
 
 }
