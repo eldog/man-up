@@ -1,9 +1,5 @@
 package com.appspot.manup.signature;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -12,8 +8,8 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Parcel;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -21,11 +17,11 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
 
+import com.appspot.manup.signature.WriteSignatureService.WriteCompleteListener;
+
 public final class CaptureSignatureActivity extends Activity
 {
     private static final String TAG = CaptureSignatureActivity.class.getSimpleName();
-
-    private static final int BITMAP_FILE_QUALITY = 100;
 
     private static final int MENU_SUBMIT = Menu.FIRST;
     private static final int MENU_CLEAR = Menu.FIRST + 1;
@@ -129,81 +125,6 @@ public final class CaptureSignatureActivity extends Activity
 
     } // MyView
 
-    private final class WriteToExternalStorage extends AsyncTask<Object, Void, Long>
-    {
-        @Override
-        protected Long doInBackground(final Object... params)
-        {
-            final long id = (Long) params[0];
-            final SignatureDatabase dataHelper = SignatureDatabase
-                    .getInstance(CaptureSignatureActivity.this);
-            final File imageFile = dataHelper.getImageFile(id);
-            if (imageFile == null)
-            {
-                Log.w(TAG, "Image file cannot be retrieved from database");
-                return null;
-            } // if
-            try
-            {
-                imageFile.createNewFile();
-            } // try
-            catch (final IOException e)
-            {
-                Log.w(TAG, "Error creating file", e);
-                return null;
-            } // catch
-            final Bitmap b = (Bitmap) params[1];
-            FileOutputStream fos = null;
-            try
-            {
-                fos = new FileOutputStream(imageFile);
-                if (!b.compress(Bitmap.CompressFormat.PNG, BITMAP_FILE_QUALITY, fos))
-                {
-                    return null;
-                } // if
-            } // try
-            catch (final IOException e)
-            {
-                Log.w(TAG, "Error writing file", e);
-                return null;
-            } // catch
-            finally
-            {
-                if (fos != null)
-                {
-                    try
-                    {
-                        fos.close();
-                    } // try
-                    catch (final IOException e)
-                    {
-                        Log.w(TAG, "Error closing output stream", e);
-                    } // catch
-                } // if
-            } // finally
-            if (dataHelper.signatureCaptured(id))
-            {
-                return id;
-            } // if
-            return null;
-        } // doInBackground
-
-        @Override
-        protected void onPostExecute(final Long id)
-        {
-            if (id != null)
-            {
-                setContentView(myView = new MyView(CaptureSignatureActivity.this));
-            } // if
-            else
-            {
-                Toast.makeText(CaptureSignatureActivity.this, "Write failed", Toast.LENGTH_SHORT)
-                        .show();
-            } // else
-        } // onPostExecute
-
-    } // WriteToExternalStorage
-
     private boolean mClearCanvas;
     private MyView myView;
     private Paint mPaint;
@@ -272,8 +193,84 @@ public final class CaptureSignatureActivity extends Activity
         final SignatureDatabase dataHelper = SignatureDatabase.getInstance(this);
         // TODO: Replace fake student ID generation.
         final long id = dataHelper.addSignature(Long.toString(studentId++));
-        new WriteToExternalStorage().execute(id, myView.getBitMap());
+        write(id, myView.getBitMap());
     } // onSubmit
+
+    private final WriteCompleteListener mWriteListener = new WriteCompleteListener()
+    {
+        @Override
+        public void onWriteComplete(Intent intent)
+        {
+            final long id = intent.getLongExtra(WriteSignatureService.EXTRA_ID, -1);
+            final boolean successful =
+                    intent.getBooleanExtra(WriteSignatureService.EXTRA_SUCCESSFUL, false);
+            final String s = id + ": " + ((successful) ? "Successfully written" : "Write failed");
+            runOnUiThread(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    Toast.makeText(CaptureSignatureActivity.this, s, Toast.LENGTH_SHORT).show();
+                }
+            });
+
+            if (successful)
+            {
+                SignatureDatabase dataHelper =
+                        SignatureDatabase.getInstance(CaptureSignatureActivity.this);
+                final String success = "Database entry " + id + ": Signature capture "
+                        + ((dataHelper.signatureCaptured(id)) ? "successful" : "failed");
+                // Temp solution return Toast message, need to use broadcast
+                // receiver here
+                runOnUiThread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        Toast.makeText(CaptureSignatureActivity.this,
+                                success, Toast.LENGTH_SHORT).show();
+                        setContentView(myView = new MyView(CaptureSignatureActivity.this));
+                    }
+                });
+            }
+
+        } // onWriteComplete
+    };
+
+    public static final String ACTION_CONTENTS = CaptureSignatureActivity.class.getName()
+                + ".CONTENTS";
+    public static final String EXTRA_ID = WriteSignatureService.class.getName() + ".ID";
+    public static final String EXTRA_BITMAP = WriteSignatureService.class.getName() + ".BITMAP";
+
+    private void write(final long id, final Bitmap bitmap)
+    {
+        Parcel parcel = Parcel.obtain();
+        bitmap.writeToParcel(parcel, 0);
+
+        // Testing parcels
+
+        Bitmap m = null;
+        parcel.setDataPosition(0);
+        try
+        {
+            m = (Bitmap)Bitmap.CREATOR.createFromParcel(parcel);
+        }
+        catch (RuntimeException e)
+        {
+            Log.e(TAG, "Fatal error unmarshalling parcel");
+            e.printStackTrace();
+        }
+        if (m == null)
+        {
+            Log.d(TAG, "fail");
+            return;
+        }
+        else
+        {
+            Log.d(TAG, "works");
+            WriteSignatureService.writeSignature(this, mWriteListener, id, parcel);
+        }
+    }
 
 } // CaptureSignatureActivity
 
