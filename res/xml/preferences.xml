@@ -1,0 +1,10 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <EditTextPreference
+        android:key="host"
+        android:title="Host" />
+    <EditTextPreference
+        android:key="port"
+        android:inputType="number"
+        android:numeric="integer"
+        android:title="Port" />
+</PreferenceScreen>

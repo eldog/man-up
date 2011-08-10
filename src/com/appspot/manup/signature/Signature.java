@@ -140,7 +140,7 @@ public class Signature extends DataUploadHelperActivity {
 		}
 	}
 
-	private static final int SUBMIT = Menu.FIRST, CLEAR = 2, LIST = 3;
+	private static final int SUBMIT = Menu.FIRST, CLEAR = 2, LIST = 3, SETTINGS = 4;
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
@@ -149,6 +149,7 @@ public class Signature extends DataUploadHelperActivity {
 		menu.add(0, SUBMIT, 0, "Submit").setShortcut('7', 's');
 		menu.add(0, CLEAR, 0, "Clear").setShortcut('3', 'c');
 		menu.add(0, LIST, 0, "Failed uploads").setShortcut('4', 'f');
+		menu.add(0, SETTINGS, 0, "Settings");
 		return true;
 	}
 
@@ -167,6 +168,9 @@ public class Signature extends DataUploadHelperActivity {
 		case LIST:
 			startActivity(new Intent(this, SigsNotUploaded.class));
 			return true;
+		case SETTINGS:
+		    startActivity(new Intent(this, SignaturePreferenceActivity.class));
+		    return true;
 		}
 		return super.onOptionsItemSelected(item);
 	}

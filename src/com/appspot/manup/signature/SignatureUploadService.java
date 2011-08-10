@@ -126,7 +126,8 @@ public final class SignatureUploadService extends IntentService
         final URI uri;
         try
         {
-            uri = new URI("http", null /* userInfo */, "192.168.1.3", 8080,
+            final Preferences prefs = new Preferences(this);
+            uri = new URI("http", null /* userInfo */, prefs.getHost(), prefs.getPort(),
                     "/members/" + db.getStudentId(id), null /* query */, null /* fragment */);
         } // try
         catch (final URISyntaxException e)

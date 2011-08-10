@@ -16,5 +16,6 @@
         </activity>
 		<activity android:name=".SigsNotUploaded"></activity>
 		<service android:name=".SignatureUploadService"></service>
+		<activity android:name=".SignaturePreferenceActivity"></activity>
     </application>
 </manifest>
