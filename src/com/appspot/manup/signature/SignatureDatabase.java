@@ -1,11 +1,10 @@
 package com.appspot.manup.signature;
 
 import java.io.File;
-import java.util.HashSet;
-import java.util.Set;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
@@ -91,9 +90,6 @@ public final class SignatureDatabase
         return sDataHelper;
     } // getInstance
 
-    private final Set<SignatureCapturedListener> mListeners =
-            new HashSet<SignatureCapturedListener>();
-
     private final Context mContext;
     private SQLiteDatabase mDb = null;
     private volatile OpenHelper mOpenHelper = null;
@@ -103,7 +99,6 @@ public final class SignatureDatabase
         super();
         mContext = context.getApplicationContext();
         mOpenHelper = new OpenHelper(mContext);
-
     } // DataHelper
 
     private synchronized SQLiteDatabase getDatabase()
@@ -172,13 +167,7 @@ public final class SignatureDatabase
         final boolean stateChanged = updateSignatureState(id, Signature.SIGNATURE_CAPTURED);
         if (stateChanged)
         {
-            synchronized (mListeners)
-            {
-                for (final SignatureCapturedListener listener : mListeners)
-                {
-                    listener.onSignatureCaptured(id);
-                } // for
-            } // synchronized
+            mContext.startService(new Intent(mContext, UploadService.class));
         } // if
         return stateChanged;
     } // signatureCaptured
@@ -204,22 +193,6 @@ public final class SignatureDatabase
                 new String[] { Long.toString(id) });
         return rowsUpdated == 1;
     } // update
-
-    public void registerSignatureCapturedListener(final SignatureCapturedListener listener)
-    {
-        synchronized (mListeners)
-        {
-            mListeners.add(listener);
-        } // synchronized
-    } // registerSignatureCapturedListener
-
-    public void unregisterSignatureCapturedListener(final SignatureCapturedListener listener)
-    {
-        synchronized (mListeners)
-        {
-            mListeners.remove(listener);
-        } // synchronized
-    } // unregisterSignatureCapturedListener
 
     private boolean deleteSignature(final long id)
     {

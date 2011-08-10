@@ -14,101 +14,49 @@ import org.apache.http.entity.mime.FormBodyPart;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.apache.http.entity.mime.content.FileBody;
 
-import android.app.Service;
+import android.app.IntentService;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.IBinder;
-import android.os.Process;
 import android.util.Log;
 
 import com.appspot.manup.signature.SignatureDatabase.Signature;
-import com.appspot.manup.signature.SignatureDatabase.SignatureCapturedListener;
 
-public final class UploadService extends Service
+public final class UploadService extends IntentService
 {
     private static final String TAG = UploadService.class.getSimpleName();
 
     private static final String IMAGE_MIME = "image/png";
 
-    private final SignatureCapturedListener mListener = new SignatureCapturedListener()
-    {
-        @Override
-        public void onSignatureCaptured(final long id)
-        {
-            synchronized (mUploadThread)
-            {
-                mUploadThread.notify();
-            } // mUploadThread
-        } // onSignatureCaptured
-    };
-
-    private final Thread mUploadThread = new Thread(TAG)
-    {
-        @Override
-        public void run()
-        {
-            Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
-            while (true)
-            {
-                uploadSignaturesLoop();
-                synchronized (this)
-                {
-                    if (interrupted())
-                    {
-                        break;
-                    } // if
-                    Log.d(TAG, "Waiting...");
-                    try
-                    {
-                        wait();
-                    } // try
-                    catch (final InterruptedException e)
-                    {
-                        break;
-                    } // catch
-                } // synchronized
-                Log.d(TAG, "On the move.");
-            } // while
-            Log.d(TAG, "Interrupted.");
-        } // run
-    };
-
     private final SignatureHttpClient mClient = new SignatureHttpClient();
 
     public UploadService()
     {
-        super();
+        super(TAG);
     } // UploadService
 
     @Override
-    public void onCreate()
+    protected void onHandleIntent(final Intent intent)
     {
-        super.onCreate();
-        mUploadThread.start();
-        SignatureDatabase.getInstance(this).registerSignatureCapturedListener(mListener);
-    } // onCreate
+        uploadSignatures();
+    } // onHandleIntent
 
-    private void uploadSignaturesLoop()
+    private void uploadSignatures()
     {
-        while (uploadSignatures());
-    } // uploadSignaturesLoop
-
-    private boolean uploadSignatures()
-    {
-        Log.d(TAG, "GONA HAVE an upload.");
         Cursor c = null;
         try
         {
             c = SignatureDatabase.getInstance(this).getCapturedSignatures();
-            if (c == null || !c.moveToFirst())
+            if (c == null)
             {
-                return false;
+                Log.w(TAG, "Failed to get captured signatures. Aborting.");
+                return;
             } // if
 
             final int idColumn = c.getColumnIndex(Signature._ID);
             final int studentIdColumn = c.getColumnIndex(Signature.STUDENT_ID);
 
-            do
+            while (c.moveToNext())
             {
                 try
                 {
@@ -116,10 +64,10 @@ public final class UploadService extends Service
                 } // try
                 catch (final IOException e)
                 {
-                    Log.w(TAG, "Failed to upload signature.", e);
+                    Log.w(TAG, "Failed to upload signature. Aborting.", e);
+                    return;
                 } // catch
-                Log.d(TAG, "Uploaded somethings.");
-            } while (c.moveToNext());
+            } // while
 
         } // try
         finally
@@ -129,14 +77,10 @@ public final class UploadService extends Service
                 c.close();
             } // if
         } // finally
-
-        return true;
     } // uploadSignatures
 
     private void uploadSignature(final long id, final String studentId) throws IOException
     {
-        final SignatureDatabase db = SignatureDatabase.getInstance(this);
-
         final URI uri;
         try
         {
@@ -155,6 +99,7 @@ public final class UploadService extends Service
             throw new AssertionError(e);
         } // catch
 
+        final SignatureDatabase db = SignatureDatabase.getInstance(this);
         final File imageFile = db.getImageFile(id);
         if (imageFile == null)
         {
@@ -203,17 +148,6 @@ public final class UploadService extends Service
             throw new IOException("Failed to update signature state for " + id);
         } // if
     } // uploadSignature
-
-    @Override
-    public void onDestroy()
-    {
-        SignatureDatabase.getInstance(this).unregisterSignatureCapturedListener(mListener);
-        synchronized (mUploadThread)
-        {
-            mUploadThread.interrupt();
-        } // synchronized
-        super.onDestroy();
-    } // onDestroy
 
     @Override
     public IBinder onBind(final Intent intent)

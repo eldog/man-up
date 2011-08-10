@@ -191,7 +191,6 @@ public final class CaptureSignatureActivity extends Activity
         @Override
         protected void onPostExecute(final Long id)
         {
-            startService(new Intent(CaptureSignatureActivity.this, UploadService.class));
             if (id != null)
             {
                 setContentView(myView = new MyView(CaptureSignatureActivity.this));
@@ -221,6 +220,7 @@ public final class CaptureSignatureActivity extends Activity
     {
         super.onCreate(savedInstanceState);
         setContentView(myView = new MyView(this));
+        startService(new Intent(CaptureSignatureActivity.this, UploadService.class));
         mPaint = new Paint();
         mPaint.setAntiAlias(true);
         mPaint.setDither(true);
@@ -229,6 +229,7 @@ public final class CaptureSignatureActivity extends Activity
         mPaint.setStrokeJoin(Paint.Join.ROUND);
         mPaint.setStrokeCap(Paint.Cap.ROUND);
         mPaint.setStrokeWidth(10);
+
     } // onCreate
 
     @Override
