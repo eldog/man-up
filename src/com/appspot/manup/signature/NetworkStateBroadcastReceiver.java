@@ -11,6 +11,14 @@ public final class NetworkStateBroadcastReceiver extends BroadcastReceiver
     @SuppressWarnings("unused")
     private static final String TAG = NetworkStateBroadcastReceiver.class.getSimpleName();
 
+    private static boolean isProbablyOnline(final Context context)
+    {
+        final ConnectivityManager connectivityManager =
+                (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        final NetworkInfo info = connectivityManager.getActiveNetworkInfo();
+        return info != null && info.getState() == NetworkInfo.State.CONNECTED;
+    } // isProbablyOnline
+
     public NetworkStateBroadcastReceiver()
     {
         super();
@@ -25,13 +33,5 @@ public final class NetworkStateBroadcastReceiver extends BroadcastReceiver
             context.startService(uploadServiceIntent);
         } //if
     } // onReceive
-
-    private boolean isProbablyOnline(final Context context)
-    {
-        final ConnectivityManager connectivityManager =
-                (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        final NetworkInfo info = connectivityManager.getActiveNetworkInfo();
-        return info != null && info.getState() == NetworkInfo.State.CONNECTED;
-    } // isProbablyOnline
 
 } // InternetBroadcastReceiver

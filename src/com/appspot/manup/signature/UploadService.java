@@ -38,11 +38,6 @@ public final class UploadService extends IntentService
     @Override
     protected void onHandleIntent(final Intent intent)
     {
-        uploadSignatures();
-    } // onHandleIntent
-
-    private void uploadSignatures()
-    {
         Cursor c = null;
         try
         {
