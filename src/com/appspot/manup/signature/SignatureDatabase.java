@@ -84,9 +84,8 @@ public final class SignatureDatabase
         return sDataHelper;
     } // getInstance
 
-    private final Object mLock = new Object();
     private final Context mContext;
-    private volatile SQLiteDatabase mDb = null;
+    private SQLiteDatabase mDb = null;
     private volatile OpenHelper mOpenHelper = null;
 
     private SignatureDatabase(final Context context)
@@ -97,15 +96,12 @@ public final class SignatureDatabase
 
     } // DataHelper
 
-    private SQLiteDatabase getDatabase()
+    private synchronized SQLiteDatabase getDatabase()
     {
-        synchronized (mLock)
+        if (mDb == null)
         {
-            if (mDb == null)
-            {
-                mDb = mOpenHelper.getWritableDatabase();
-            } // if
-        } // synchronized
+            mDb = mOpenHelper.getWritableDatabase();
+        } // if
         return mDb;
     } // getDatabase
 
