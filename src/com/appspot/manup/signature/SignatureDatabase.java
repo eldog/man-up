@@ -73,18 +73,14 @@ public final class SignatureDatabase
 
     } // OpenHelper
 
-    private static final Object sLock = new Object();
     private static SignatureDatabase sDataHelper = null;
 
-    public static SignatureDatabase getInstance(final Context context)
+    public static synchronized SignatureDatabase getInstance(final Context context)
     {
-        synchronized (sLock)
+        if (sDataHelper == null)
         {
-            if (sDataHelper == null)
-            {
-                sDataHelper = new SignatureDatabase(context);
-            } // if
-        } // synchronized
+            sDataHelper = new SignatureDatabase(context);
+        } // if
         return sDataHelper;
     } // getInstance
 
