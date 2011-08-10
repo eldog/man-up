@@ -1,6 +1,7 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     <EditTextPreference
         android:key="host"
+        android:inputType="textUri"
         android:title="Host" />
     <EditTextPreference
         android:key="port"
