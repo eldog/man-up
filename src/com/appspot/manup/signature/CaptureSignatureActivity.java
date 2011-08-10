@@ -191,6 +191,7 @@ public final class CaptureSignatureActivity extends Activity
         @Override
         protected void onPostExecute(final Long id)
         {
+            startService(new Intent(CaptureSignatureActivity.this, UploadService.class));
             if (id != null)
             {
                 setContentView(myView = new MyView(CaptureSignatureActivity.this));
