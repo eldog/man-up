@@ -19,27 +19,25 @@ public class WriteSignatureService extends IntentService
     private static final String TAG = WriteSignatureService.class.getSimpleName();
 
     private static final String ACTION_WRITE = WriteSignatureService.class.getName() + ".WRITE";
+
     public static final String EXTRA_ID = WriteSignatureService.class.getName() + ".ID";
     public static final String EXTRA_BITMAP = WriteSignatureService.class.getName() + ".BITMAP";
-    public static final String EXTRA_SUCCESSFUL = WriteSignatureService.class.getName()
-            + ".RESULT";
-    public static final String EXTRA_DB_CAP_SUCCESSFUL = WriteSignatureService.class.getName()
-            + ".DBRESULT";
+    public static final String EXTRA_SUCCESSFUL = WriteSignatureService.class.getName() + ".RESULT";
 
     private static final int BITMAP_FILE_QUALITY = 100;
 
     private static final Map<Long, Set<WriteCompleteListener>> sListeners =
             new HashMap<Long, Set<WriteCompleteListener>>();
 
-    public static final Map<Long, Bitmap> sBitmaps = new HashMap<Long, Bitmap>();
+    private static final Map<Long, Bitmap> sSignatures = new HashMap<Long, Bitmap>();
 
     public interface WriteCompleteListener
     {
-        void onWriteComplete(final Intent intent);
-    }
+        void onWriteComplete(Intent intent);
+    } // WriteCompleteListener
 
     public static void writeSignature(final Context context,
-            final WriteCompleteListener listener, final long id)
+            final WriteCompleteListener listener, final long id, final Bitmap signature)
     {
         synchronized (sListeners)
         {
@@ -52,6 +50,8 @@ public class WriteSignatureService extends IntentService
             final Set<WriteCompleteListener> listeners = new HashSet<WriteCompleteListener>();
             listeners.add(listener);
             sListeners.put(id, listeners);
+
+            sSignatures.put(id, signature);
 
             final Intent intent = new Intent(context, WriteSignatureService.class);
             intent.setAction(ACTION_WRITE);
@@ -89,77 +89,50 @@ public class WriteSignatureService extends IntentService
     public WriteSignatureService()
     {
         super(TAG);
-    }
+    } // WriteSignatureService
 
     @Override
-    protected void onHandleIntent(Intent intent)
+    protected void onHandleIntent(final Intent intent)
     {
-        synchronized (sBitmaps)
-        {
-            boolean writeSuccessful = false;
-            boolean databaseCapturedSuccessful = false;
-            final long id = intent.getLongExtra(EXTRA_ID, -1);
-            if (sBitmaps.containsKey(id))
-            {
-                Bitmap b = sBitmaps.get(id);
-                writeSuccessful = write(id, b);
-                if (writeSuccessful)
-                {
-                    SignatureDatabase dataHelper =
-                            SignatureDatabase.getInstance(WriteSignatureService.this);
-                    if (dataHelper.signatureCaptured(id))
-                    {
-                        databaseCapturedSuccessful = true;
-                        sBitmaps.remove(id);
-                    }
-                    else
-                    {
-                        Log.w(TAG, id + ": Could not update database");
-                    }
-                }
-            }
-            else
-            {
-                Log.w(TAG, "Bitmap could not be retrieved");
-            }
-            intent.putExtra(EXTRA_SUCCESSFUL, writeSuccessful);
-            intent.putExtra(EXTRA_DB_CAP_SUCCESSFUL, databaseCapturedSuccessful);
-            notifyListeners(intent);
-        }
-    }
+        final long id = intent.getLongExtra(EXTRA_ID, -1);
+        intent.putExtra(EXTRA_SUCCESSFUL, writeSignature(id));
+        notifyListeners(intent);
+    } // onHandleIntent
 
-    private boolean write(final long id, final Bitmap b)
+    private boolean writeSignature(final long id)
     {
-        final SignatureDatabase dataHelper = SignatureDatabase
-                .getInstance(WriteSignatureService.this);
-        final File imageFile = dataHelper.getImageFile(id);
+        final SignatureDatabase db = SignatureDatabase.getInstance(WriteSignatureService.this);
+
+        final File imageFile = db.getImageFile(id);
         if (imageFile == null)
         {
-            Log.w(TAG, "Image file cannot be retrieved from database");
+            Log.w(TAG, "Failed to retrieve image file for " + id);
             return false;
         } // if
+
         try
         {
             imageFile.createNewFile();
         } // try
         catch (final IOException e)
         {
-            Log.w(TAG, "Error creating file", e);
+            Log.w(TAG, "Failed to create file for " + id, e);
             return false;
         } // catch
+
         FileOutputStream fos = null;
         try
         {
             fos = new FileOutputStream(imageFile);
-            if (b.compress(Bitmap.CompressFormat.PNG, BITMAP_FILE_QUALITY, fos))
+            final Bitmap signature = sSignatures.remove(id);
+            if (!signature.compress(Bitmap.CompressFormat.PNG, BITMAP_FILE_QUALITY, fos))
             {
-                return true;
+                return false;
             } // if
-            return false;
         } // try
         catch (final IOException e)
         {
-            Log.w(TAG, "Error writing file", e);
+            Log.w(TAG, "Failed to write image for " + id, e);
             return false;
         } // catch
         finally
@@ -172,9 +145,12 @@ public class WriteSignatureService extends IntentService
                 } // try
                 catch (final IOException e)
                 {
-                    Log.w(TAG, "Error closing output stream", e);
+                    Log.w(TAG, "Failed to close image file for " + id, e);
                 } // catch
             } // if
         } // finally
-    }
-}
+
+        return db.signatureCaptured(id);
+    } // write
+
+} // WriteSignatureService

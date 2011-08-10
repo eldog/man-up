@@ -19,6 +19,7 @@ import com.appspot.manup.signature.WriteSignatureService.WriteCompleteListener;
 
 public final class CaptureSignatureActivity extends Activity
 {
+    @SuppressWarnings("unused")
     private static final String TAG = CaptureSignatureActivity.class.getSimpleName();
 
     private static final int MENU_SUBMIT = Menu.FIRST;
@@ -123,6 +124,27 @@ public final class CaptureSignatureActivity extends Activity
 
     } // MyView
 
+    private final WriteCompleteListener mWriteListener = new WriteCompleteListener()
+    {
+        @Override
+        public void onWriteComplete(Intent intent)
+        {
+            final long id = intent.getLongExtra(WriteSignatureService.EXTRA_ID, -1);
+            final boolean successful =
+                    intent.getBooleanExtra(WriteSignatureService.EXTRA_SUCCESSFUL, false);
+            final String s = id + ": " + ((successful) ? "Successfully written" : "Write failed");
+            runOnUiThread(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    Toast.makeText(CaptureSignatureActivity.this, s, Toast.LENGTH_SHORT).show();
+                    setContentView(myView = new MyView(CaptureSignatureActivity.this));
+                } // run
+            });
+        } // onWriteComplete
+    };
+
     private boolean mClearCanvas;
     private MyView myView;
     private Paint mPaint;
@@ -148,7 +170,6 @@ public final class CaptureSignatureActivity extends Activity
         mPaint.setStrokeJoin(Paint.Join.ROUND);
         mPaint.setStrokeCap(Paint.Cap.ROUND);
         mPaint.setStrokeWidth(10);
-
     } // onCreate
 
     @Override
@@ -196,53 +217,11 @@ public final class CaptureSignatureActivity extends Activity
         write(id, myView.getBitMap());
     } // onSubmit
 
-    private final WriteCompleteListener mWriteListener = new WriteCompleteListener()
+
+    private void write(final long id, final Bitmap signature)
     {
-        @Override
-        public void onWriteComplete(Intent intent)
-        {
-            final long id = intent.getLongExtra(WriteSignatureService.EXTRA_ID, -1);
-            final boolean successful =
-                    intent.getBooleanExtra(WriteSignatureService.EXTRA_SUCCESSFUL, false);
-            final String s = id + ": " + ((successful) ? "Successfully written" : "Write failed");
-            runOnUiThread(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    Toast.makeText(CaptureSignatureActivity.this, s, Toast.LENGTH_SHORT).show();
-                }
-            });
-
-            if (successful)
-            {
-                final boolean dbSuccess =
-                        intent.getBooleanExtra(WriteSignatureService.EXTRA_DB_CAP_SUCCESSFUL,
-                                false);
-                final String success = "Database entry " + id + ": Signature capture "
-                        + ((dbSuccess) ? "successful" : "failed");
-
-                // Temp solution return Toast message
-                runOnUiThread(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        Toast.makeText(CaptureSignatureActivity.this,
-                                success, Toast.LENGTH_SHORT).show();
-                        setContentView(myView = new MyView(CaptureSignatureActivity.this));
-                    }
-                });
-            }
-
-        } // onWriteComplete
-    };
-
-    private void write(final long id, final Bitmap bitmap)
-    {
-        WriteSignatureService.sBitmaps.put(id, bitmap);
-        WriteSignatureService.writeSignature(this, mWriteListener, id);
-    }
+        WriteSignatureService.writeSignature(this, mWriteListener, id, signature);
+    } // write
 
 } // CaptureSignatureActivity
 
