@@ -164,7 +164,7 @@ public class Signature extends DataUploadHelperActivity
         menu.add(0, SUBMIT, 0, "Submit").setShortcut('7', 's');
         menu.add(0, CLEAR, 0, "Clear").setShortcut('3', 'c');
         menu.add(0, LIST, 0, "Failed uploads").setShortcut('4', 'f');
-        menu.add(0, SETTINGS, 0, "Settigns");
+        menu.add(0, SETTINGS, 0, "Settings");
         return true;
     }
 
