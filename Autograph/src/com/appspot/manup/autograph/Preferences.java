@@ -3,6 +3,7 @@ package com.appspot.manup.autograph;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
+import android.text.TextUtils;
 
 public final class Preferences
 {
@@ -24,7 +25,7 @@ public final class Preferences
 
     public boolean hasHost()
     {
-        return (mPrefs.getString(KEY_HOST, null) != null) ? true : false;
+        return !TextUtils.isEmpty(mPrefs.getString(KEY_HOST, null));
     }
 
     public int getPort()
@@ -35,7 +36,7 @@ public final class Preferences
 
     public boolean hasPort()
     {
-        return (mPrefs.getString(KEY_PORT, null) != null) ? true : false;
+        return !TextUtils.isEmpty(mPrefs.getString(KEY_PORT, null));
     }
 
 } // Preferences
