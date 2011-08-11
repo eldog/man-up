@@ -1,18 +1,10 @@
 package com.appspot.manup.signature;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Path;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
-import android.view.View;
 import android.widget.Toast;
 
 import com.appspot.manup.signature.WriteSignatureService.WriteCompleteListener;
@@ -26,103 +18,6 @@ public final class CaptureSignatureActivity extends Activity
     private static final int MENU_CLEAR = Menu.FIRST + 1;
     private static final int MENU_SETTINGS = Menu.FIRST + 2;
 
-    private final class MyView extends View
-    {
-        private Bitmap mBitmap;
-        private Canvas mCanvas;
-        private Path mPath;
-        private Paint mBitmapPaint;
-
-        public MyView(Context c)
-        {
-            super(c);
-
-            mClearCanvas = true;
-            mBitmap = Bitmap.createBitmap(320, 480, Bitmap.Config.ARGB_8888);
-            mCanvas = new Canvas(mBitmap);
-            mPath = new Path();
-            mBitmapPaint = new Paint(Paint.DITHER_FLAG);
-        }
-
-        @Override
-        protected void onSizeChanged(int w, int h, int oldw, int oldh)
-        {
-            super.onSizeChanged(w, h, oldw, oldh);
-            mCanvas.setBitmap(mBitmap = Bitmap.createBitmap(w, h,
-                    Bitmap.Config.ARGB_8888));
-        }
-
-        @Override
-        protected void onDraw(Canvas canvas)
-        {
-            canvas.drawColor(Color.WHITE);
-            canvas.drawBitmap(mBitmap, 0, 0, mBitmapPaint);
-            canvas.drawPath(mPath, mPaint);
-        }
-
-        private float mX, mY;
-        private static final float TOUCH_TOLERANCE = 4;
-
-        private void touch_start(float x, float y)
-        {
-            mPath.reset();
-            mPath.moveTo(x, y);
-            mX = x;
-            mY = y;
-        }
-
-        private void touch_move(float x, float y)
-        {
-            float dx = Math.abs(x - mX);
-            float dy = Math.abs(y - mY);
-            if (dx >= TOUCH_TOLERANCE || dy >= TOUCH_TOLERANCE)
-            {
-                mPath.quadTo(mX, mY, (x + mX) / 2, (y + mY) / 2);
-                mX = x;
-                mY = y;
-            }
-        }
-
-        private void touch_up()
-        {
-            mPath.lineTo(mX, mY);
-            // commit the path to our offscreen
-            mCanvas.drawPath(mPath, mPaint);
-            // kill this so we don't double draw
-            mPath.reset();
-            mClearCanvas = false;
-        }
-
-        @Override
-        public boolean onTouchEvent(MotionEvent event)
-        {
-            float x = event.getX();
-            float y = event.getY();
-
-            switch (event.getAction())
-            {
-                case MotionEvent.ACTION_DOWN:
-                    touch_start(x, y);
-                    invalidate();
-                    break;
-                case MotionEvent.ACTION_MOVE:
-                    touch_move(x, y);
-                    invalidate();
-                    break;
-                case MotionEvent.ACTION_UP:
-                    touch_up();
-                    invalidate();
-                    break;
-            }
-            return true;
-        }
-
-        public Bitmap getBitMap()
-        {
-            return mBitmap;
-        }
-
-    } // MyView
 
     private final WriteCompleteListener mWriteListener = new WriteCompleteListener()
     {
@@ -139,15 +34,14 @@ public final class CaptureSignatureActivity extends Activity
                 public void run()
                 {
                     Toast.makeText(CaptureSignatureActivity.this, s, Toast.LENGTH_SHORT).show();
-                    setContentView(myView = new MyView(CaptureSignatureActivity.this));
+                    setContentView(mSignatureView = new SignatureView(CaptureSignatureActivity.this));
                 } // run
             });
         } // onWriteComplete
     };
 
-    private boolean mClearCanvas;
-    private MyView myView;
-    private Paint mPaint;
+    private SignatureView mSignatureView = null;
+
     // TODO: Replace fake student ID generation.
     private long studentId = System.currentTimeMillis();
 
@@ -160,16 +54,7 @@ public final class CaptureSignatureActivity extends Activity
     public void onCreate(final Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        setContentView(myView = new MyView(this));
-        startService(new Intent(CaptureSignatureActivity.this, UploadService.class));
-        mPaint = new Paint();
-        mPaint.setAntiAlias(true);
-        mPaint.setDither(true);
-        mPaint.setColor(Color.BLACK);
-        mPaint.setStyle(Paint.Style.STROKE);
-        mPaint.setStrokeJoin(Paint.Join.ROUND);
-        mPaint.setStrokeCap(Paint.Cap.ROUND);
-        mPaint.setStrokeWidth(10);
+        setContentView(mSignatureView = new SignatureView(this));
     } // onCreate
 
     @Override
@@ -185,8 +70,8 @@ public final class CaptureSignatureActivity extends Activity
     @Override
     public boolean onOptionsItemSelected(final MenuItem item)
     {
-        mPaint.setXfermode(null);
-        mPaint.setAlpha(0xFF);
+//        mPaint.setXfermode(null);
+//        mPaint.setAlpha(0xFF);
 
         switch (item.getItemId())
         {
@@ -194,7 +79,7 @@ public final class CaptureSignatureActivity extends Activity
                 onSubmit();
                 return true;
             case MENU_CLEAR:
-                setContentView(myView = new MyView(this));
+                setContentView(mSignatureView = new SignatureView(this));
                 return true;
             case MENU_SETTINGS:
                 startActivity(new Intent(this, SignaturePreferenceActivity.class));
@@ -204,9 +89,15 @@ public final class CaptureSignatureActivity extends Activity
         } // switch
     } // onOptionsItemSelected
 
+    @Override
+    public Object onRetainNonConfigurationInstance()
+    {
+        return mSignatureView;
+    } // onRetainNonConfigurationInstance
+
     private void onSubmit()
     {
-        if (mClearCanvas)
+        if (mSignatureView.isClear())
         {
             Toast.makeText(this, "A signature is required", Toast.LENGTH_SHORT).show();
             return;
@@ -214,7 +105,7 @@ public final class CaptureSignatureActivity extends Activity
         final SignatureDatabase dataHelper = SignatureDatabase.getInstance(this);
         // TODO: Replace fake student ID generation.
         final long id = dataHelper.addSignature(Long.toString(studentId++));
-        WriteSignatureService.writeSignature(this, mWriteListener, id, myView.getBitMap());
+        WriteSignatureService.writeSignature(this, mWriteListener, id, mSignatureView.getBitMap());
     } // onSubmit
 
 } // CaptureSignatureActivity
