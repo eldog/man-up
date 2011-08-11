@@ -1,6 +1,5 @@
 package com.appspot.manup.autograph;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
@@ -9,7 +8,7 @@ import android.widget.Toast;
 
 import com.appspot.manup.autograph.WriteSignatureService.WriteCompleteListener;
 
-public final class CaptureSignatureActivity extends Activity
+public final class CaptureSignatureActivity extends CheckPreferencesActivity
 {
     @SuppressWarnings("unused")
     private static final String TAG = CaptureSignatureActivity.class.getSimpleName();
