@@ -11,7 +11,9 @@ import java.util.Set;
 import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.graphics.Matrix;
 import android.util.Log;
 
 public class WriteSignatureService extends IntentService
@@ -36,8 +38,8 @@ public class WriteSignatureService extends IntentService
         void onWriteComplete(Intent intent);
     } // WriteCompleteListener
 
-    public static void writeSignature(final Context context,
-            final WriteCompleteListener listener, final long id, final Bitmap signature)
+    public static void writeSignature(final Context context, final WriteCompleteListener listener,
+            final long id, final Bitmap signature, final int orientation)
     {
         synchronized (sListeners)
         {
@@ -50,9 +52,23 @@ public class WriteSignatureService extends IntentService
             final Set<WriteCompleteListener> listeners = new HashSet<WriteCompleteListener>();
             listeners.add(listener);
             sListeners.put(id, listeners);
-
-            sSignatures.put(id, signature);
-
+            if (orientation == Configuration.ORIENTATION_PORTRAIT)
+            {
+                Matrix matrixPortrait = new Matrix();
+                int height = signature.getHeight();
+                int width = signature.getWidth();
+                float scaleWidth = ((float) height) / width;
+                float scaleHeight = ((float) width) / height;
+                matrixPortrait.postScale(scaleWidth, scaleHeight);
+                Bitmap portraitSignature =
+                        Bitmap.createBitmap(signature, 0, 0, signature.getWidth(),
+                                signature.getHeight(), matrixPortrait, true);
+                sSignatures.put(id, portraitSignature);
+            }
+            else
+            {
+                sSignatures.put(id, signature);
+            }
             final Intent intent = new Intent(context, WriteSignatureService.class);
             intent.setAction(ACTION_WRITE);
             intent.putExtra(EXTRA_ID, id);
