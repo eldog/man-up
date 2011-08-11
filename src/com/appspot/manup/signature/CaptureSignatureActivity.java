@@ -70,16 +70,13 @@ public final class CaptureSignatureActivity extends Activity
     @Override
     public boolean onOptionsItemSelected(final MenuItem item)
     {
-//        mPaint.setXfermode(null);
-//        mPaint.setAlpha(0xFF);
-
         switch (item.getItemId())
         {
             case MENU_SUBMIT:
                 onSubmit();
                 return true;
             case MENU_CLEAR:
-                setContentView(mSignatureView = new SignatureView(this));
+                mSignatureView.clear();
                 return true;
             case MENU_SETTINGS:
                 startActivity(new Intent(this, SignaturePreferenceActivity.class));
@@ -88,12 +85,6 @@ public final class CaptureSignatureActivity extends Activity
                 return super.onOptionsItemSelected(item);
         } // switch
     } // onOptionsItemSelected
-
-    @Override
-    public Object onRetainNonConfigurationInstance()
-    {
-        return mSignatureView;
-    } // onRetainNonConfigurationInstance
 
     private void onSubmit()
     {
@@ -105,7 +96,7 @@ public final class CaptureSignatureActivity extends Activity
         final SignatureDatabase dataHelper = SignatureDatabase.getInstance(this);
         // TODO: Replace fake student ID generation.
         final long id = dataHelper.addSignature(Long.toString(studentId++));
-        WriteSignatureService.writeSignature(this, mWriteListener, id, mSignatureView.getBitMap());
+        WriteSignatureService.writeSignature(this, mWriteListener, id, mSignatureView.getBitmap());
     } // onSubmit
 
 } // CaptureSignatureActivity

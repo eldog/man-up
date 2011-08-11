@@ -11,21 +11,22 @@ import android.view.View;
 
 public final class SignatureView extends View
 {
+    @SuppressWarnings("unused")
+    private static final String TAG = SignatureView.class.getSimpleName();
+
     private static final float TOUCH_TOLERANCE = 4;
 
     private final Paint mBitmapPaint = new Paint(Paint.DITHER_FLAG);
+    private final Canvas mCanvas = new Canvas();
     private final Path mPath = new Path();
     private final Paint mPaint;
-    private final Canvas mCanvas;
 
     private boolean mClearCanvas = true;
     private float mX = -1.0f;
     private float mY = -1.0f;
-    private Bitmap mBitmap = Bitmap.createBitmap(320, 480, Bitmap.Config.ARGB_8888);
+    private Bitmap mBitmap = null;
 
     {
-        mCanvas = new Canvas(mBitmap);
-
         mPaint = new Paint();
         mPaint.setAntiAlias(true);
         mPaint.setDither(true);
@@ -52,7 +53,10 @@ public final class SignatureView extends View
     protected void onDraw(final Canvas canvas)
     {
         canvas.drawColor(Color.WHITE);
-        canvas.drawBitmap(mBitmap, 0, 0, mBitmapPaint);
+        if (mBitmap != null)
+        {
+            canvas.drawBitmap(mBitmap, 0, 0, mBitmapPaint);
+        } // if
         canvas.drawPath(mPath, mPaint);
     } // onDraw
 
@@ -96,17 +100,15 @@ public final class SignatureView extends View
         {
             case MotionEvent.ACTION_DOWN:
                 touchStart(x, y);
-                invalidate();
                 break;
             case MotionEvent.ACTION_MOVE:
                 touchMove(x, y);
-                invalidate();
                 break;
             case MotionEvent.ACTION_UP:
                 touchUp();
-                invalidate();
                 break;
         } // switch
+        invalidate();
         return true;
     } // onTouchEvent
 
@@ -115,7 +117,12 @@ public final class SignatureView extends View
         return mClearCanvas;
     } // isClear
 
-    public Bitmap getBitMap()
+    public void clear()
+    {
+        mCanvas.drawColor(Color.WHITE);
+    } // clear
+
+    public Bitmap getBitmap()
     {
         return mBitmap;
     } // getBitMap

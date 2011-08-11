@@ -12,6 +12,7 @@ import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Matrix;
 import android.util.Log;
 
 public class WriteSignatureService extends IntentService
@@ -82,6 +83,12 @@ public class WriteSignatureService extends IntentService
             sListeners.remove(id);
         } // synchronized
     } // notifyListeners
+
+    private final Matrix mClockwise90DegRotation = new Matrix();
+
+    {
+        mClockwise90DegRotation.setRotate(90.0f);
+    }
 
     public WriteSignatureService()
     {
