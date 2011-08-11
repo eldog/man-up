@@ -34,7 +34,7 @@ public final class CaptureSignatureActivity extends Activity
                 public void run()
                 {
                     Toast.makeText(CaptureSignatureActivity.this, s, Toast.LENGTH_SHORT).show();
-                    setContentView(mSignatureView = new SignatureView(CaptureSignatureActivity.this));
+                    mSignatureView.clear();
                 } // run
             });
         } // onWriteComplete

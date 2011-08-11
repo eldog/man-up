@@ -53,10 +53,7 @@ public final class SignatureView extends View
     protected void onDraw(final Canvas canvas)
     {
         canvas.drawColor(Color.WHITE);
-        if (mBitmap != null)
-        {
-            canvas.drawBitmap(mBitmap, 0, 0, mBitmapPaint);
-        } // if
+        canvas.drawBitmap(mBitmap, 0 /* x */, 0 /* y */, mBitmapPaint);
         canvas.drawPath(mPath, mPaint);
     } // onDraw
 
@@ -120,6 +117,7 @@ public final class SignatureView extends View
     public void clear()
     {
         mCanvas.drawColor(Color.WHITE);
+        invalidate();
     } // clear
 
     public Bitmap getBitmap()
