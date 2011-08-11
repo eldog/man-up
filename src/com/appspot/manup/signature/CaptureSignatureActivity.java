@@ -40,7 +40,7 @@ public final class CaptureSignatureActivity extends Activity
         } // onWriteComplete
     };
 
-    private SignatureView mSignatureView = null;
+    private DoodleView mSignatureView = null;
 
     // TODO: Replace fake student ID generation.
     private long studentId = System.currentTimeMillis();
@@ -54,7 +54,7 @@ public final class CaptureSignatureActivity extends Activity
     public void onCreate(final Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        setContentView(mSignatureView = new SignatureView(this));
+        setContentView(mSignatureView = new DoodleView(this));
     } // onCreate
 
     @Override
@@ -96,7 +96,7 @@ public final class CaptureSignatureActivity extends Activity
         final SignatureDatabase dataHelper = SignatureDatabase.getInstance(this);
         // TODO: Replace fake student ID generation.
         final long id = dataHelper.addSignature(Long.toString(studentId++));
-        WriteSignatureService.writeSignature(this, mWriteListener, id, mSignatureView.getBitmap());
+        WriteSignatureService.writeSignature(this, mWriteListener, id, mSignatureView.getDoodle());
     } // onSubmit
 
 } // CaptureSignatureActivity

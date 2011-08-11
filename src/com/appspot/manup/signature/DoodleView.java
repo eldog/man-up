@@ -9,10 +9,10 @@ import android.graphics.Path;
 import android.view.MotionEvent;
 import android.view.View;
 
-public final class SignatureView extends View
+public final class DoodleView extends View
 {
     @SuppressWarnings("unused")
-    private static final String TAG = SignatureView.class.getSimpleName();
+    private static final String TAG = DoodleView.class.getSimpleName();
 
     private static final float TOUCH_TOLERANCE = 4;
 
@@ -37,7 +37,7 @@ public final class SignatureView extends View
         mPaint.setStrokeWidth(10);
     }
 
-    public SignatureView(final Context context)
+    public DoodleView(final Context context)
     {
         super(context);
     } // SignatureView
@@ -120,9 +120,9 @@ public final class SignatureView extends View
         invalidate();
     } // clear
 
-    public Bitmap getBitmap()
+    public Bitmap getDoodle()
     {
         return mBitmap;
     } // getBitMap
 
-} // SignatureView
+} // DoodleView
