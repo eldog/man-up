@@ -11,9 +11,7 @@ import java.util.Set;
 import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Configuration;
 import android.graphics.Bitmap;
-import android.graphics.Matrix;
 import android.util.Log;
 
 public class WriteSignatureService extends IntentService
@@ -23,7 +21,6 @@ public class WriteSignatureService extends IntentService
     private static final String ACTION_WRITE = WriteSignatureService.class.getName() + ".WRITE";
 
     public static final String EXTRA_ID = WriteSignatureService.class.getName() + ".ID";
-    public static final String EXTRA_BITMAP = WriteSignatureService.class.getName() + ".BITMAP";
     public static final String EXTRA_SUCCESSFUL = WriteSignatureService.class.getName() + ".RESULT";
 
     private static final int BITMAP_FILE_QUALITY = 100;
@@ -39,7 +36,7 @@ public class WriteSignatureService extends IntentService
     } // WriteCompleteListener
 
     public static void writeSignature(final Context context, final WriteCompleteListener listener,
-            final long id, final Bitmap signature, final int orientation)
+            final long id, final Bitmap signature)
     {
         synchronized (sListeners)
         {
@@ -48,32 +45,16 @@ public class WriteSignatureService extends IntentService
                 sListeners.get(id).add(listener);
                 return;
             } // if
-
             final Set<WriteCompleteListener> listeners = new HashSet<WriteCompleteListener>();
-            listeners.add(listener);
             sListeners.put(id, listeners);
-            if (orientation == Configuration.ORIENTATION_PORTRAIT)
-            {
-                Matrix matrixPortrait = new Matrix();
-                int height = signature.getHeight();
-                int width = signature.getWidth();
-                float scaleWidth = ((float) height) / width;
-                float scaleHeight = ((float) width) / height;
-                matrixPortrait.postScale(scaleWidth, scaleHeight);
-                Bitmap portraitSignature =
-                        Bitmap.createBitmap(signature, 0, 0, signature.getWidth(),
-                                signature.getHeight(), matrixPortrait, true);
-                sSignatures.put(id, portraitSignature);
-            }
-            else
-            {
-                sSignatures.put(id, signature);
-            }
-            final Intent intent = new Intent(context, WriteSignatureService.class);
-            intent.setAction(ACTION_WRITE);
-            intent.putExtra(EXTRA_ID, id);
-            context.startService(intent);
+            listeners.add(listener);
         } // synchronized
+
+        sSignatures.put(id, signature);
+        final Intent intent = new Intent(context, WriteSignatureService.class);
+        intent.setAction(ACTION_WRITE);
+        intent.putExtra(EXTRA_ID, id);
+        context.startService(intent);
     } // uploadSignature
 
     public static void unregister(final WriteCompleteListener listener, final long id)

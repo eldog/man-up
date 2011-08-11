@@ -214,17 +214,8 @@ public final class CaptureSignatureActivity extends Activity
         final SignatureDatabase dataHelper = SignatureDatabase.getInstance(this);
         // TODO: Replace fake student ID generation.
         final long id = dataHelper.addSignature(Long.toString(studentId++));
-
-        // No need to differentiate between left and right landscape
-        // as rotation automatically taken care of
-        final int orientation = getResources().getConfiguration().orientation;
-        write(id, myView.getBitMap(), orientation);
+        WriteSignatureService.writeSignature(this, mWriteListener, id, myView.getBitMap());
     } // onSubmit
-
-    private void write(final long id, final Bitmap signature, final int orientation)
-    {
-        WriteSignatureService.writeSignature(this, mWriteListener, id, signature, orientation);
-    } // write
 
 } // CaptureSignatureActivity
 
