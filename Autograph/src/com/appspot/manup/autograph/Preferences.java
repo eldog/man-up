@@ -26,7 +26,7 @@ public final class Preferences
     public boolean hasHost()
     {
         return !TextUtils.isEmpty(mPrefs.getString(KEY_HOST, null));
-    }
+    } // hasHost
 
     public int getPort()
     {
@@ -37,6 +37,11 @@ public final class Preferences
     public boolean hasPort()
     {
         return !TextUtils.isEmpty(mPrefs.getString(KEY_PORT, null));
-    }
+    } // hasPort
+
+    public boolean preferencesSet()
+    {
+        return hasHost() && hasPort();
+    } // preferencesSet
 
 } // Preferences

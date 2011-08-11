@@ -3,40 +3,59 @@ package com.appspot.manup.autograph;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.AsyncTask;
-import android.os.Bundle;
 
-public class CheckPreferencesActivity extends Activity
+public abstract class CheckPreferencesActivity extends Activity
 {
-    @Override
-    protected void onCreate(Bundle savedInstanceState)
-    {
-        // TODO Auto-generated method stub
-        super.onCreate(savedInstanceState);
-        new CheckPreferencesSet().execute();
-    }
-
     private final class CheckPreferencesSet extends AsyncTask<Void, Void, Boolean>
     {
         @Override
-        protected Boolean doInBackground(Void... params)
+        protected Boolean doInBackground(final Void... noParams)
         {
-            Preferences prefs = new Preferences(CheckPreferencesActivity.this);
-            if (!prefs.hasHost() || !prefs.hasPort())
-            {
-                return false;
-            }
-            return true;
-        }
+            return new Preferences(CheckPreferencesActivity.this).preferencesSet();
+        } // doInBackground
 
         @Override
-        protected void onPostExecute(Boolean result)
+        protected void onCancelled()
         {
-            if (!result)
+            onStop();
+        } // onCancelled
+
+        @Override
+        protected void onPostExecute(final Boolean prefsSet)
+        {
+            onStop();
+            if (!prefsSet)
             {
                 startActivity(new Intent(CheckPreferencesActivity.this,
                         SignaturePreferenceActivity.class));
-            }
-        }
+            } // if
+        } // onPostExecute
 
-    }
-}
+        private void onStop()
+        {
+            mCheckPreferencesSet = null;
+        } // onStop
+
+    } // CheckPreferencesSet
+
+    private CheckPreferencesSet mCheckPreferencesSet = null;
+
+    @Override
+    protected void onResume()
+    {
+        super.onResume();
+        mCheckPreferencesSet = (CheckPreferencesSet) new CheckPreferencesSet().execute();
+    } // onResume
+
+    @Override
+    protected void onPause()
+    {
+        if (mCheckPreferencesSet != null)
+        {
+            mCheckPreferencesSet.cancel(true);
+            mCheckPreferencesSet = null;
+        } // if
+        super.onPause();
+    } // onPause
+
+} // CheckPreferencesActivity
