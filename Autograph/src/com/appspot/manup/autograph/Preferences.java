@@ -22,10 +22,20 @@ public final class Preferences
         return mPrefs.getString(KEY_HOST, null);
     } // getHost
 
+    public boolean hasHost()
+    {
+        return (mPrefs.getString(KEY_HOST, null) != null) ? true : false;
+    }
+
     public int getPort()
     {
         final String portString = mPrefs.getString(KEY_PORT, null);
         return portString != null ? Integer.valueOf(portString) : -1;
     } // getPort
+
+    public boolean hasPort()
+    {
+        return (mPrefs.getString(KEY_PORT, null) != null) ? true : false;
+    }
 
 } // Preferences

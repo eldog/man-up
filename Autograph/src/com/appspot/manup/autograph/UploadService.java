@@ -76,15 +76,26 @@ public final class UploadService extends IntentService
 
     private void uploadSignature(final long id, final String studentId) throws IOException
     {
+        final Preferences prefs = new Preferences(this);
+        final String host = prefs.getHost();
+        if (host == null)
+        {
+            throw new IOException("Host not set");
+        }
+        final int port = prefs.getPort();
+        if (port == -1)
+        {
+            throw new IOException("Port not set");
+        }
         final URI uri;
         try
         {
-            final Preferences prefs = new Preferences(this);
+            //final Preferences prefs = new Preferences(this);
             uri = new URI(
                     "http",
                     null /* userInfo */,
-                    prefs.getHost(),
-                    prefs.getPort(),
+                    host,
+                    port,
                     "/members/" + studentId,
                     null /* query */,
                     null /* fragment */);
