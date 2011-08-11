@@ -4,7 +4,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:versionCode="1"
     android:versionName="1.0"
-    package="com.appspot.manup.signature">
+    package="com.appspot.manup.autograph">
 
     <uses-sdk android:minSdkVersion="8" />
 
@@ -31,7 +31,7 @@
         <service android:name=".UploadService" />
         <service android:name=".WriteSignatureService"></service>
 
-        <receiver android:name=".NetworkStateBroadcastReceiver" >
+        <receiver android:name=".NetworkStateBroadcastReceiver">
             <intent-filter>
                 <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
             </intent-filter>

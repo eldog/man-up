@@ -1,4 +1,4 @@
-package com.appspot.manup.signature;
+package com.appspot.manup.autograph;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -7,7 +7,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
-import com.appspot.manup.signature.WriteSignatureService.WriteCompleteListener;
+import com.appspot.manup.autograph.WriteSignatureService.WriteCompleteListener;
 
 public final class CaptureSignatureActivity extends Activity
 {

@@ -1,4 +1,4 @@
-package com.appspot.manup.signature;
+package com.appspot.manup.autograph;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -20,7 +20,7 @@ import android.database.Cursor;
 import android.os.IBinder;
 import android.util.Log;
 
-import com.appspot.manup.signature.SignatureDatabase.Signature;
+import com.appspot.manup.autograph.SignatureDatabase.Signature;
 
 public final class UploadService extends IntentService
 {
