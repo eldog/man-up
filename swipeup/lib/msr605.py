@@ -85,9 +85,30 @@ class TrackThree(Track):
     _HAS_FORMAT_CODE = True
 
 
-class MSR605:
+class DummyConnections(object):
     def __init__(self):
-        self._serial = serial.Serial('/dev/ttyUSB0')
+        self._buf = ''
+
+    def close(self):
+        pass
+
+    def read(self, bytes=1):
+        b, self._buf = self._buf[:bytes], self._buf[bytes:]
+        return b
+
+    def open(self):
+        pass
+
+    def write(self, text):
+        if text == b'\x1Br':
+            raw_input('Press enter to swipe')
+            self._buf +='\x1bs\x1b\x01\x1b+\x1b\x02;900073014961?\x1b\x03\x1b+?\x1c\x1b0'
+        return len(text)
+
+
+class MSR605:
+    def __init__(self, conn):
+        self._serial = conn
 
     def __enter__(self):
         self._serial.open()
@@ -100,7 +121,7 @@ class MSR605:
     def _command(self, command):
         command = b'\x1B' + command
         bytes_written = self._serial.write(command)
-        if  bytes_written != len(command):
+        if bytes_written != len(command):
             raise IOError('Tried to write %d b, wrote %d' % (len(command),
                                                              bytes_written))
 
@@ -166,8 +187,7 @@ class MSR605:
         (TRACK_2, BPI_75) : b'\xA0',
         (TRACK_2, BPI_210): b'\xA1',
         (TRACK_3, BPI_75) : b'\xC0',
-        (TRACK_3, BPI_210): b'\xC1'
-        }
+        (TRACK_3, BPI_210): b'\xC1'}
 
     def set_bpi(self, track, bpi):
         self._command(b'b' + self._BPI_MAP[(track, bpi)])
@@ -228,14 +248,20 @@ class MSR605:
         else:
             raise IOError
 
+
+def from_serial():
+    return MSR605(serial.Serial('/dev/ttyUSB0'))
+
+def from_dummy():
+    return MSR605(DummyConnections())
+
 def main(argv=None):
     if argv is None:
         argv = sys.argv
-    with MSR605() as msr605:
+    with from_serial() as msr605:
         while True:
             id = msr605.read()
             print(id)
-
 
 if __name__ == '__main__':
     exit(main())
