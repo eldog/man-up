@@ -16,26 +16,10 @@ def abspath(path):
     return os.path.abspath(
         os.path.join(os.path.dirname(__file__), path))
 
-def remove_values_from_list(the_list, val):
-    return [value for value in the_list if value != val]
-
 def _config_path():
-    LIB_DIR = '../lib/'
-    LIB32_DIR = '../lib32/'
-    LIB64_DIR = '../lib64/'
-    if sys.maxsize > 2**32:
-        print('using 64bit libs')
-        _plat_lib_path = abspath(LIB64_DIR)
-        sys.path = remove_values_from_list(sys.path, abspath(LIB32_DIR))
-    else:
-        print('using 32bit libs')
-        _plat_lib_path = abspath(LIB32_DIR)
-        sys.path = remove_values_from_list(sys.path, abspath(LIB64_DIR))
-    if _plat_lib_path not in sys.path:
-        sys.path.append(_plat_lib_path)
-    _lib_path = abspath(LIB_DIR)
-    if _lib_path not in sys.path:
-        sys.path.append(_lib_path)
+    lib_path = abspath('../lib')
+    if lib_path not in sys.path:
+        sys.path.append(lib_path)
 _config_path()
 del _config_path
 
