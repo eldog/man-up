@@ -4,7 +4,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:versionCode="1"
     android:versionName="1.0"
-    package="com.appspot.manup.signature">
+    package="com.appspot.manup.autograph">
 
     <uses-sdk android:minSdkVersion="8" />
 
@@ -19,7 +19,8 @@
 
         <activity
             android:name=".CaptureSignatureActivity"
-            android:label="@string/app_name">
+            android:label="@string/app_name"
+            android:screenOrientation="landscape">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -31,7 +32,7 @@
         <service android:name=".WriteSignatureService"></service>
         <service android:name=".SwipeServerService"></service>
 
-        <receiver android:name=".NetworkStateBroadcastReceiver" >
+        <receiver android:name=".NetworkStateBroadcastReceiver">
             <intent-filter>
                 <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
             </intent-filter>

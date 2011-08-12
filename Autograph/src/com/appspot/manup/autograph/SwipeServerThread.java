@@ -1,4 +1,4 @@
-package com.appspot.manup.signature;
+package com.appspot.manup.autograph;
 
 import java.io.BufferedReader;
 import java.io.IOException;

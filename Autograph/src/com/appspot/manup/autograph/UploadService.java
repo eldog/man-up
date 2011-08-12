@@ -1,4 +1,4 @@
-package com.appspot.manup.signature;
+package com.appspot.manup.autograph;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -20,7 +20,7 @@ import android.database.Cursor;
 import android.os.IBinder;
 import android.util.Log;
 
-import com.appspot.manup.signature.SignatureDatabase.Signature;
+import com.appspot.manup.autograph.SignatureDatabase.Signature;
 
 public final class UploadService extends IntentService
 {
@@ -76,10 +76,18 @@ public final class UploadService extends IntentService
 
     private void uploadSignature(final long id, final String studentId) throws IOException
     {
+        final Preferences prefs = new Preferences(this);
+        if (!prefs.hasHost())
+        {
+            throw new IOException("Host not set");
+        }
+        if (!prefs.hasPort())
+        {
+            throw new IOException("Port not set");
+        }
         final URI uri;
         try
         {
-            final Preferences prefs = new Preferences(this);
             uri = new URI(
                     "http",
                     null /* userInfo */,

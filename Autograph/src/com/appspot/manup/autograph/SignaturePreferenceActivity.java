@@ -1,4 +1,4 @@
-package com.appspot.manup.signature;
+package com.appspot.manup.autograph;
 
 import android.os.Bundle;
 import android.preference.PreferenceActivity;

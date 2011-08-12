@@ -1,4 +1,4 @@
-package com.appspot.manup.signature;
+package com.appspot.manup.autograph;
 
 import java.io.File;
 import java.util.HashSet;
@@ -10,6 +10,8 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.provider.BaseColumns;
 import android.util.Log;
 
@@ -93,6 +95,7 @@ public final class SignatureDatabase
     } // getInstance
 
     private final Context mContext;
+    private boolean mNotifyOnSignatureCaptured = false;
     private SQLiteDatabase mDb = null;
     private volatile OpenHelper mOpenHelper = null;
 
@@ -100,6 +103,7 @@ public final class SignatureDatabase
     {
         super();
         mContext = context.getApplicationContext();
+        mNotifyOnSignatureCaptured = isOnline();
         mOpenHelper = new OpenHelper(mContext);
     } // DataHelper
 
@@ -197,12 +201,17 @@ public final class SignatureDatabase
     public boolean signatureCaptured(final long id)
     {
         final boolean stateChanged = updateSignatureState(id, Signature.SIGNATURE_CAPTURED);
-        if (stateChanged)
+        if (stateChanged && mNotifyOnSignatureCaptured)
         {
-            mContext.startService(new Intent(mContext, UploadService.class));
+            notifySignaturesCaptured();
         } // if
         return stateChanged;
     } // signatureCaptured
+
+    private void notifySignaturesCaptured()
+    {
+        mContext.startService(new Intent(mContext, UploadService.class));
+    } // notifySignatureCaptured
 
     public boolean signatureUploaded(final long id)
     {
@@ -264,5 +273,22 @@ public final class SignatureDatabase
                 null /* having */,
                 null /* orderBy */);
     } // getCapturedSignatures
+
+    public void setNotifyOnSignatureCaptured(final boolean notifyOnSignatureCapture)
+    {
+        mNotifyOnSignatureCaptured = notifyOnSignatureCapture;
+        if (mNotifyOnSignatureCaptured)
+        {
+            notifySignaturesCaptured();
+        } // if
+    } // setNotifyOnSignatureCaptured
+
+    private boolean isOnline()
+    {
+        final ConnectivityManager connectivityManager =
+                (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+        final NetworkInfo info = connectivityManager.getActiveNetworkInfo();
+        return info != null && info.isConnected();
+    } // isProbablyOnline
 
 } // SignatureDatabase
