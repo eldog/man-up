@@ -30,229 +30,184 @@ public class SwipeServerThread extends Thread
     private static final int BACKLOG = 10;
     private static final int SOCKET_TIME_OUT = 5000;
 
-    private SignatureDatabase mSignatureDatabase;
+    private static InetAddress getLocalIpAddress() throws SocketException
+    {
+        // Using Enumeration instead of Iterator as NetworkInterface is some
+        // ancient relic and getNetworkInterfaces() returns an Enumeration
+        for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en
+                .hasMoreElements();)
+        {
+            NetworkInterface intf = en.nextElement();
+            for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr
+                    .hasMoreElements();)
+            {
+                InetAddress inetAddress = enumIpAddr.nextElement();
+                if (!inetAddress.isLoopbackAddress())
+                {
+                    return inetAddress;
+                } // if
+            } // for
+        }// for
+        return null;
+    } // getLocalIpAddress
+
+    private final SignatureDatabase mSignatureDatabase;
 
     public SwipeServerThread(SignatureDatabase signatureDatabase)
     {
         super(TAG);
         mSignatureDatabase = signatureDatabase;
-    }
+    } // SwipeServerThread
 
     @Override
     public void run()
     {
         Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
-        InetAddress hostInetAddress = getLocalIpAddress();
-        if (hostInetAddress == null)
-        {
-            Log.e(TAG,
-                    "Could not get host inet address, aborting running server");
-            return;
-        } // if
-        Log.d(TAG, "host inet: " + hostInetAddress);
-        ServerSocket serverSocket;
+
         try
         {
-            serverSocket = new ServerSocket(PORT, BACKLOG, hostInetAddress);
-            try
-            {
-                try
-                {
-                    serverSocket.setSoTimeout(5000);
-                } // try
-                catch (SocketException e)
-                {
-                    Log.e(TAG, "Could not set server timeout", e);
-                    return;
-                } // catch
-
-                Log.d(TAG, "socket created on address " + serverSocket.getInetAddress().toString()
-                        + " on port " + serverSocket.getLocalPort());
-                while (true)
-                {
-                    Socket socket = null;
-                    Log.d(TAG, "Reading socket...");
-                    boolean hasRead = false;
-                    while (!hasRead)
-                    {
-                        try
-                        {
-                            socket = serverSocket.accept();
-                        } // try
-                        catch (InterruptedIOException e)
-                        {
-                            // Assuming the exception was because of the timeout
-                            // we check to see if we've been interrupted and
-                            // should
-                            // stop
-                            if (Thread.currentThread().isInterrupted())
-                            {
-                                Log.d(TAG, "Interrupted, now stopping");
-                                return;
-                            } // if
-                            continue;
-                        } // catch
-                        catch (IOException e)
-                        {
-                            Log.e(TAG, "Could not accept new connection", e);
-                            return;
-                        } // catch
-                          // We must have accepted a connection then
-                        hasRead = true;
-                    } // while
-                    Log.d(TAG, "socket read");
-                    try
-                    {
-                        try
-                        {
-                            socket.setSoLinger(true, SOCKET_TIME_OUT);
-                        } // try
-                        catch (SocketException e)
-                        {
-                            Log.e(TAG, "Unable to set linger time", e);
-                            return;
-                        } // catch
-
-                        BufferedReader input = null;
-                        try
-                        {
-                            try
-                            {
-                                input = new BufferedReader(
-                                        new InputStreamReader(
-                                                socket.getInputStream()));
-                            } // try
-                            catch (IOException e)
-                            {
-                                Log.e(TAG, "Could not read sockets input", e);
-                                return;
-                            } // catch
-
-                            String studentId = null;
-                            try
-                            {
-                                studentId = input.readLine();
-                            } // try
-                            catch (IOException e)
-                            {
-                                Log.e(TAG, "Could not read input", e);
-                                return;
-                            } // catch
-                            if (studentId != null)
-                            {
-                                Log.d(TAG, "Client: " + studentId);
-
-                                // Send the request to out handler
-                                long id = mSignatureDatabase.addSignature(studentId);
-                                if (id == -1)
-                                {
-                                    Log.e(TAG, "Could not insert the signature");
-                                }
-                                else
-                                {
-                                    Log.d(TAG, "Inserted signature with id: "
-                                            + id);
-                                }
-                            }
-                            else
-                            {
-                                Log.e(TAG, "Client request was null");
-                            }
-                            PrintWriter output = null;
-                            try
-                            {
-                                try
-                                {
-                                    output = new PrintWriter(socket.getOutputStream());
-                                } // try
-                                catch (IOException e)
-                                {
-                                    Log.e(TAG, "Could not get the output stream", e);
-                                    return;
-                                } // catch
-                                output.print("Ciao buddy");
-                            } // try
-                            finally
-                            {
-                                if (output != null)
-                                {
-                                    output.close();
-                                } // if
-                            } // finally
-                        } // try
-                        finally
-                        {
-                            if (input != null)
-                            {
-                                try
-                                {
-                                    input.close();
-                                } // try
-                                catch (IOException e)
-                                {
-                                    Log.e(TAG, "Could not close input stream", e);
-                                } // catch
-                            } // if
-                        } // finally
-                    } // try
-                    finally
-                    {
-                        try
-                        {
-                            socket.close();
-                        } // try
-                        catch (IOException e)
-                        {
-                            Log.e(TAG, "Could not close socket", e);
-                        } // catch
-                    } // finally
-                } // while
-            } // try
-            finally
-            {
-                try
-                {
-                    serverSocket.close();
-                } // try
-                catch (IOException e1)
-                {
-                    Log.e(TAG, "Could not close server socket");
-                } // catch
-            } // finally
+            handleRequests();
         } // try
-        catch (IOException e)
+        catch (final InterruptedException e)
         {
-            Log.e(TAG, "Socket creation failed", e);
-            return;
+            Log.v(TAG, "Interrupted, now stopping.", e);
+        } // catch
+        catch (final IOException e)
+        {
+            Log.d(TAG, "An error occured while handling requests.", e);
         } // catch
     } // run
 
-    private static InetAddress getLocalIpAddress()
+    private void handleRequests() throws IOException, InterruptedException
     {
+        InetAddress hostInetAddress = getLocalIpAddress();
+        if (hostInetAddress == null)
+        {
+            Log.e(TAG, "Could not get host inet address, aborting running server");
+            return;
+        } // if
+        Log.d(TAG, "host inet: " + hostInetAddress);
+
+        ServerSocket serverSocket = null;
         try
         {
-            // Using Enumeration instead of Iterator as NetworkInterface is some
-            // ancient relic and getNetworkInterfaces() returns an Enumeration
-            for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces();
-                    en.hasMoreElements();)
+            serverSocket = new ServerSocket(PORT, BACKLOG, hostInetAddress);
+            serverSocket.setSoTimeout(SOCKET_TIME_OUT);
+
+            Log.d(TAG, "Server socket: " + serverSocket.getInetAddress() + ":"
+                    + serverSocket.getLocalPort());
+
+            while (true)
             {
-                NetworkInterface intf = en.nextElement();
-                for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses();
-                        enumIpAddr.hasMoreElements();)
+                try
                 {
-                    InetAddress inetAddress = enumIpAddr.nextElement();
-                    if (!inetAddress.isLoopbackAddress())
-                    {
-                        return inetAddress;
-                    } // if
-                } // for
-            }// for
+                    handleRequest(serverSocket);
+                } // try
+                catch (final IOException e)
+                {
+                    Log.d(TAG, "Failed to handle request.", e);
+                } // catch
+            } // while
         } // try
-        catch (SocketException ex)
+        finally
         {
-            Log.e(TAG, ex.toString());
-        } // catch
-        return null;
-    } // getLocalIpAddress
+            if (serverSocket != null)
+            {
+                serverSocket.close();
+            } // if
+        } // finally
+    }
+
+    private void handleRequest(final ServerSocket serverSocket) throws InterruptedException,
+            IOException
+    {
+        Socket socket = null;
+        try
+        {
+            socket = waitForIncomingConnection(serverSocket);
+            final String magStripeNumber = readMagStripeNumber(socket);
+
+            if (magStripeNumber == null)
+            {
+                Log.w(TAG, "Mag stripe number could not be read.");
+                return;
+            } // if
+
+            Log.d(TAG, "Mag stripe number: " + magStripeNumber);
+
+            final boolean inserted = insertMagStripeNumber(magStripeNumber);
+
+            if (!inserted)
+            {
+                Log.e(TAG, "Failed to insert mag stripe number into database.");
+            } // if
+
+            writeResponse(socket, inserted);
+        } // try
+        finally
+        {
+            if (socket != null)
+            {
+                socket.close();
+            } // if
+        } // finally
+    } // handleRequest
+
+    private Socket waitForIncomingConnection(final ServerSocket serverSocket)
+            throws InterruptedException, IOException
+    {
+        Log.d(TAG, "Waiting for incoming connection...");
+        while (!Thread.currentThread().isInterrupted())
+        {
+            try
+            {
+                return serverSocket.accept();
+            } // try
+            catch (final InterruptedIOException e)
+            {
+                // Timed out, loop.
+            } // catch
+        } // while
+        throw new InterruptedException("Interrupted while waiting for incoming connection.");
+    } // read
+
+    private String readMagStripeNumber(final Socket socket) throws IOException
+    {
+        BufferedReader input = null;
+        try
+        {
+            input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            return input.readLine();
+        } // try
+        finally
+        {
+            if (input != null)
+            {
+                input.close();
+            } // if
+        } // finally
+    } // readMagStripe
+
+    private boolean insertMagStripeNumber(final String magStripeNumber)
+    {
+        return mSignatureDatabase.addSignature(magStripeNumber) != -1;
+    } // insertMagStripeNumber
+
+    private void writeResponse(final Socket socket, final boolean inserted) throws IOException
+    {
+        PrintWriter output = null;
+        try
+        {
+            output = new PrintWriter(socket.getOutputStream());
+            output.print("Ciao buddy");
+        } // try
+        finally
+        {
+            if (output != null)
+            {
+                output.close();
+            } // if
+        } // finally
+    } // writeResponse
 
 } // SwipeServerThread
