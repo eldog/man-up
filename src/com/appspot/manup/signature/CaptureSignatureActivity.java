@@ -9,17 +9,18 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
 
+import com.appspot.manup.signature.SignatureDatabase.OnSignatureAddedListener;
 import com.appspot.manup.signature.WriteSignatureService.WriteCompleteListener;
 
 public final class CaptureSignatureActivity extends Activity
 {
-    @SuppressWarnings("unused")
     private static final String TAG = CaptureSignatureActivity.class.getSimpleName();
 
     private static final int MENU_SUBMIT = Menu.FIRST;
@@ -48,8 +49,7 @@ public final class CaptureSignatureActivity extends Activity
         protected void onSizeChanged(int w, int h, int oldw, int oldh)
         {
             super.onSizeChanged(w, h, oldw, oldh);
-            mCanvas.setBitmap(mBitmap = Bitmap.createBitmap(w, h,
-                    Bitmap.Config.ARGB_8888));
+            mCanvas.setBitmap(mBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888));
         }
 
         @Override
@@ -124,14 +124,35 @@ public final class CaptureSignatureActivity extends Activity
 
     } // MyView
 
+    private final OnSignatureAddedListener mOnSignatureAddedListener = new OnSignatureAddedListener()
+    {
+        @Override
+        public void onSignatureAdded(final long newId)
+        {
+            runOnUiThread(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    Log.d(TAG, "signature added: " + newId);
+                    id = newId;
+                    Toast.makeText(CaptureSignatureActivity.this,
+                            "Enter new signature for id: " + id, Toast.LENGTH_SHORT)
+                            .show();
+                    setContentView(myView = new MyView(CaptureSignatureActivity.this));
+                } // run
+            });
+        }
+    };
+
     private final WriteCompleteListener mWriteListener = new WriteCompleteListener()
     {
         @Override
         public void onWriteComplete(Intent intent)
         {
             final long id = intent.getLongExtra(WriteSignatureService.EXTRA_ID, -1);
-            final boolean successful =
-                    intent.getBooleanExtra(WriteSignatureService.EXTRA_SUCCESSFUL, false);
+            final boolean successful = intent.getBooleanExtra(
+                    WriteSignatureService.EXTRA_SUCCESSFUL, false);
             final String s = id + ": " + ((successful) ? "Successfully written" : "Write failed");
             runOnUiThread(new Runnable()
             {
@@ -149,7 +170,7 @@ public final class CaptureSignatureActivity extends Activity
     private MyView myView;
     private Paint mPaint;
     // TODO: Replace fake student ID generation.
-    private long studentId = System.currentTimeMillis();
+    private long id = System.currentTimeMillis();
 
     public CaptureSignatureActivity()
     {
@@ -171,6 +192,22 @@ public final class CaptureSignatureActivity extends Activity
         mPaint.setStrokeCap(Paint.Cap.ROUND);
         mPaint.setStrokeWidth(10);
     } // onCreate
+
+    @Override
+    protected void onResume()
+    {
+        super.onResume();
+        SignatureDatabase.getInstance(this).addOnSignatureAddedListener(mOnSignatureAddedListener);
+        startService(new Intent(CaptureSignatureActivity.this, SwipeServerService.class));
+    }
+
+    @Override
+    protected void onPause()
+    {
+        SignatureDatabase.getInstance(this).removeOnSignatureAddedListener(mOnSignatureAddedListener);
+        stopService(new Intent(CaptureSignatureActivity.this, SwipeServerService.class));
+        super.onPause();
+    }
 
     @Override
     public boolean onCreateOptionsMenu(final Menu menu)
@@ -211,9 +248,6 @@ public final class CaptureSignatureActivity extends Activity
             Toast.makeText(this, "A signature is required", Toast.LENGTH_SHORT).show();
             return;
         } // if
-        final SignatureDatabase dataHelper = SignatureDatabase.getInstance(this);
-        // TODO: Replace fake student ID generation.
-        final long id = dataHelper.addSignature(Long.toString(studentId++));
 
         // No need to differentiate between left and right landscape
         // as rotation automatically taken care of

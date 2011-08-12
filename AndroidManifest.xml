@@ -29,6 +29,7 @@
 
         <service android:name=".UploadService" />
         <service android:name=".WriteSignatureService"></service>
+        <service android:name=".SwipeServerService"></service>
 
         <receiver android:name=".NetworkStateBroadcastReceiver" >
             <intent-filter>

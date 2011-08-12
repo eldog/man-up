@@ -1,6 +1,8 @@
 package com.appspot.manup.signature;
 
 import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -42,7 +44,7 @@ public final class SignatureDatabase
     private static final class OpenHelper extends SQLiteOpenHelper
     {
         private static final String DATABASE_NAME = "manup_signatures.db";
-        private static final int DATABASE_VERSION = 2;
+        private static final int DATABASE_VERSION = 5;
 
         public OpenHelper(final Context context)
         {
@@ -58,7 +60,7 @@ public final class SignatureDatabase
 
             "CREATE TABLE " + Signature.TABLE_NAME + "("                                +
                 Signature._ID             + " INTEGER PRIMARY KEY AUTOINCREMENT,"       +
-                Signature.STUDENT_ID      + " TEXT UNIQUE,"                             +
+                Signature.STUDENT_ID      + " TEXT UNIQUE ON CONFLICT REPLACE,"          +
                 Signature.SIGNATURE_STATE + " TEXT DEFAULT " + Signature.SIGNATURE_NONE +
             ")";
 
@@ -115,8 +117,38 @@ public final class SignatureDatabase
         final SQLiteDatabase db = getDatabase();
         final ContentValues cv = new ContentValues(1);
         cv.put(Signature.STUDENT_ID, studentId);
-        return db.insert(Signature.TABLE_NAME, Signature.STUDENT_ID, cv);
+        long id = db.insert(Signature.TABLE_NAME, Signature.STUDENT_ID, cv);
+        notifyOnSignatureAddedListeners(id);
+        return id;
     } // insert
+
+    private void notifyOnSignatureAddedListeners(long id)
+    {
+        if (id != -1)
+        {
+            for (OnSignatureAddedListener onSignatureAddedListener : mOnSignatureAddedListeners)
+            {
+                onSignatureAddedListener.onSignatureAdded(id);
+            }
+        }
+    }
+
+    public interface OnSignatureAddedListener
+    {
+        void onSignatureAdded(long id);
+    }
+
+    private Set<OnSignatureAddedListener> mOnSignatureAddedListeners = new HashSet<OnSignatureAddedListener>();
+
+    public boolean addOnSignatureAddedListener(OnSignatureAddedListener onSignatureAddedListener)
+    {
+        return mOnSignatureAddedListeners.add(onSignatureAddedListener);
+    }
+
+    public boolean removeOnSignatureAddedListener(OnSignatureAddedListener onSignatureAddedListener)
+    {
+        return mOnSignatureAddedListeners.remove(onSignatureAddedListener);
+    }
 
     public File getImageFile(final long id)
     {
