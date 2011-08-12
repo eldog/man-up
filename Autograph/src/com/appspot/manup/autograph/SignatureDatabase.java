@@ -62,7 +62,7 @@ public final class SignatureDatabase
 
             "CREATE TABLE " + Signature.TABLE_NAME + "("                                +
                 Signature._ID             + " INTEGER PRIMARY KEY AUTOINCREMENT,"       +
-                Signature.STUDENT_ID      + " TEXT UNIQUE ON CONFLICT REPLACE,"          +
+                Signature.STUDENT_ID      + " TEXT UNIQUE ON CONFLICT REPLACE,"         +
                 Signature.SIGNATURE_STATE + " TEXT DEFAULT " + Signature.SIGNATURE_NONE +
             ")";
 
@@ -142,14 +142,16 @@ public final class SignatureDatabase
         void onSignatureAdded(long id);
     }
 
-    private Set<OnSignatureAddedListener> mOnSignatureAddedListeners = new HashSet<OnSignatureAddedListener>();
+    private Set<OnSignatureAddedListener> mOnSignatureAddedListeners =
+            new HashSet<OnSignatureAddedListener>();
 
     public boolean addOnSignatureAddedListener(OnSignatureAddedListener onSignatureAddedListener)
     {
         return mOnSignatureAddedListeners.add(onSignatureAddedListener);
     }
 
-    public boolean removeOnSignatureAddedListener(OnSignatureAddedListener onSignatureAddedListener)
+    public boolean removeOnSignatureAddedListener(
+            OnSignatureAddedListener onSignatureAddedListener)
     {
         return mOnSignatureAddedListeners.remove(onSignatureAddedListener);
     }
