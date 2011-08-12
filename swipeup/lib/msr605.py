@@ -1,5 +1,4 @@
 import sys
-import serial
 
 COERCIVITY_HIGH = b'\x1Bh'
 COERCIVITY_LOW = b'\x1Bl'
@@ -250,6 +249,7 @@ class MSR605:
 
 
 def from_serial():
+    import serial
     return MSR605(serial.Serial('/dev/ttyUSB0'))
 
 def from_dummy():
