@@ -11,6 +11,9 @@ REPO_URL='https://android.git.kernel.org/repo'
 SOURCE_DIR="android-source"
 SOURCE_TMP_DIR="/tmp/${SOURCE_DIR}"
 
+sudo apt-get --assume-yes install \
+    git
+
 # Setup repo
 if [ ! -d "${REPO_DIR}" ]; then
     sudo mkdir "${REPO_DIR}"

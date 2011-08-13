@@ -22,4 +22,5 @@ sed -i '192i\      smtp.ehlo()\
       smtp.ehlo()' 'google/appengine/api/mail_stub.py'
 
 cd ..
+sudo chown -R root:root "${SDK_DIR}"
 sudo mv "${SDK_DIR}" /opt/
