@@ -6,11 +6,8 @@ import java.io.InputStreamReader;
 import java.io.InterruptedIOException;
 import java.io.PrintWriter;
 import java.net.InetAddress;
-import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
-import java.util.Enumeration;
 
 import android.os.Process;
 import android.util.Log;
@@ -154,18 +151,13 @@ public class SwipeServerThread extends Thread
 
     private String readMagStripeNumber(final Socket socket) throws IOException
     {
-        BufferedReader input = null;
         try
         {
-            input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            return input.readLine();
+            return new BufferedReader(new InputStreamReader(socket.getInputStream())).readLine();
         } // try
         finally
         {
-            if (input != null)
-            {
-                input.close();
-            } // if
+            socket.shutdownInput();
         } // finally
     } // readMagStripe
 
@@ -186,8 +178,9 @@ public class SwipeServerThread extends Thread
         {
             if (output != null)
             {
-                output.close();
+                output.flush();
             } // if
+            socket.shutdownOutput();
         } // finally
     } // writeResponse
 
