@@ -1,7 +1,9 @@
 package com.appspot.manup.autograph;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import android.content.ContentValues;
@@ -194,6 +196,42 @@ public final class SignatureDatabase
             } // if
         } // finally
     } // getStudentId
+
+    public Map<String, Long> getAllMagStripesNoneState()
+    {
+        Cursor c = null;
+        try
+        {
+            c = getDatabase().query(
+                    Signature.TABLE_NAME,
+                    new String[] { Signature.STUDENT_ID, Signature._ID },
+                    Signature.SIGNATURE_STATE + "=?",
+                    new String[] { Signature.SIGNATURE_NONE },
+                    null /* groupBy */,
+                    null /* having */,
+                    null /* orderBy */);
+            if (c.moveToFirst())
+            {
+                Map<String, Long> magStripes = new HashMap<String, Long>();
+                do
+                {
+                    magStripes.put(c.getString(0), c.getLong(1));
+                }
+                while (c.moveToNext());
+                return magStripes;
+            } // if
+            Log.e(TAG, "Failed to get student IDs for SIGNATURE_NONE state");
+            return null;
+        } // try
+        finally
+        {
+            if (c != null)
+            {
+                c.close();
+            } // if
+        } // finally
+    }
+
 
     private boolean signatureNone(final long id)
     {

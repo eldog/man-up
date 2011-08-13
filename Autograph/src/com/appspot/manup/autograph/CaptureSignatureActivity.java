@@ -6,7 +6,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
-import com.appspot.manup.autograph.SignatureDatabase.OnSignatureAddedListener;
 import com.appspot.manup.autograph.WriteSignatureService.WriteCompleteListener;
 
 public final class CaptureSignatureActivity extends CheckPreferencesActivity
@@ -18,25 +17,8 @@ public final class CaptureSignatureActivity extends CheckPreferencesActivity
     private static final int MENU_CLEAR = Menu.FIRST + 1;
     private static final int MENU_SETTINGS = Menu.FIRST + 2;
 
-    private final OnSignatureAddedListener mOnSignatureAddedListener = new OnSignatureAddedListener()
-    {
-        @Override
-        public void onSignatureAdded(final long newId)
-        {
-            runOnUiThread(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    id = newId;
-                    Toast.makeText(CaptureSignatureActivity.this,
-                            "Enter new signature for id: " + id, Toast.LENGTH_SHORT)
-                            .show();
-                    mSignatureView.clear();
-                } // run
-            });
-        }
-    };
+    // TODO temporary measure
+    private long id = System.currentTimeMillis();
 
     private final WriteCompleteListener mWriteListener = new WriteCompleteListener()
     {
@@ -53,16 +35,13 @@ public final class CaptureSignatureActivity extends CheckPreferencesActivity
                 public void run()
                 {
                     Toast.makeText(CaptureSignatureActivity.this, s, Toast.LENGTH_SHORT).show();
-                    mSignatureView.clear();
+                    CaptureSignatureActivity.this.finish();
                 } // run
             });
         } // onWriteComplete
     };
 
     private DoodleView mSignatureView = null;
-
-    // TODO: Replace fake student ID generation.
-    private long id = System.currentTimeMillis();
 
     public CaptureSignatureActivity()
     {
@@ -74,25 +53,8 @@ public final class CaptureSignatureActivity extends CheckPreferencesActivity
     {
         super.onCreate(savedInstanceState);
         setContentView(mSignatureView = new DoodleView(this));
+        id = getIntent().getLongExtra(AutographListActivity.EXTRA_ID, id);
     } // onCreate
-
-    @Override
-    protected void onResume()
-    {
-        super.onResume();
-        SignatureDatabase.getInstance(this).addOnSignatureAddedListener(mOnSignatureAddedListener);
-        startService(new Intent(CaptureSignatureActivity.this, LdapService.class));
-        startService(new Intent(CaptureSignatureActivity.this, SwipeServerService.class));
-    }
-
-    @Override
-    protected void onPause()
-    {
-        SignatureDatabase.getInstance(this).removeOnSignatureAddedListener(mOnSignatureAddedListener);
-        stopService(new Intent(CaptureSignatureActivity.this, LdapService.class));
-        stopService(new Intent(CaptureSignatureActivity.this, SwipeServerService.class));
-        super.onPause();
-    }
 
     @Override
     public boolean onCreateOptionsMenu(final Menu menu)
