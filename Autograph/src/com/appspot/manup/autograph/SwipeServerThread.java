@@ -30,26 +30,7 @@ public class SwipeServerThread extends Thread
     private static final int BACKLOG = 10;
     private static final int SOCKET_TIME_OUT = 5000;
 
-    private static InetAddress getLocalIpAddress() throws SocketException
-    {
-        // Using Enumeration instead of Iterator as NetworkInterface is some
-        // ancient relic and getNetworkInterfaces() returns an Enumeration
-        for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en
-                .hasMoreElements();)
-        {
-            NetworkInterface intf = en.nextElement();
-            for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr
-                    .hasMoreElements();)
-            {
-                InetAddress inetAddress = enumIpAddr.nextElement();
-                if (!inetAddress.isLoopbackAddress())
-                {
-                    return inetAddress;
-                } // if
-            } // for
-        }// for
-        return null;
-    } // getLocalIpAddress
+
 
     private final SignatureDatabase mSignatureDatabase;
 
@@ -80,7 +61,7 @@ public class SwipeServerThread extends Thread
 
     private void handleRequests() throws IOException, InterruptedException
     {
-        InetAddress hostInetAddress = getLocalIpAddress();
+        InetAddress hostInetAddress = NetworkUtils.getLocalIpAddress();
         if (hostInetAddress == null)
         {
             Log.e(TAG, "Could not get host inet address, aborting running server");
