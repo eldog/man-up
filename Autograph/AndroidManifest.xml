@@ -29,8 +29,9 @@
         <activity android:name=".SignaturePreferenceActivity" />
 
         <service android:name=".UploadService" />
-        <service android:name=".WriteSignatureService"></service>
-        <service android:name=".SwipeServerService"></service>
+        <service android:name=".WriteSignatureService" />
+        <service android:name=".SwipeServerService" />
+        <service android:name=".LdapService" />
 
         <receiver android:name=".NetworkStateBroadcastReceiver">
             <intent-filter>

@@ -137,7 +137,7 @@ public final class SignatureDatabase
         }
     }
 
-    public interface OnSignatureAddedListener
+    interface OnSignatureAddedListener
     {
         void onSignatureAdded(long id);
     }

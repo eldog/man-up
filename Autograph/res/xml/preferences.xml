@@ -7,4 +7,16 @@
         android:key="port"
         android:inputType="number"
         android:title="Port" />
+    <EditTextPreference
+        android:key="cs_host"
+        android:inputType="textUri"
+        android:title="CS Host" />
+    <EditTextPreference
+        android:key="username"
+        android:inputType="text"
+        android:title="CS Username"/>
+    <EditTextPreference
+        android:key="password"
+        android:inputType="textPassword"
+        android:title="CS Password"/>
 </PreferenceScreen>

@@ -81,6 +81,7 @@ public final class CaptureSignatureActivity extends CheckPreferencesActivity
     {
         super.onResume();
         SignatureDatabase.getInstance(this).addOnSignatureAddedListener(mOnSignatureAddedListener);
+        startService(new Intent(CaptureSignatureActivity.this, LdapService.class));
         startService(new Intent(CaptureSignatureActivity.this, SwipeServerService.class));
     }
 
@@ -88,6 +89,7 @@ public final class CaptureSignatureActivity extends CheckPreferencesActivity
     protected void onPause()
     {
         SignatureDatabase.getInstance(this).removeOnSignatureAddedListener(mOnSignatureAddedListener);
+        stopService(new Intent(CaptureSignatureActivity.this, LdapService.class));
         stopService(new Intent(CaptureSignatureActivity.this, SwipeServerService.class));
         super.onPause();
     }
