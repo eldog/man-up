@@ -7,6 +7,7 @@ All tested on Ubuntu 11.04 64 bit
 
 For each project run the setup script within the directory, this 
 should install the correct libraries etc.
+
     ./setup.sh
 
 "scripts" contains the scripts to install the correct sdks and libs.
