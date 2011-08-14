@@ -151,18 +151,13 @@ public class SwipeServerThread extends Thread
 
     private String readMagStripeNumber(final Socket socket) throws IOException
     {
-        BufferedReader input = null;
         try
         {
-            input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            return input.readLine();
+            return new BufferedReader(new InputStreamReader(socket.getInputStream())).readLine();
         } // try
         finally
         {
-            if (input != null)
-            {
-                input.close();
-            } // if
+            socket.shutdownInput();
         } // finally
     } // readMagStripe
 
@@ -183,8 +178,9 @@ public class SwipeServerThread extends Thread
         {
             if (output != null)
             {
-                output.close();
+                output.flush();
             } // if
+            socket.shutdownOutput();
         } // finally
     } // writeResponse
 
