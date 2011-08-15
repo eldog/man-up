@@ -13,6 +13,10 @@ public final class CaptureSignatureActivity extends CheckPreferencesActivity
     @SuppressWarnings("unused")
     private static final String TAG = CaptureSignatureActivity.class.getSimpleName();
 
+    public static final String ACTION_CAPTURE =
+            CaptureSignatureActivity.class.getName() + ".CAPTURE";
+    public static final String EXTRA_ID = CaptureSignatureActivity.class.getName() + ".ID";
+
     private static final int MENU_SUBMIT = Menu.FIRST;
     private static final int MENU_CLEAR = Menu.FIRST + 1;
     private static final int MENU_SETTINGS = Menu.FIRST + 2;
@@ -53,7 +57,7 @@ public final class CaptureSignatureActivity extends CheckPreferencesActivity
     {
         super.onCreate(savedInstanceState);
         setContentView(mSignatureView = new DoodleView(this));
-        id = getIntent().getLongExtra(AutographListActivity.EXTRA_ID, id);
+        id = getIntent().getLongExtra(EXTRA_ID, id);
     } // onCreate
 
     @Override
