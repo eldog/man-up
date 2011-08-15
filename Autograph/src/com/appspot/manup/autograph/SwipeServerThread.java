@@ -29,9 +29,9 @@ public class SwipeServerThread extends Thread
 
 
 
-    private final SignatureDatabase mSignatureDatabase;
+    private final DataManager mSignatureDatabase;
 
-    public SwipeServerThread(SignatureDatabase signatureDatabase)
+    public SwipeServerThread(DataManager signatureDatabase)
     {
         super(TAG);
         mSignatureDatabase = signatureDatabase;
@@ -163,7 +163,7 @@ public class SwipeServerThread extends Thread
 
     private boolean insertMagStripeNumber(final String magStripeNumber)
     {
-        return mSignatureDatabase.addSignature(magStripeNumber) != -1;
+        return mSignatureDatabase.addMember(magStripeNumber) != -1;
     } // insertMagStripeNumber
 
     private void writeResponse(final Socket socket, final boolean inserted) throws IOException

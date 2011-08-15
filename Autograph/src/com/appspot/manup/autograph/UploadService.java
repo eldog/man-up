@@ -20,7 +20,7 @@ import android.database.Cursor;
 import android.os.IBinder;
 import android.util.Log;
 
-import com.appspot.manup.autograph.SignatureDatabase.Signature;
+import com.appspot.manup.autograph.DataManager.Member;
 
 public final class UploadService extends IntentService
 {
@@ -41,15 +41,15 @@ public final class UploadService extends IntentService
         Cursor c = null;
         try
         {
-            c = SignatureDatabase.getInstance(this).getCapturedSignatures();
+            c = DataManager.getInstance(this).getCapturedSignatures();
             if (c == null)
             {
                 Log.w(TAG, "Failed to get captured signatures. Aborting.");
                 return;
             } // if
 
-            final int idColumn = c.getColumnIndex(Signature._ID);
-            final int studentIdColumn = c.getColumnIndex(Signature.STUDENT_ID);
+            final int idColumn = c.getColumnIndex(Member._ID);
+            final int studentIdColumn = c.getColumnIndex(Member.STUDENT_ID);
 
             while (c.moveToNext())
             {
@@ -102,8 +102,8 @@ public final class UploadService extends IntentService
             throw new AssertionError(e);
         } // catch
 
-        final SignatureDatabase db = SignatureDatabase.getInstance(this);
-        final File imageFile = db.getImageFile(id);
+        final DataManager db = DataManager.getInstance(this);
+        final File imageFile = db.getSignatureFile(id);
         if (imageFile == null)
         {
             throw new IOException("Failed to get image file for " + id);
@@ -146,7 +146,7 @@ public final class UploadService extends IntentService
                 } // finally
             } // if
         } // finally
-        if (!db.signatureUploaded(id))
+        if (!db.setSignatureUploaded(id))
         {
             throw new IOException("Failed to update signature state for " + id);
         } // if

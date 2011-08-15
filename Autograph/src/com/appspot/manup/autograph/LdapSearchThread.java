@@ -12,11 +12,11 @@ public class LdapSearchThread extends Thread
     private static final String TAG = LdapSearchThread.class.getSimpleName();
 
     private final long mId;
-    private SignatureDatabase mSignatureDatabase;
+    private DataManager mSignatureDatabase;
     private final String mHost;
     private final int mPort;
 
-    public LdapSearchThread(final long id, SignatureDatabase signatureDatabase, String host,
+    public LdapSearchThread(final long id, DataManager signatureDatabase, String host,
             int port)
     {
         mId = id;
@@ -28,7 +28,7 @@ public class LdapSearchThread extends Thread
     @Override
     public void run()
     {
-        final String magStripe = mSignatureDatabase.getStudentId(mId);
+        final String magStripe = mSignatureDatabase.getMagStripe(mId);
         LDAPConnection ldapConnection = new LDAPConnection();
         try
         {
@@ -40,6 +40,7 @@ public class LdapSearchThread extends Thread
             {
                 LDAPEntry entry = results.next();
                 Log.d(TAG, entry.toString());
+                mSignatureDatabase.addOrUpdateMember(UomLdapEntry.fromLdapEntry(entry));
             }
             Log.d(TAG, "finished search");
         }

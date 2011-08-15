@@ -105,9 +105,9 @@ public class WriteSignatureService extends IntentService
 
     private boolean writeSignature(final long id)
     {
-        final SignatureDatabase db = SignatureDatabase.getInstance(WriteSignatureService.this);
+        final DataManager db = DataManager.getInstance(WriteSignatureService.this);
 
-        final File imageFile = db.getImageFile(id);
+        final File imageFile = db.getSignatureFile(id);
         if (imageFile == null)
         {
             Log.w(TAG, "Failed to retrieve image file for " + id);
@@ -154,7 +154,7 @@ public class WriteSignatureService extends IntentService
             } // if
         } // finally
 
-        return db.signatureCaptured(id);
+        return db.setSignatureCaptured(id);
     } // write
 
 } // WriteSignatureService

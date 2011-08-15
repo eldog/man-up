@@ -5,9 +5,13 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.Enumeration;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+
 public class NetworkUtils
 {
-    static InetAddress getLocalIpAddress() throws SocketException
+    public static InetAddress getLocalIpAddress() throws SocketException
     {
         // Using Enumeration instead of Iterator as NetworkInterface is some
         // ancient relic and getNetworkInterfaces() returns an Enumeration
@@ -27,6 +31,14 @@ public class NetworkUtils
         }// for
         return null;
     } // getLocalIpAddress
+
+    public static boolean isOnline(Context context)
+    {
+        final ConnectivityManager connectivityManager =
+                (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        final NetworkInfo info = connectivityManager.getActiveNetworkInfo();
+        return info != null && info.isConnected();
+    } // isOnline
 
     private NetworkUtils()
     {

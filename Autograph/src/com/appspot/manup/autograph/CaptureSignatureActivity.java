@@ -6,7 +6,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
-import com.appspot.manup.autograph.SignatureDatabase.OnSignatureAddedListener;
 import com.appspot.manup.autograph.WriteSignatureService.WriteCompleteListener;
 
 public final class CaptureSignatureActivity extends CheckPreferencesActivity
@@ -17,26 +16,6 @@ public final class CaptureSignatureActivity extends CheckPreferencesActivity
     private static final int MENU_SUBMIT = Menu.FIRST;
     private static final int MENU_CLEAR = Menu.FIRST + 1;
     private static final int MENU_SETTINGS = Menu.FIRST + 2;
-
-    private final OnSignatureAddedListener mOnSignatureAddedListener = new OnSignatureAddedListener()
-    {
-        @Override
-        public void onSignatureAdded(final long newId)
-        {
-            runOnUiThread(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    id = newId;
-                    Toast.makeText(CaptureSignatureActivity.this,
-                            "Enter new signature for id: " + id, Toast.LENGTH_SHORT)
-                            .show();
-                    mSignatureView.clear();
-                } // run
-            });
-        }
-    };
 
     private final WriteCompleteListener mWriteListener = new WriteCompleteListener()
     {
@@ -80,7 +59,6 @@ public final class CaptureSignatureActivity extends CheckPreferencesActivity
     protected void onResume()
     {
         super.onResume();
-        SignatureDatabase.getInstance(this).addOnSignatureAddedListener(mOnSignatureAddedListener);
         startService(new Intent(CaptureSignatureActivity.this, LdapService.class));
         startService(new Intent(CaptureSignatureActivity.this, SwipeServerService.class));
     }
@@ -88,7 +66,6 @@ public final class CaptureSignatureActivity extends CheckPreferencesActivity
     @Override
     protected void onPause()
     {
-        SignatureDatabase.getInstance(this).removeOnSignatureAddedListener(mOnSignatureAddedListener);
         stopService(new Intent(CaptureSignatureActivity.this, LdapService.class));
         stopService(new Intent(CaptureSignatureActivity.this, SwipeServerService.class));
         super.onPause();

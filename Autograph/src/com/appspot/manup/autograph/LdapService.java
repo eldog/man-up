@@ -6,7 +6,6 @@ import android.os.AsyncTask;
 import android.os.IBinder;
 import android.util.Log;
 
-import com.appspot.manup.autograph.SignatureDatabase.OnSignatureAddedListener;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
@@ -20,18 +19,6 @@ public class LdapService extends Service
     private final static int LOCAL_PORT = 23456;
     private static final String REMOTE_ADDRESS = "edir.manchester.ac.uk";
     private final static int REMOTE_PORT = 389;
-
-    private OnSignatureAddedListener mOnSignatureAddedListener = new OnSignatureAddedListener()
-    {
-        @Override
-        public void onSignatureAdded(long id)
-        {
-
-            new LdapSearchThread(id, SignatureDatabase.getInstance(LdapService.this),
-                    "localhost", LOCAL_PORT).start();
-
-        }
-    };
 
     private Session mSession = null;
 
@@ -112,8 +99,6 @@ public class LdapService extends Service
         protected void onPostExecute(Session session)
         {
             super.onPostExecute(session);
-            SignatureDatabase.getInstance(LdapService.this).addOnSignatureAddedListener(
-                    mOnSignatureAddedListener);
             mSession = session;
         }
 
@@ -132,8 +117,6 @@ public class LdapService extends Service
     public void onDestroy()
     {
         mSshForwardAsyncTask.cancel(true);
-        SignatureDatabase.getInstance(this).removeOnSignatureAddedListener(
-                mOnSignatureAddedListener);
         if (mSession != null)
         {
             try

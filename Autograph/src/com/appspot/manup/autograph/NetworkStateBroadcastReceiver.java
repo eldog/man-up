@@ -21,7 +21,7 @@ public final class NetworkStateBroadcastReceiver extends BroadcastReceiver
     {
         final NetworkInfo info =
                 (NetworkInfo) intent.getParcelableExtra(ConnectivityManager.EXTRA_NETWORK_INFO);
-        SignatureDatabase.getInstance(context).setNotifyOnSignatureCaptured(info.isConnected());
+        DataManager.getInstance(context).setNotifyOnSignatureCaptured(info.isConnected());
     } // onReceive
 
 } // InternetBroadcastReceiver

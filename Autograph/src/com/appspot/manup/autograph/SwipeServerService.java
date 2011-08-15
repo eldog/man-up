@@ -14,7 +14,7 @@ public class SwipeServerService extends Service
     @Override
     public void onCreate()
     {
-        mSwipeServerThread = new SwipeServerThread(SignatureDatabase.getInstance(this));
+        mSwipeServerThread = new SwipeServerThread(DataManager.getInstance(this));
         mSwipeServerThread.start();
     }
 
