@@ -41,7 +41,7 @@ public final class UploadService extends IntentService
         Cursor c = null;
         try
         {
-            c = DataManager.getInstance(this).getCapturedSignatures();
+            c = DataManager.getInstance(this).getMembersWithCapturedSignatures();
             if (c == null)
             {
                 Log.w(TAG, "Failed to get captured signatures. Aborting.");

@@ -35,9 +35,9 @@ public final class DataManager
         public static final String DEPARTMENT = "department";
         public static final String SIGNATURE_STATE = "signature_state";
 
-        public static final String SIGNATURE_UNCAPTURED = "uncaptured";
-        public static final String SIGNATURE_CAPTURED = "captured";
-        public static final String SIGNATURE_UPLOADED = "uploaded";
+        public static final String SIGNATURE_STATE_UNCAPTURED = "uncaptured";
+        public static final String SIGNATURE_STATE_CAPTURED = "captured";
+        public static final String SIGNATURE_STATE_UPLOADED = "uploaded";
 
         private Member()
         {
@@ -74,7 +74,7 @@ public final class DataManager
                 Member.STUDENT_TYPE    + " TEXT,"                              +
                 Member.DEPARTMENT      + " TEXT,"                              +
                 Member.SIGNATURE_STATE + " TEXT NOT NULL DEFAULT "
-                    + Member.SIGNATURE_UNCAPTURED                              +
+                    + Member.SIGNATURE_STATE_UNCAPTURED                        +
             ")";
 
             //@formatter:on
@@ -134,9 +134,31 @@ public final class DataManager
         return getMemberField(Member._ID, Long.toString(id), Member.MAG_STRIPE);
     } // getMagStripe
 
+    public Cursor getMembersWithUncapturedSignatures()
+    {
+        return getMembersWithSignaturesInState(Member.SIGNATURE_STATE_UNCAPTURED);
+    } // getMembersWithUncapturedSignatures
+
+    public Cursor getMembersWithCapturedSignatures()
+    {
+        return getMembersWithSignaturesInState(Member.SIGNATURE_STATE_CAPTURED);
+    } // getMembersWithCapturedSignatures
+
+    private Cursor getMembersWithSignaturesInState(final String signatureState)
+    {
+        return mDb.query(
+                Member.TABLE_NAME,
+                null /* columns */,
+                Member.SIGNATURE_STATE + "=?",
+                new String[] { signatureState },
+                null /* groupBy */,
+                null /* having */,
+                null /* orderBy */);
+    } // getMembersWithSignaturesInState
+
     public boolean setSignatureCaptured(final long id)
     {
-        final boolean stateChanged = updateSignatureState(id, Member.SIGNATURE_CAPTURED);
+        final boolean stateChanged = updateSignatureState(id, Member.SIGNATURE_STATE_CAPTURED);
         if (stateChanged && mNotifyOnSignatureCaptured)
         {
             notifySignaturesCaptured();
@@ -146,7 +168,7 @@ public final class DataManager
 
     public boolean setSignatureUploaded(final long id)
     {
-        final boolean stateChanged = updateSignatureState(id, Member.SIGNATURE_UPLOADED);
+        final boolean stateChanged = updateSignatureState(id, Member.SIGNATURE_STATE_UPLOADED);
         if (stateChanged)
         {
             deleteMember(id);
@@ -165,7 +187,6 @@ public final class DataManager
     {
         mContext.startService(new Intent(mContext, UploadService.class));
     } // notifySignatureCaptured
-
 
     private boolean deleteMember(final long id)
     {
@@ -188,18 +209,6 @@ public final class DataManager
 
         return false;
     } // deleteMember
-
-    public Cursor getCapturedSignatures()
-    {
-        return mDb.query(
-                Member.TABLE_NAME,
-                null /* columns */,
-                Member.SIGNATURE_STATE + "=?",
-                new String[] { Member.SIGNATURE_CAPTURED },
-                null /* groupBy */,
-                null /* having */,
-                null /* orderBy */);
-    } // getCapturedSignatures
 
     public void setNotifyOnSignatureCaptured(final boolean notifyOnSignatureCapture)
     {

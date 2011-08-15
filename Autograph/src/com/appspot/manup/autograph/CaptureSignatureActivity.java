@@ -13,6 +13,10 @@ public final class CaptureSignatureActivity extends CheckPreferencesActivity
     @SuppressWarnings("unused")
     private static final String TAG = CaptureSignatureActivity.class.getSimpleName();
 
+    public static final String ACTION_CAPTURE =
+            CaptureSignatureActivity.class.getName() + ".CAPTURE";
+    public static final String EXTRA_ID = CaptureSignatureActivity.class.getName() + ".ID";
+
     private static final int MENU_SUBMIT = Menu.FIRST;
     private static final int MENU_CLEAR = Menu.FIRST + 1;
     private static final int MENU_SETTINGS = Menu.FIRST + 2;
@@ -32,16 +36,14 @@ public final class CaptureSignatureActivity extends CheckPreferencesActivity
                 public void run()
                 {
                     Toast.makeText(CaptureSignatureActivity.this, s, Toast.LENGTH_SHORT).show();
-                    mSignatureView.clear();
+                    CaptureSignatureActivity.this.finish();
                 } // run
             });
         } // onWriteComplete
     };
 
+    private long mId = -1L;
     private DoodleView mSignatureView = null;
-
-    // TODO: Replace fake student ID generation.
-    private long id = System.currentTimeMillis();
 
     public CaptureSignatureActivity()
     {
@@ -53,6 +55,7 @@ public final class CaptureSignatureActivity extends CheckPreferencesActivity
     {
         super.onCreate(savedInstanceState);
         setContentView(mSignatureView = new DoodleView(this));
+        mId = getIntent().getLongExtra(EXTRA_ID, mId);
     } // onCreate
 
     @Override
@@ -107,7 +110,7 @@ public final class CaptureSignatureActivity extends CheckPreferencesActivity
             Toast.makeText(this, "A signature is required", Toast.LENGTH_SHORT).show();
             return;
         } // if
-        WriteSignatureService.writeSignature(this, mWriteListener, id, mSignatureView.getDoodle());
+        WriteSignatureService.writeSignature(this, mWriteListener, mId, mSignatureView.getDoodle());
     } // onSubmit
 
 } // CaptureSignatureActivity
