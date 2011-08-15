@@ -8,6 +8,7 @@ import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 
 import android.os.Process;
 import android.util.Log;
@@ -25,16 +26,19 @@ public class SwipeServerThread extends Thread
 
     private static final int PORT = 12345;
     private static final int BACKLOG = 10;
-    private static final int SOCKET_TIME_OUT = 5000;
 
+    private static final int READ_TIMEOUT_MILLISECONDS = 10000;
+    private static final int SERVER_SOCKET_TIMEOUT_MILLISECONDS = 10000;
+    private static final int SOCKET_TIMEOUT_MILLISECONDS = 1000;
 
+    private final SignatureDatabase mDb;
 
     private final DataManager mSignatureDatabase;
 
     public SwipeServerThread(DataManager signatureDatabase)
     {
         super(TAG);
-        mSignatureDatabase = signatureDatabase;
+        mDb = signatureDatabase;
     } // SwipeServerThread
 
     @Override
@@ -64,18 +68,19 @@ public class SwipeServerThread extends Thread
             Log.e(TAG, "Could not get host inet address, aborting running server");
             return;
         } // if
-        Log.d(TAG, "host inet: " + hostInetAddress);
+        Log.d(TAG, "Host inet: " + hostInetAddress);
 
         ServerSocket serverSocket = null;
         try
         {
             serverSocket = new ServerSocket(PORT, BACKLOG, hostInetAddress);
-            serverSocket.setSoTimeout(SOCKET_TIME_OUT);
+            serverSocket.setSoTimeout(SERVER_SOCKET_TIMEOUT_MILLISECONDS);
 
             Log.d(TAG, "Server socket: " + serverSocket.getInetAddress() + ":"
                     + serverSocket.getLocalPort());
 
-            while (true)
+            // Terminates when handleRequest() is interrupted.
+            for(;;)
             {
                 try
                 {
@@ -94,7 +99,7 @@ public class SwipeServerThread extends Thread
                 serverSocket.close();
             } // if
         } // finally
-    }
+    } // handleRequests
 
     private void handleRequest(final ServerSocket serverSocket) throws InterruptedException,
             IOException
@@ -134,26 +139,57 @@ public class SwipeServerThread extends Thread
     private Socket waitForIncomingConnection(final ServerSocket serverSocket)
             throws InterruptedException, IOException
     {
-        Log.d(TAG, "Waiting for incoming connection...");
-        while (!Thread.currentThread().isInterrupted())
+        Log.v(TAG, "Waiting for incoming connection...");
+
+        Socket socket = null;
+        do
         {
             try
             {
-                return serverSocket.accept();
+                socket = serverSocket.accept();
             } // try
             catch (final InterruptedIOException e)
             {
                 // Timed out, loop.
+                Log.v(TAG, "Timed out while waiting for incoming connection.", e);
             } // catch
-        } // while
-        throw new InterruptedException("Interrupted while waiting for incoming connection.");
+
+            if (Thread.interrupted())
+            {
+                throw new InterruptedException(
+                        "Interrupted while waiting for incoming connection.");
+            } // if
+        } while (socket == null);
+
+        socket.setSoTimeout(SOCKET_TIMEOUT_MILLISECONDS);
+        return socket;
     } // read
 
-    private String readMagStripeNumber(final Socket socket) throws IOException
+    private String readMagStripeNumber(final Socket socket) throws IOException,
+            InterruptedException
     {
         try
         {
-            return new BufferedReader(new InputStreamReader(socket.getInputStream())).readLine();
+            final BufferedReader input =
+                    new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            final long timeBeforeRead = System.currentTimeMillis();
+            while (System.currentTimeMillis() - timeBeforeRead < READ_TIMEOUT_MILLISECONDS)
+            {
+                try
+                {
+                    return input.readLine();
+                } // try
+                catch (final SocketTimeoutException e)
+                {
+                    Log.v(TAG, "Timed out before a line was read.", e);
+                } // catch
+
+                if (Thread.interrupted())
+                {
+                    throw new InterruptedException("Interrupted while reading from socket.");
+                } // if
+            } // while
+            throw new SocketTimeoutException("Timed out before mag stripe was read.");
         } // try
         finally
         {
@@ -168,18 +204,14 @@ public class SwipeServerThread extends Thread
 
     private void writeResponse(final Socket socket, final boolean inserted) throws IOException
     {
-        PrintWriter output = null;
         try
         {
-            output = new PrintWriter(socket.getOutputStream());
+            final PrintWriter output = new PrintWriter(socket.getOutputStream());
             output.print("Ciao buddy");
+            output.flush();
         } // try
         finally
         {
-            if (output != null)
-            {
-                output.flush();
-            } // if
             socket.shutdownOutput();
         } // finally
     } // writeResponse
