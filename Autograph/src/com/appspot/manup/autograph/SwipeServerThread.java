@@ -31,14 +31,12 @@ public class SwipeServerThread extends Thread
     private static final int SERVER_SOCKET_TIMEOUT_MILLISECONDS = 10000;
     private static final int SOCKET_TIMEOUT_MILLISECONDS = 1000;
 
-    private final SignatureDatabase mDb;
-
     private final DataManager mSignatureDatabase;
 
     public SwipeServerThread(DataManager signatureDatabase)
     {
         super(TAG);
-        mDb = signatureDatabase;
+        mSignatureDatabase = signatureDatabase;
     } // SwipeServerThread
 
     @Override
