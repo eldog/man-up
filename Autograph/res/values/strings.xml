@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="add_student_id_button">Add</string>
     <string name="app_name">Autograph</string>
+    <string name="student_id">Student ID</string>
 </resources>

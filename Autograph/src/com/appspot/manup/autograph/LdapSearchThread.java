@@ -28,7 +28,7 @@ public class LdapSearchThread extends Thread
     @Override
     public void run()
     {
-        final String magStripe = mSignatureDatabase.getMagStripe(mId);
+        final String magStripe = mSignatureDatabase.getStudentId(mId);
         LDAPConnection ldapConnection = new LDAPConnection();
         try
         {

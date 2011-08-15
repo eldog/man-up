@@ -75,7 +75,7 @@ public final class AutographListActivity extends CheckPreferencesActivity
     } // GetMagStripesFromDb
 
     private Button mAdd = null;
-    private EditText mMagStripe = null;
+    private EditText mStudentId = null;
 
     private SimpleCursorAdapter mUncapturedSignatureAdapter = null;
     private MemeberAdder mMemberAdder = null;
@@ -87,14 +87,15 @@ public final class AutographListActivity extends CheckPreferencesActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.autograph_list);
         mAdd = (Button) findViewById(R.id.add_button);
-        mMagStripe = (EditText) findViewById(R.id.mag_stripe);
+        mStudentId = (EditText) findViewById(R.id.student_id);
         mUncapturedSignatureAdapter = new SimpleCursorAdapter(
                 this,
                 R.layout.autograph_list_item,
                 null,
-                new String[] { Member.MAG_STRIPE },
-                new int[] { R.id.mag_stripe });
-        final ListView uncapturedSignaturesList = (ListView) findViewById(R.id.mag_stripes_list);
+                new String[] { Member.STUDENT_ID },
+                new int[] { R.id.student_id });
+        final ListView uncapturedSignaturesList =
+                (ListView) findViewById(R.id.members_with_uncaptured_signatures_list);
         uncapturedSignaturesList.setAdapter(mUncapturedSignatureAdapter);
         uncapturedSignaturesList.setOnItemClickListener(new OnItemClickListener()
         {
@@ -178,7 +179,7 @@ public final class AutographListActivity extends CheckPreferencesActivity
 
     public void onAddClick(final View v)
     {
-        final String magStripe = mMagStripe.getText().toString();
+        final String magStripe = mStudentId.getText().toString();
         if (!TextUtils.isEmpty(magStripe))
         {
             new MemeberAdder().execute(magStripe);

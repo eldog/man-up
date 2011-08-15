@@ -26,7 +26,6 @@ public final class DataManager
     {
         private static final String TABLE_NAME = "member";
 
-        public static final String MAG_STRIPE = "mag_stripe";
         public static final String STUDENT_ID = "student_id";
         public static final String GIVEN_NAME = "gavin_name";
         public static final String SURNAME = "surname";
@@ -50,7 +49,7 @@ public final class DataManager
     private static final class OpenHelper extends SQLiteOpenHelper
     {
         private static final String DATABASE_NAME = "members.db";
-        private static final int DATABASE_VERSION = 1;
+        private static final int DATABASE_VERSION = 4;
 
         public OpenHelper(final Context context)
         {
@@ -66,8 +65,7 @@ public final class DataManager
 
             "CREATE TABLE " + Member.TABLE_NAME + "("                          +
                 Member._ID             + " INTEGER PRIMARY KEY AUTOINCREMENT," +
-                Member.MAG_STRIPE      + " TEXT NOT NULL UNIQUE,"              +
-                Member.STUDENT_ID      + " TEXT UNIQUE,"                       +
+                Member.STUDENT_ID      + " TEXT NOT NULL UNIQUE,"              +
                 Member.GIVEN_NAME      + " TEXT,"                              +
                 Member.SURNAME         + " TEXT,"                              +
                 Member.EMAIL           + " TEXT,"                              +
@@ -117,21 +115,21 @@ public final class DataManager
         mDb = new OpenHelper(mContext).getWritableDatabase();
     } // DataHelper
 
-    public long addMember(final String magStripe)
+    public long addMember(final String studentId)
     {
         final ContentValues memberValues = new ContentValues(1);
-        memberValues.put(Member.MAG_STRIPE, magStripe);
-        return upsertMember(magStripe, memberValues);
+        memberValues.put(Member.STUDENT_ID, studentId);
+        return upsertMember(studentId, memberValues);
     } // addMember
 
     public long addOrUpdateMember(final UomLdapEntry uomLdapEntry)
     {
-        return upsertMember(uomLdapEntry.getMagStripe(), uomLdapEntry.getContentValues());
+        return upsertMember(uomLdapEntry.getStudentId(), uomLdapEntry.getContentValues());
     } // addOrUpdateMember
 
-    public String getMagStripe(final long id)
+    public String getStudentId(final long id)
     {
-        return getMemberField(Member._ID, Long.toString(id), Member.MAG_STRIPE);
+        return getMemberField(Member._ID, Long.toString(id), Member.STUDENT_ID);
     } // getMagStripe
 
     public Cursor getMembersWithUncapturedSignatures()
@@ -248,12 +246,12 @@ public final class DataManager
         } // finally
     } // getMemberField
 
-    private long upsertMember(final String magStripe, final ContentValues memberValues)
+    private long upsertMember(final String studentId, final ContentValues memberValues)
     {
         mDb.beginTransaction();
         try
         {
-            long id = getId(magStripe);
+            long id = getId(studentId);
             if (id != -1)
             {
                 if (updateMember(id, memberValues) != 1)
@@ -278,9 +276,9 @@ public final class DataManager
         } // finally
     } // upsertMember
 
-    private long getId(final String magStripe)
+    private long getId(final String studentId)
     {
-        final String id = getMemberField(Member.MAG_STRIPE, magStripe, Member._ID);
+        final String id = getMemberField(Member.STUDENT_ID, studentId, Member._ID);
         return id != null ? Long.parseLong(id) : -1L;
     } // getId
 
@@ -297,7 +295,7 @@ public final class DataManager
     {
         return mDb.insert(
                 Member.TABLE_NAME,
-                Member.MAG_STRIPE /* null column hack */,
+                Member.STUDENT_ID /* null column hack */,
                 memberValues);
     } // insertMember
 

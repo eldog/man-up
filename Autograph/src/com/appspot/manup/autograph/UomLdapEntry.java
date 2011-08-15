@@ -9,7 +9,6 @@ import com.novell.ldap.LDAPEntry;
 
 public final class UomLdapEntry
 {
-    private static final String LDAP_MAG_STRIPE = "umanMagStripe";
     private static final String LDAP_STUDENT_ID = "umanPersonID";
     private static final String LDAP_GIVEN_NAME = "givenName";
     private static final String LDAP_SURNAME = "sn";
@@ -17,31 +16,31 @@ public final class UomLdapEntry
     private static final String LDAP_DEPARTMENT = "ou";
     private static final String LDAP_STUDENT_TYPE = "employeeType";
 
-    public static UomLdapEntry fromLdapEntry(LDAPEntry ldapEntry)
+    private static final String VALUE_SEPERATER = ", ";
+
+    public static UomLdapEntry fromLdapEntry(final LDAPEntry ldapEntry)
     {
         return new UomLdapEntry(
-                getStringValue(ldapEntry, LDAP_MAG_STRIPE),
                 getStringValue(ldapEntry, LDAP_STUDENT_ID),
                 getStringValue(ldapEntry, LDAP_GIVEN_NAME),
                 getStringValue(ldapEntry, LDAP_SURNAME),
                 getStringValue(ldapEntry, LDAP_EMAIL),
                 getStringValue(ldapEntry, LDAP_DEPARTMENT),
                 getStringValue(ldapEntry, LDAP_STUDENT_TYPE));
-    }
+    } // fromLdapEntry
 
-    private static String getStringValue(LDAPEntry ldapEntry, String attribute)
+    private static String getStringValue(final LDAPEntry ldapEntry, final String attribute)
     {
-        StringBuilder stringBuilder = new StringBuilder();
+        final StringBuilder valueBuilder = new StringBuilder();
         for (Enumeration<?> values = ldapEntry.getAttribute(attribute)
                 .getStringValues(); values.hasMoreElements();)
         {
-            stringBuilder.append(values.nextElement());
-            stringBuilder.append(", ");
-        }
-        return stringBuilder.toString();
-    }
+            valueBuilder.append(values.nextElement());
+            valueBuilder.append(VALUE_SEPERATER);
+        } // for
+        return valueBuilder.toString();
+    } // getStringValue
 
-    private final String mMagStripe;
     private final String mStudentId;
     private final String mGivenName;
     private final String mSurname;
@@ -49,11 +48,10 @@ public final class UomLdapEntry
     private final String mDepartment;
     private final String mStudentType;
 
-    public UomLdapEntry(String magStripe, String studentId, String givenName, String surname,
-            String email, String department, String studentType)
+    public UomLdapEntry(final String studentId, final String givenName, final String surname,
+            final String email, final String department, final String studentType)
     {
         super();
-        mMagStripe = magStripe;
         mStudentId = studentId;
         mGivenName = givenName;
         mSurname = surname;
@@ -64,9 +62,8 @@ public final class UomLdapEntry
 
     public ContentValues getContentValues()
     {
-        ContentValues contentValues = new ContentValues(6);
+        final ContentValues contentValues = new ContentValues(6);
         contentValues.put(Member.STUDENT_ID, mStudentId);
-        contentValues.put(Member.MAG_STRIPE, mMagStripe);
         contentValues.put(Member.GIVEN_NAME, mGivenName);
         contentValues.put(Member.SURNAME, mSurname);
         contentValues.put(Member.EMAIL, mEmail);
@@ -75,38 +72,34 @@ public final class UomLdapEntry
         return contentValues;
     } // createContentValuesFromLdap
 
-    public String getMagStripe()
-    {
-        return mMagStripe;
-    }
-
     public String getStudentId()
     {
         return mStudentId;
-    }
+    } // getStudentId
 
     public String getGivenName()
     {
         return mGivenName;
-    }
+    } // getGivenName
 
     public String getSurname()
     {
         return mSurname;
-    }
+    } // getSurname
 
     public String getEmail()
     {
         return mEmail;
-    }
+    } // getEmail
 
     public String getDepartment()
     {
         return mDepartment;
-    }
+    } // getDepartment
 
     public String getStudentType()
     {
         return mStudentType;
-    }
-}
+    } // getStudentType
+
+} // UomLdapEntry
