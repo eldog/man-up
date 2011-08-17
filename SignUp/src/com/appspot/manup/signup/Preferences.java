@@ -2,6 +2,7 @@ package com.appspot.manup.signup;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
 
@@ -12,6 +13,8 @@ public final class Preferences
     private static final String KEY_LDAP_HOST = "cs_host";
     private static final String KEY_USERNAME = "username";
     private static final String KEY_PASSWORD = "password";
+    public static final String KEY_LDAP = "ldap";
+    public static final String KEY_SWIPE = "swipe";
 
     private final SharedPreferences mPrefs;
 
@@ -20,6 +23,11 @@ public final class Preferences
         super();
         mPrefs = PreferenceManager.getDefaultSharedPreferences(context);
     } // Preferences
+
+    public void registerOnPreferenceChangeListener(final OnSharedPreferenceChangeListener listener)
+    {
+        mPrefs.registerOnSharedPreferenceChangeListener(listener);
+    } // registerOnPreferenceChangedListener
 
     public String getHost()
     {
@@ -82,15 +90,23 @@ public final class Preferences
         return hasHost() && hasPort() && hasCsHost() && hasUsername() && hasPassword();
     } // preferencesSet
 
-    public Editor edit(){
+    public boolean getSwipePref()
+    {
+        return mPrefs.getBoolean(KEY_SWIPE, false);
+    }
+
+    public boolean getLdapPref()
+    {
+        return mPrefs.getBoolean(KEY_LDAP, false);
+    }
+
+    public Editor edit()
+    {
         return new Editor();
     } // edit
 
     public class Editor
     {
-        private static final String KEY_LDAP = "ldap";
-        private static final String KEY_SWIPE = "swipe";
-
         private final SharedPreferences.Editor mEdit;
 
         private Editor()
@@ -115,7 +131,8 @@ public final class Preferences
             return this;
         } // putBoolean
 
-        public boolean commit(){
+        public boolean commit()
+        {
             return mEdit.commit();
         } // commit
 

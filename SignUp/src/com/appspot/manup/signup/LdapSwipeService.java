@@ -50,44 +50,58 @@ public class LdapSwipeService extends IntentService
         manager.notify(NOTIFICATION_ID, notification);
     }
 
-    public static void startServiceAction(final Context context, final Intent intent)
+    public static void serviceAction(final Context context, final Intent intent)
     {
-        final Intent i = new Intent(context, LdapSwipeService.class);
+        Intent i = new Intent(context, LdapSwipeService.class);
         i.setAction(intent.getAction());
         context.startService(i);
     }
 
     private SwipeUpThread mSwipeServerThread;
 
-    private static final int SSH_PORT = 22;
     private static final int LOCAL_PORT = 23456;
-    private static final String REMOTE_ADDRESS = "edir.manchester.ac.uk";
-    private static final int REMOTE_PORT = 389;
 
     private Session mSession = null;
-    private Thread mSshThread;
-
+    private Thread mSshThread = null;
 
     @Override
     protected void onHandleIntent(final Intent intent)
     {
-        if (intent.getAction().equals(AutographApplication.ACTION_LDAP))
+        final String action = intent.getAction();
+        if (action.equals(AutographApplication.ACTION_LDAP))
         {
             mSshThread = new SshForward();
-            mSshThread.run();
+            mSshThread.start();
+            Log.d(TAG, "ldap started");
         }
-        else if (intent.getAction().equals(AutographApplication.ACTION_SWIPE))
+        else if (action.equals(AutographApplication.ACTION_SWIPE))
         {
             mSwipeServerThread = new SwipeUpThread(DataManager.getInstance(this));
             mSwipeServerThread.start();
+            Log.d(TAG, "swipe started");
         }
+        else if (action.equals(AutographApplication.ACTION_STOP_LDAP))
+        {
+            stopLdap();
+            Log.d(TAG, "ldap stopped");
+        }
+        else if (action.equals(AutographApplication.ACTION_STOP_SWIPE))
+        {
+            stopSwipe();
+            Log.d(TAG, "swipe stopped");
+        }
+
     } // onHandleIntent
 
     private class SshForward extends Thread
     {
+        private static final int SSH_PORT = 22;
+        private static final String REMOTE_ADDRESS = "edir.manchester.ac.uk";
+        private static final int REMOTE_PORT = 389;
+
         public SshForward()
         {
-           super(TAG);
+            super(TAG);
         } // SshForward
 
         @Override
@@ -115,7 +129,6 @@ public class LdapSwipeService extends IntentService
                     public void showMessage(String message)
                     {
                         Log.d(TAG, message);
-
                     }
 
                     @Override
@@ -175,17 +188,33 @@ public class LdapSwipeService extends IntentService
         return null;
     } // onBind
 
+    public void stopLdap()
+    {
+        if (mSshThread != null)
+        {
+            if (mSshThread.isAlive())
+            {
+                mSshThread.interrupt();
+            }
+        }
+    } // stopLdap
+
+    public void stopSwipe()
+    {
+        if (mSwipeServerThread != null)
+        {
+            if (mSwipeServerThread.isAlive())
+            {
+                mSwipeServerThread.interrupt();
+            }
+        }
+    } // stopSwipe
+
     @Override
     public void onDestroy()
     {
-        if (mSwipeServerThread.isAlive())
-        {
-            mSwipeServerThread.interrupt();
-        }
-        if (mSshThread.isAlive())
-        {
-            mSshThread.interrupt();
-        }
+        stopSwipe();
+        stopLdap();
         if (mSession != null)
         {
             try
