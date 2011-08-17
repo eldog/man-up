@@ -30,10 +30,10 @@ public final class MembersListActivity extends CheckPreferencesActivity
     private final class MemeberAdder extends AsyncTask<String, Void, Long>
     {
         @Override
-        protected Long doInBackground(final String... magStripe)
+        protected Long doInBackground(final String... studentId)
         {
             return DataManager.getInstance(
-                    MembersListActivity.this).addMember(magStripe[0]);
+                    MembersListActivity.this).addMember(studentId[0]);
         } // doInBackground
 
         @Override
@@ -58,7 +58,7 @@ public final class MembersListActivity extends CheckPreferencesActivity
            mAdd.setEnabled(true);
         } // onStop
 
-    } // AddSignature
+    } // MemeberAdder
 
     private final class UncapturedSignaturesLoader extends CursorLoader
     {
@@ -75,7 +75,7 @@ public final class MembersListActivity extends CheckPreferencesActivity
             mUncapturedSignatureAdapter.changeCursor(uncapturedSignatures);
         } // onCursorLoaded
 
-    } // GetMagStripesFromDb
+    } // UncapturedSignaturesLoader
 
     private Button mAdd = null;
     private EditText mStudentId = null;
@@ -129,7 +129,6 @@ public final class MembersListActivity extends CheckPreferencesActivity
         if (mUncapturedSignaturesLoader != null)
         {
             mUncapturedSignaturesLoader.cancel(true);
-
         } // if
         mUncapturedSignaturesLoader = (UncapturedSignaturesLoader)
                 new UncapturedSignaturesLoader().execute();
@@ -147,7 +146,7 @@ public final class MembersListActivity extends CheckPreferencesActivity
         {
             mMemberAdder.cancel(true);
             mMemberAdder = null;
-        }
+        } // if
         if (mUncapturedSignatureAdapter != null)
         {
             final Cursor c = mUncapturedSignatureAdapter.getCursor();
@@ -182,12 +181,12 @@ public final class MembersListActivity extends CheckPreferencesActivity
 
     public void onAddClick(final View v)
     {
-        final String magStripe = mStudentId.getText().toString();
-        if (!TextUtils.isEmpty(magStripe))
+        final String studentId = mStudentId.getText().toString();
+        if (!TextUtils.isEmpty(studentId))
         {
-            new MemeberAdder().execute(magStripe);
+            new MemeberAdder().execute(studentId);
             mAdd.setEnabled(false);
         } // if
-    } // onSignClick
+    } // onAddClick
 
 } // AutographListActivity
