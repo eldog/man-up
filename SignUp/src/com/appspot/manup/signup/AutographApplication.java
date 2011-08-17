@@ -1,13 +1,12 @@
 package com.appspot.manup.signup;
 
-import com.appspot.manup.signup.ldap.LdapService;
-import com.appspot.manup.signup.swipeupclient.SwipeUpService;
-
 import android.app.Application;
 import android.content.Intent;
 
 public final class AutographApplication extends Application
 {
+    public static final String ACTION_LDAP = AutographApplication.class.getName() + ".LDAP";
+    public static final String ACTION_SWIPE = AutographApplication.class.getName() + ".SWIPE";
     public AutographApplication()
     {
         super();
@@ -17,8 +16,10 @@ public final class AutographApplication extends Application
     public void onCreate()
     {
         super.onCreate();
-        startService(new Intent(this, LdapService.class));
-        startService(new Intent(this, SwipeUpService.class));
+        Intent i  = new Intent(ACTION_LDAP);
+        LdapSwipeService.startServiceAction(this, i);
+        i = new Intent(ACTION_SWIPE);
+        LdapSwipeService.startServiceAction(this, i);
     } // onCreate
 
 } // AutographApplication

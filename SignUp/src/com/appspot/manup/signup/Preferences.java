@@ -82,4 +82,43 @@ public final class Preferences
         return hasHost() && hasPort() && hasCsHost() && hasUsername() && hasPassword();
     } // preferencesSet
 
+    public Editor edit(){
+        return new Editor();
+    } // edit
+
+    public class Editor
+    {
+        private static final String KEY_LDAP = "ldap";
+        private static final String KEY_SWIPE = "swipe";
+
+        private final SharedPreferences.Editor mEdit;
+
+        private Editor()
+        {
+            super();
+            mEdit = mPrefs.edit();
+        } // Preferences.Editor
+
+        public Editor putLdap(final boolean value)
+        {
+            return putBoolean(KEY_LDAP, value);
+        } // putLdap
+
+        public Editor putSwipe(final boolean value)
+        {
+            return putBoolean(KEY_SWIPE, value);
+        } // putSwipe
+
+        private Editor putBoolean(final String preference, final boolean value)
+        {
+            mEdit.putBoolean(preference, value);
+            return this;
+        } // putBoolean
+
+        public boolean commit(){
+            return mEdit.commit();
+        } // commit
+
+    } // Preferences.Editor
+
 } // Preferences

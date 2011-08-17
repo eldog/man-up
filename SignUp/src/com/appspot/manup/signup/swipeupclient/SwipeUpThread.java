@@ -23,7 +23,7 @@ import android.util.Log;
  * Can be killed by an interrupt
  *
  */
-class SwipeUpThread extends Thread
+public class SwipeUpThread extends Thread
 {
     private static final String TAG = SwipeUpThread.class.getSimpleName();
 

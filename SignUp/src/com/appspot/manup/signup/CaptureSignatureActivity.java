@@ -7,8 +7,6 @@ import android.view.MenuItem;
 import android.widget.Toast;
 
 import com.appspot.manup.signup.WriteSignatureService.WriteCompleteListener;
-import com.appspot.manup.signup.ldap.LdapService;
-import com.appspot.manup.signup.swipeupclient.SwipeUpService;
 import com.appspot.manup.signup.ui.CheckPreferencesActivity;
 import com.appspot.manup.signup.ui.DoodleView;
 
@@ -61,22 +59,6 @@ public final class CaptureSignatureActivity extends CheckPreferencesActivity
         setContentView(mSignatureView = new DoodleView(this));
         mId = getIntent().getLongExtra(EXTRA_ID, mId);
     } // onCreate
-
-    @Override
-    protected void onResume()
-    {
-        super.onResume();
-        startService(new Intent(CaptureSignatureActivity.this, LdapService.class));
-        startService(new Intent(CaptureSignatureActivity.this, SwipeUpService.class));
-    }
-
-    @Override
-    protected void onPause()
-    {
-        stopService(new Intent(CaptureSignatureActivity.this, LdapService.class));
-        stopService(new Intent(CaptureSignatureActivity.this, SwipeUpService.class));
-        super.onPause();
-    }
 
     @Override
     public boolean onCreateOptionsMenu(final Menu menu)
