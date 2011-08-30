@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 from __future__ import division
 from __future__ import print_function
 from argparse import ArgumentParser
@@ -9,19 +8,16 @@ import urllib
 import urllib2
 import socket
 import sys
-import Tkinter as tk
 import threading
 
 def abspath(path):
-    return os.path.abspath(
-        os.path.join(os.path.dirname(__file__), path))
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), path))
 
 def _config_path():
     lib_path = abspath('../lib')
     if lib_path not in sys.path:
         sys.path.append(lib_path)
 _config_path()
-del _config_path
 
 import ldap
 import msr605
@@ -49,6 +45,10 @@ def _parse_argv(argv):
         dest='dummy',
         action='store_true',
         help='use a dummy card reader instead of looking for a real one')
+
+    p.add_argument('-g', '--gui',
+        action="store_true",
+        help='use GUI instead of CLI')
 
     p.add_argument('-l', '--ldap-host',
         dest='ldap_host',
@@ -145,7 +145,7 @@ class AndroidClient(asyncore.dispatcher):
     def __init__(self, host, port, message):
         asyncore.dispatcher.__init__(self)
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.connect( (host, port) )
+        self.connect((host, port))
         self.buffer = '%s\n' % message
 
     def handle_connect(self):
@@ -201,62 +201,6 @@ class ThreadResponse(threading.Thread):
             self.response_queue.task_done()
 
 
-class _SwipeFrame(tk.Frame, object):
-    def __init__(self, *args, **kwargs):
-        super(_SwipeFrame, self).__init__(*args, **kwargs)
-
-        self.button = tk.Button(self, text='exit', command=self.quit)
-        self.button.grid(row=1, column=0, padx=5, pady=5, stick=tk.E)
-
-        self.response_frame = _ResponseFrame(master=self)
-        self.response_frame.grid(row=0, column=0, padx=5,
-                                 pady=5, stick=tk.EW)
-
-
-class _ResponseFrame(tk.Frame, object):
-    def __init__(self, *args, **kwargs):
-        super(_ResponseFrame, self).__init__(*args, **kwargs)
-
-        self.name_label = tk.Label(self, text='Name:')
-        self.name_label.grid(row=0, column=0, padx=5, pady=5, stick=tk.W)
-        self.name = tk.StringVar(self)
-        self.name_entry = tk.Entry(self, textvariable=self.name,
-                                   width=50)
-        self.name_entry.grid(row=0, column=1, padx=5, pady=5, stick=tk.W)
-
-        self.email_label = tk.Label(self, text='Email:')
-        self.email_label.grid(row=1, column=0, padx=5, pady=5, stick=tk.W)
-        self.email = tk.StringVar(self)
-        self.email_entry = tk.Entry(self, textvariable=self.email,
-                                    width=50)
-        self.email_entry.grid(row=1, column=1, padx=5, pady=5, stick=tk.W)
-
-        self.student_id_label = tk.Label(self, text='Student ID:')
-        self.student_id_label.grid(row=2, column=0, padx=5, pady=5,
-                                   stick=tk.W)
-        self.student_id = tk.StringVar(self)
-        self.student_id_entry = tk.Entry(self,
-                                         textvariable=self.student_id,
-                                         width=50)
-        self.student_id_entry.grid(row=2, column=1, padx=5, pady=5,
-                                   stick=tk.W)
-
-    def json_update(self, json_response):
-        self.name.set(json_response['cn'][0])
-        self.email.set(json_response['mail'][0])
-        self.student_id.set(json_response['umanPersonID'][0])
-
-
-class SwipeUpGUI(tk.Tk, object):
-    def __init__(self, *args, **kwargs):
-        super(SwipeUpGUI, self).__init__(*args, **kwargs)
-        self.title('Swipe Up')
-        self.columnconfigure(0, weight=1)
-        self.rowconfigure(1, weight=1)
-
-        self.frame = _SwipeFrame(master=self)
-        self.frame.grid(row=1, column=0, padx=5, pady=5)
-
 class ServerClient(object):
     def __init__(self, host, port):
         self._host = host
@@ -307,17 +251,22 @@ def main(argv=None):
     client_thread.setDaemon(True)
     client_thread.start()
 
-    tk.NoDefaultRoot();
-    swipe_gui = SwipeUpGUI()
-    server_client = ServerClient(args.webservice_host,
-        args.webservice_port)
+
+    if args.gui:
+        from swipeup.interfaces.gui import SwipeUpGui
+        interface = SwipeUpGui()
+    else:
+        from swipeup.interfaces.cli import SwipeUpCli
+        interface = SwipeUpCli(card_thread)
+
+    server_client = ServerClient(args.webservice_host, args.webservice_port)
 
     response_thread = ThreadResponse(response_queue,
-        swipe_gui.frame.response_frame.json_update, server_client.send)
+        interface.json_update, server_client.send)
     response_thread.setDaemon(True)
     response_thread.start()
 
-    swipe_gui.mainloop()
+    interface.mainloop()
 
 if __name__ == '__main__':
     exit(main())
