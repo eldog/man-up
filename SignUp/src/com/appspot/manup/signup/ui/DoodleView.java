@@ -40,7 +40,7 @@ public final class DoodleView extends View
     public DoodleView(final Context context)
     {
         super(context);
-    } // SignatureView
+    } // constructor
 
     @Override
     protected void onSizeChanged(final int w, final int h, final int oldw, final int oldh)
@@ -125,4 +125,4 @@ public final class DoodleView extends View
         return mBitmap;
     } // getBitMap
 
-} // DoodleView
+} // class DoodleView

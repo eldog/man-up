@@ -7,7 +7,7 @@ import android.content.ContentValues;
 import com.appspot.manup.signup.data.DataManager.Member;
 import com.novell.ldap.LDAPEntry;
 
-public final class UomLdapEntry
+public final class MemberLdapEntry
 {
     private static final String LDAP_STUDENT_ID = "umanPersonID";
     private static final String LDAP_GIVEN_NAME = "givenName";
@@ -18,9 +18,9 @@ public final class UomLdapEntry
 
     private static final String VALUE_SEPERATER = ", ";
 
-    public static UomLdapEntry fromLdapEntry(final LDAPEntry ldapEntry)
+    public static MemberLdapEntry fromLdapEntry(final LDAPEntry ldapEntry)
     {
-        return new UomLdapEntry(
+        return new MemberLdapEntry(
                 getStringValue(ldapEntry, LDAP_STUDENT_ID),
                 getStringValue(ldapEntry, LDAP_GIVEN_NAME),
                 getStringValue(ldapEntry, LDAP_SURNAME),
@@ -48,7 +48,7 @@ public final class UomLdapEntry
     private final String mDepartment;
     private final String mStudentType;
 
-    private UomLdapEntry(final String studentId, final String givenName, final String surname,
+    private MemberLdapEntry(final String studentId, final String givenName, final String surname,
             final String email, final String department, final String studentType)
     {
         super();

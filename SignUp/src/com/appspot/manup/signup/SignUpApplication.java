@@ -5,86 +5,111 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.AsyncTask;
+import android.util.Log;
+
+import com.appspot.manup.signup.data.DataManager;
+import com.appspot.manup.signup.data.DataManager.MemberAddedListener;
+import com.appspot.manup.signup.data.DataManager.SignatureCapturedListener;
+import com.appspot.manup.signup.ldap.LdapService;
+import com.appspot.manup.signup.swipeupclient.SwipeUpClientService;
 
 public final class SignUpApplication extends Application
 {
-    Preferences mPrefs;
-    public static final String ACTION_LDAP = SignUpApplication.class.getName() + ".LDAP";
-    public static final String ACTION_SWIPE = SignUpApplication.class.getName() + ".SWIPE";
-    public static final String ACTION_STOP_LDAP =
-            SignUpApplication.class.getName() + ".STOPLDAP";
-    public static final String ACTION_STOP_SWIPE =
-            SignUpApplication.class.getName() + ".STOPSWIPE";
+    private static final String TAG = SignUpApplication.class.getSimpleName();
+
+    private final class SignUpInitialiser extends AsyncTask<Void, Void, Void>
+    {
+        @Override
+        protected Void doInBackground(final Void... noParams)
+        {
+            final Preferences prefs = new Preferences(SignUpApplication.this);
+            mDataManager = DataManager.getInstance(SignUpApplication.this);
+            mDataManager.registerSignatureCapturedListener(mSignatureCapturedListener);
+            prefs.registerOnSharedPreferenceChangeListener(mOnSharedPreferenceChangeListener);
+            configureLdapLook(prefs);
+            configureListenForSwipeUp(prefs);
+            return null;
+        } // doInBackground
+
+    } // CheckServicePrefs
+
+    private final OnSharedPreferenceChangeListener mOnSharedPreferenceChangeListener =
+            new OnSharedPreferenceChangeListener()
+    {
+        @Override
+        public void onSharedPreferenceChanged(final SharedPreferences sharedPreferences,
+                final String key)
+        {
+            final Preferences prefs = new Preferences(sharedPreferences);
+            if (prefs.isLdapLookEnabledKey(key))
+            {
+                configureLdapLook(prefs);
+            } // if
+            else if (prefs.isListenForSwipeUpKey(key))
+            {
+                configureListenForSwipeUp(prefs);
+            } // else if
+        } // onSharedPreferenceChanged
+    };
+
+    private final MemberAddedListener mMemberAddedListener = new MemberAddedListener()
+    {
+        @Override
+        public void onMemberAdded(final long id)
+        {
+            final Intent intent = new Intent(SignUpApplication.this, LdapService.class);
+            intent.putExtra(LdapService.EXTRA_ID, id);
+            startService(intent);
+        } // onMemberAdded
+    };
+
+    private final SignatureCapturedListener mSignatureCapturedListener = new SignatureCapturedListener()
+    {
+        @Override
+        public void onSignatureCaptured(final long id)
+        {
+            startService(new Intent(SignUpApplication.this, UploadService.class));
+        } // onSignatureCaptured
+    };
+
+    private volatile DataManager mDataManager = null;
 
     public SignUpApplication()
     {
         super();
-    } // AutographApplication
+    } // constructor
 
     @Override
     public void onCreate()
     {
         super.onCreate();
-        new CheckServicePrefs().execute();
-
+        new SignUpInitialiser().execute();
     } // onCreate
 
-    private final class CheckServicePrefs extends AsyncTask<Void, Void, Boolean[]>
+    private void configureLdapLook(final Preferences prefs)
     {
-        private static final int LDAP = 0, SWIPE = 1;
-
-        @Override
-        protected Boolean[] doInBackground(Void... noParams)
+        if (prefs.ldapLookupEnabled())
         {
-            mPrefs = new Preferences(SignUpApplication.this);
-            final boolean ldap = mPrefs.getLdapPref();
-            final boolean swipe = mPrefs.getSwipePref();
-
-            // This needs fixing
-            OnSharedPreferenceChangeListener listener =
-                    new OnSharedPreferenceChangeListener()
-                    {
-                        @Override
-                        public void onSharedPreferenceChanged(
-                                SharedPreferences sharedPreferences, String key)
-                        {
-                            if (key.equals(Preferences.KEY_LDAP) || key.equals(
-                                    Preferences.KEY_SWIPE))
-                            {
-                                new CheckServicePrefs().execute();
-                            }
-                        }
-                    };
-            mPrefs.registerOnPreferenceChangeListener(listener);
-
-            return new Boolean[]{ldap, swipe};
-        } // doInBackground
-
-        @Override
-        protected void onPostExecute(Boolean[] result)
+            mDataManager.registerMemberAddedListener(mMemberAddedListener);
+        } // if
+        else
         {
-            if (result[LDAP])
-            {
-                final Intent i  = new Intent(ACTION_LDAP);
-                LdapSwipeService.serviceAction(SignUpApplication.this, i);
-            }
-            else
-            {
-                final Intent i  = new Intent(ACTION_STOP_LDAP);
-                LdapSwipeService.serviceAction(SignUpApplication.this, i);
-            }
-            if (result[SWIPE])
-            {
-                final Intent i = new Intent(ACTION_SWIPE);
-                LdapSwipeService.serviceAction(SignUpApplication.this, i);
-            }
-            else
-            {
-                final Intent i = new Intent(ACTION_STOP_SWIPE);
-                LdapSwipeService.serviceAction(SignUpApplication.this, i);
-            }
+            mDataManager.unregisterMemberAddedListener(mMemberAddedListener);
+        } // else
+    } // configureLdapLook
 
-        } // onPostExecute
-    } // CheckServicePrefs
+    private void configureListenForSwipeUp(final Preferences prefs)
+    {
+        final Intent intent = new Intent(this, SwipeUpClientService.class);
+        if (prefs.listenForSwipeUp())
+        {
+            Log.d(TAG, "Turning it on.");
+            startService(intent);
+        } // if
+        else
+        {
+            stopService(intent);
+        } // else
+    } // configureListenForSwipeUp
 
-} // AutographApplication
+} // class SignUpApplication

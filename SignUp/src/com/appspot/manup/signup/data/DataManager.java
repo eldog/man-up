@@ -1,19 +1,18 @@
 package com.appspot.manup.signup.data;
 
 import java.io.File;
-
-import com.appspot.manup.signup.NetworkUtils;
-import com.appspot.manup.signup.UploadService;
-import com.appspot.manup.signup.ldap.UomLdapEntry;
+import java.util.HashSet;
+import java.util.Set;
 
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.provider.BaseColumns;
 import android.util.Log;
+
+import com.appspot.manup.signup.ldap.MemberLdapEntry;
 
 public final class DataManager
 {
@@ -21,26 +20,31 @@ public final class DataManager
 
     private static final String SIGNATURE_FILE_EXT = ".png";
 
-    public interface SignatureCapturedListener
-    {
-        void onSignatureCaptured(long id);
-    } // SignatureCapturedListener
-
     public static final class Member implements BaseColumns
     {
         private static final String TABLE_NAME = "member";
 
         public static final String STUDENT_ID = "student_id";
+
+        public static final String SIGNATURE_STATE = "signature_state";
+        public static final String SIGNATURE_STATE_UNCAPTURED = "uncaptured";
+        public static final String SIGNATURE_STATE_CAPTURED = "captured";
+        public static final String SIGNATURE_STATE_UPLOADED = "uploaded";
+
+        public static final String STUDENT_ID_VALIDATED = "student_id_validated";
+        public static final String STUDENT_ID_VALIDATED_NO = "no";
+        public static final String STUDENT_ID_VALIDATED_VALID = "valid";
+        public static final String STUDENT_ID_VALIDATED_INVALID = "invalid";
+
+        public static final String RETRIEVED_ADDITIONAL_INFO = "retrieved_additional_info";
+        public static final String RETRIEVED_ADDITIONAL_INFO_NO = "no";
+        public static final String RETRIEVED_ADDITIONAL_INFO_YES = "yes";
+
         public static final String GIVEN_NAME = "gavin_name";
         public static final String SURNAME = "surname";
         public static final String EMAIL = "email";
         public static final String STUDENT_TYPE = "student_type";
         public static final String DEPARTMENT = "department";
-        public static final String SIGNATURE_STATE = "signature_state";
-
-        public static final String SIGNATURE_STATE_UNCAPTURED = "uncaptured";
-        public static final String SIGNATURE_STATE_CAPTURED = "captured";
-        public static final String SIGNATURE_STATE_UPLOADED = "uploaded";
 
         private Member()
         {
@@ -53,7 +57,7 @@ public final class DataManager
     private static final class OpenHelper extends SQLiteOpenHelper
     {
         private static final String DATABASE_NAME = "members.db";
-        private static final int DATABASE_VERSION = 4;
+        private static final int DATABASE_VERSION = 5;
 
         public OpenHelper(final Context context)
         {
@@ -67,16 +71,20 @@ public final class DataManager
 
             final String createTableSql =
 
-            "CREATE TABLE " + Member.TABLE_NAME + "("                          +
-                Member._ID             + " INTEGER PRIMARY KEY AUTOINCREMENT," +
-                Member.STUDENT_ID      + " TEXT NOT NULL UNIQUE,"              +
-                Member.GIVEN_NAME      + " TEXT,"                              +
-                Member.SURNAME         + " TEXT,"                              +
-                Member.EMAIL           + " TEXT,"                              +
-                Member.STUDENT_TYPE    + " TEXT,"                              +
-                Member.DEPARTMENT      + " TEXT,"                              +
-                Member.SIGNATURE_STATE + " TEXT NOT NULL DEFAULT "
-                    + Member.SIGNATURE_STATE_UNCAPTURED                        +
+            "CREATE TABLE " + Member.TABLE_NAME + "("                                    +
+                Member._ID                       + " INTEGER PRIMARY KEY AUTOINCREMENT," +
+                Member.STUDENT_ID                + " TEXT NOT NULL UNIQUE,"              +
+                Member.SIGNATURE_STATE           + " TEXT NOT NULL "
+                    + "DEFAULT " + Member.SIGNATURE_STATE_UNCAPTURED + ","               +
+                Member.STUDENT_ID_VALIDATED      + " TEXT NOT NULL "
+                    + "DEFAULT " + Member.STUDENT_ID_VALIDATED_NO + ","                  +
+                Member.RETRIEVED_ADDITIONAL_INFO + " TEXT NOT NULL "
+                    + "DEFAULT " + Member.RETRIEVED_ADDITIONAL_INFO_NO + ","             +
+                Member.GIVEN_NAME                + " TEXT,"                              +
+                Member.SURNAME                   + " TEXT,"                              +
+                Member.EMAIL                     + " TEXT,"                              +
+                Member.STUDENT_TYPE              + " TEXT,"                              +
+                Member.DEPARTMENT                + " TEXT"                               +
             ")";
 
             //@formatter:on
@@ -108,28 +116,115 @@ public final class DataManager
     } // getInstance
 
     private final Context mContext;
-    private boolean mNotifyOnSignatureCaptured = false;
     private volatile SQLiteDatabase mDb = null;
 
     private DataManager(final Context context)
     {
         super();
         mContext = context.getApplicationContext();
-        mNotifyOnSignatureCaptured = NetworkUtils.isOnline(mContext);
         mDb = new OpenHelper(mContext).getWritableDatabase();
-    } // DataHelper
+    } // DataManager
+
+    /*
+     * Listener
+     */
+
+    public interface MemberAddedListener
+    {
+        void onMemberAdded(long id);
+    } // StudentAddedListener
+
+    private final Set<MemberAddedListener> mMemberAddedListener =
+            new HashSet<MemberAddedListener>();
+
+    public void registerMemberAddedListener(final MemberAddedListener listener)
+    {
+        synchronized (mMemberAddedListener)
+        {
+            mMemberAddedListener.add(listener);
+        } // synchronized
+    } // registerMemberAddedListener
+
+    public void unregisterMemberAddedListener(final MemberAddedListener listener)
+    {
+        synchronized (mMemberAddedListener)
+        {
+            mMemberAddedListener.remove(listener);
+        } // synchronized
+    } // unregisterMemberAddedListener
+
+    private void notifyMemberAddedListeners(final long id)
+    {
+        synchronized (mMemberAddedListener)
+        {
+            for (final MemberAddedListener listener : mMemberAddedListener)
+            {
+                listener.onMemberAdded(id);
+            } // for
+        } // synchronized
+    } // notifyStudentAddedListeners
+
+    public interface SignatureCapturedListener
+    {
+        void onSignatureCaptured(final long id);
+    } // SignatureCapturedListener
+
+    private final Set<SignatureCapturedListener> mSignatureCapturedListeners =
+            new HashSet<SignatureCapturedListener>();
+
+    public void registerSignatureCapturedListener(final SignatureCapturedListener listener)
+    {
+        synchronized (mSignatureCapturedListeners)
+        {
+            mSignatureCapturedListeners.add(listener);
+        } // synchronized
+    } // registerSignatureCapturedListener
+
+    public void unregisterSignatureCapturedListener(final SignatureCapturedListener listener)
+    {
+        synchronized (mSignatureCapturedListeners)
+        {
+            mSignatureCapturedListeners.remove(listener);
+        } // synchronized
+    } // unregisterSignatureCapturedListener
+
+    private void notifySignatureCapturedListeners(final long id)
+    {
+        synchronized (mSignatureCapturedListeners)
+        {
+            for (final SignatureCapturedListener listener : mSignatureCapturedListeners)
+            {
+                listener.onSignatureCaptured(id);
+            } // for
+        } // synchronized
+    } // notifySignatureCapturedListeners
+
+    /***/
 
     public long addMember(final String studentId)
     {
         final ContentValues memberValues = new ContentValues(1);
         memberValues.put(Member.STUDENT_ID, studentId);
-        return upsertMember(studentId, memberValues);
+        return insertMember(memberValues);
     } // addMember
 
-    public long addOrUpdateMember(final UomLdapEntry uomLdapEntry)
+    public long addAdditionalMemberInfo(final MemberLdapEntry additionalInfo)
     {
-        return upsertMember(uomLdapEntry.getStudentId(), uomLdapEntry.getContentValues());
-    } // addOrUpdateMember
+        final long id = getId(additionalInfo.getStudentId());
+        if (id == -1L)
+        {
+            return -1L;
+        } // if
+        final ContentValues additionalValues = additionalInfo.getContentValues();
+        /*
+         * As additional information was retrieved, the student ID must be
+         * valid.
+         */
+        additionalValues.put(Member.STUDENT_ID_VALIDATED, Member.STUDENT_ID_VALIDATED_VALID);
+        additionalValues.put(Member.RETRIEVED_ADDITIONAL_INFO,
+                Member.RETRIEVED_ADDITIONAL_INFO_YES);
+        return updateMember(id, additionalValues);
+    } // addAdditionalMemberInfo
 
     public String getStudentId(final long id)
     {
@@ -160,12 +255,12 @@ public final class DataManager
 
     public boolean setSignatureCaptured(final long id)
     {
-        final boolean stateChanged = updateSignatureState(id, Member.SIGNATURE_STATE_CAPTURED);
-        if (stateChanged && mNotifyOnSignatureCaptured)
+        final boolean updated = updateSignatureState(id, Member.SIGNATURE_STATE_CAPTURED);
+        if (updated)
         {
-            notifySignaturesCaptured();
+            notifySignatureCapturedListeners(id);
         } // if
-        return stateChanged;
+        return updated;
     } // setSignatureCaptured
 
     public boolean setSignatureUploaded(final long id)
@@ -185,41 +280,11 @@ public final class DataManager
         return updateMember(id, newStateValue) == 1;
     } // updateSignatureState
 
-    private void notifySignaturesCaptured()
+    private long getId(final String studentId)
     {
-        mContext.startService(new Intent(mContext, UploadService.class));
-    } // notifySignatureCaptured
-
-    private boolean deleteMember(final long id)
-    {
-        final File signature = getSignatureFile(id);
-        if (signature == null)
-        {
-            return false;
-        } // if
-
-        if (!signature.exists() || signature.delete())
-        {
-            final int membersDeleted = mDb.delete(
-                    Member.TABLE_NAME,
-                    Member._ID + "=?",
-                    new String[] { Long.toString(id) });
-            return membersDeleted == 1;
-        } // if
-
-        Log.w(TAG, "Failed to delete image file for " + id);
-
-        return false;
-    } // deleteMember
-
-    public void setNotifyOnSignatureCaptured(final boolean notifyOnSignatureCapture)
-    {
-        mNotifyOnSignatureCaptured = notifyOnSignatureCapture;
-        if (mNotifyOnSignatureCaptured)
-        {
-            notifySignaturesCaptured();
-        } // if
-    } // setNotifyOnSignatureCaptured
+        final String id = getMemberField(Member.STUDENT_ID, studentId, Member._ID);
+        return id != null ? Long.parseLong(id) : -1L;
+    } // getId
 
     private String getMemberField(final String uniqueColumn, final String uniqueValue,
             final String returnColumn)
@@ -250,58 +315,49 @@ public final class DataManager
         } // finally
     } // getMemberField
 
-    private long upsertMember(final String studentId, final ContentValues memberValues)
-    {
-        mDb.beginTransaction();
-        try
-        {
-            long id = getId(studentId);
-            if (id != -1)
-            {
-                if (updateMember(id, memberValues) != 1)
-                {
-                    return -1;
-                } // if
-            } // if
-            else
-            {
-                id = insertMember(memberValues);
-                if (id <= 0)
-                {
-                    return -1;
-                } // if
-            } // else
-            mDb.setTransactionSuccessful();
-            return id;
-        } // try
-        finally
-        {
-            mDb.endTransaction();
-        } // finally
-    } // upsertMember
-
-    private long getId(final String studentId)
-    {
-        final String id = getMemberField(Member.STUDENT_ID, studentId, Member._ID);
-        return id != null ? Long.parseLong(id) : -1L;
-    } // getId
-
-    private int updateMember(final long id, final ContentValues updateValues)
+    private int updateMember(final long id, final ContentValues updatedMemberValues)
     {
         return mDb.update(
                 Member.TABLE_NAME,
-                updateValues,
+                updatedMemberValues,
                 Member._ID + "=?",
                 new String[] { Long.toString(id) });
     } // updateMember
 
     private long insertMember(final ContentValues memberValues)
     {
-        return mDb.insert(
+        final long id = mDb.insert(
                 Member.TABLE_NAME,
-                Member.STUDENT_ID /* null column hack */,
+                Member.STUDENT_ID /* nullColumnHack */,
                 memberValues);
+        if (id != -1)
+        {
+            notifyMemberAddedListeners(id);
+        } // if
+        return id;
     } // insertMember
+
+    private boolean deleteMember(final long id)
+    {
+        final File signature = getSignatureFile(id);
+        if (signature == null)
+        {
+            return false;
+        } // if
+
+        if (!signature.exists() || signature.delete())
+        {
+            final int membersDeleted = mDb.delete(
+                    Member.TABLE_NAME,
+                    Member._ID + "=?",
+                    new String[] { Long.toString(id) });
+            return membersDeleted == 1;
+        } // if
+
+        Log.w(TAG, "Failed to delete image file for " + id);
+
+        return false;
+    } // deleteMember
 
     public File getSignatureFile(final long id)
     {
@@ -313,4 +369,4 @@ public final class DataManager
         return new File(externalDir, Long.toString(id) + SIGNATURE_FILE_EXT);
     } // getSignatureFile
 
-} // SignatureDatabase
+} // class DataManager

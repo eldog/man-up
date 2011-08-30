@@ -30,19 +30,14 @@
         <activity
             android:name=".CaptureSignatureActivity"
             android:screenOrientation="landscape"
-            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"/>
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen" />
 
         <activity android:name=".SignUpPreferenceActivity" />
 
         <service android:name=".UploadService" />
         <service android:name=".WriteSignatureService" />
-        <service android:name=".LdapSwipeService" />
-
-        <receiver android:name=".NetworkStateBroadcastReceiver">
-            <intent-filter>
-                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
-            </intent-filter>
-        </receiver>
+        <service android:name=".swipeupclient.SwipeUpClientService" />
+        <service android:name=".ldap.LdapService" />
 
     </application>
 

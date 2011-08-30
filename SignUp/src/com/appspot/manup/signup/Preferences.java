@@ -8,26 +8,52 @@ import android.text.TextUtils;
 
 public final class Preferences
 {
+    /*
+     * If you change the keys, check if res/xml/preferences.xml also needs
+     * changing.
+     */
+    private static final String KEY_LDAP_LOOKUP_ENABLED = "ldap_lookup_enabled";
+    private static final String KEY_LISTEN_FOR_SWIPEUP = "listen_for_swipeup";
     private static final String KEY_HOST = "host";
     private static final String KEY_PORT = "port";
     private static final String KEY_LDAP_HOST = "cs_host";
     private static final String KEY_USERNAME = "username";
     private static final String KEY_PASSWORD = "password";
-    public static final String KEY_LDAP = "ldap";
-    public static final String KEY_SWIPE = "swipe";
 
     private final SharedPreferences mPrefs;
 
     public Preferences(final Context context)
     {
-        super();
-        mPrefs = PreferenceManager.getDefaultSharedPreferences(context);
-    } // Preferences
+        this(PreferenceManager.getDefaultSharedPreferences(context));
+    } // constructor
 
-    public void registerOnPreferenceChangeListener(final OnSharedPreferenceChangeListener listener)
+    public Preferences(final SharedPreferences prefs)
+    {
+        super();
+        mPrefs = prefs;
+    } // constructor
+
+    public void registerOnSharedPreferenceChangeListener(
+            final OnSharedPreferenceChangeListener listener)
     {
         mPrefs.registerOnSharedPreferenceChangeListener(listener);
-    } // registerOnPreferenceChangedListener
+    } // registerOnSharedPreferenceChangeListener
+
+    public void unregisterOnSharedPreferenceChangeListener(
+            final OnSharedPreferenceChangeListener listener)
+    {
+        mPrefs.unregisterOnSharedPreferenceChangeListener(listener);
+    } // unregisterOnSharedPreferenceChangeListener
+
+    public boolean ldapLookupEnabled()
+    {
+        return mPrefs.getBoolean(KEY_LDAP_LOOKUP_ENABLED, false);
+    } // ldapLookupEnabled
+
+    public boolean listenForSwipeUp()
+    {
+        return mPrefs.getBoolean(KEY_LISTEN_FOR_SWIPEUP, false);
+    } // listenForSwipeUp
 
     public String getHost()
     {
@@ -50,17 +76,17 @@ public final class Preferences
         return hasPreference(KEY_PORT);
     } // hasPort
 
-    public String getCsHost()
+    public String getLdapHost()
     {
         return mPrefs.getString(KEY_LDAP_HOST, null);
     } // getCsHost
 
-    public boolean hasCsHost()
+    public boolean hasLdapHost()
     {
         return hasPreference(KEY_LDAP_HOST);
     } // hasCsHost
 
-    public String getUsername()
+    public String getLdapUsername()
     {
         return mPrefs.getString(KEY_USERNAME, null);
     } // getUsername
@@ -87,55 +113,17 @@ public final class Preferences
 
     public boolean preferencesSet()
     {
-        return hasHost() && hasPort() && hasCsHost() && hasUsername() && hasPassword();
+        return hasHost() && hasPort() && hasLdapHost() && hasUsername() && hasPassword();
     } // preferencesSet
 
-    public boolean getSwipePref()
+    public boolean isLdapLookEnabledKey(final String key)
     {
-        return mPrefs.getBoolean(KEY_SWIPE, false);
-    }
+        return KEY_LDAP_LOOKUP_ENABLED.equals(key);
+    } // isLdapLookEnabledKey
 
-    public boolean getLdapPref()
+    public boolean isListenForSwipeUpKey(final String key)
     {
-        return mPrefs.getBoolean(KEY_LDAP, false);
-    }
+        return KEY_LISTEN_FOR_SWIPEUP.equals(key);
+    } // isListenForSwipeUpKey
 
-    public Editor edit()
-    {
-        return new Editor();
-    } // edit
-
-    public class Editor
-    {
-        private final SharedPreferences.Editor mEdit;
-
-        private Editor()
-        {
-            super();
-            mEdit = mPrefs.edit();
-        } // Preferences.Editor
-
-        public Editor putLdap(final boolean value)
-        {
-            return putBoolean(KEY_LDAP, value);
-        } // putLdap
-
-        public Editor putSwipe(final boolean value)
-        {
-            return putBoolean(KEY_SWIPE, value);
-        } // putSwipe
-
-        private Editor putBoolean(final String preference, final boolean value)
-        {
-            mEdit.putBoolean(preference, value);
-            return this;
-        } // putBoolean
-
-        public boolean commit()
-        {
-            return mEdit.commit();
-        } // commit
-
-    } // Preferences.Editor
-
-} // Preferences
+} // class Preferences

@@ -20,9 +20,9 @@
         android:title="CS Password"
         android:inputType="textPassword" />
     <CheckBoxPreference
-        android:key="ldap"
-        android:title="Enable LDAP Service" />
+        android:key="ldap_lookup_enabled"
+        android:title="Perform LDAP lookup" />
     <CheckBoxPreference
-        android:key="swipe"
-        android:title="Enable Swipe Listener" />
+        android:key="listen_for_swipeup"
+        android:title="Listen for SwipeUp" />
 </PreferenceScreen>
