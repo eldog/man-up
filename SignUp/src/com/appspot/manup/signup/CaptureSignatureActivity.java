@@ -82,7 +82,7 @@ public final class CaptureSignatureActivity extends CheckPreferencesActivity
                 mSignatureView.clear();
                 return true;
             case MENU_SETTINGS:
-                startActivity(new Intent(this, AutographPreferenceActivity.class));
+                startActivity(new Intent(this, SignUpPreferenceActivity.class));
                 return true;
             default:
                 return super.onOptionsItemSelected(item);

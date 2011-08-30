@@ -172,7 +172,7 @@ public final class MembersListActivity extends CheckPreferencesActivity
         switch (item.getItemId())
         {
             case MENU_SETTINGS:
-                startActivity(new Intent(this, AutographPreferenceActivity.class));
+                startActivity(new Intent(this, SignUpPreferenceActivity.class));
                 return true;
             default:
                 return super.onOptionsItemSelected(item);

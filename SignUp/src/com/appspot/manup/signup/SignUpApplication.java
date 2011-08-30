@@ -6,17 +6,17 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.AsyncTask;
 
-public final class AutographApplication extends Application
+public final class SignUpApplication extends Application
 {
     Preferences mPrefs;
-    public static final String ACTION_LDAP = AutographApplication.class.getName() + ".LDAP";
-    public static final String ACTION_SWIPE = AutographApplication.class.getName() + ".SWIPE";
+    public static final String ACTION_LDAP = SignUpApplication.class.getName() + ".LDAP";
+    public static final String ACTION_SWIPE = SignUpApplication.class.getName() + ".SWIPE";
     public static final String ACTION_STOP_LDAP =
-            AutographApplication.class.getName() + ".STOPLDAP";
+            SignUpApplication.class.getName() + ".STOPLDAP";
     public static final String ACTION_STOP_SWIPE =
-            AutographApplication.class.getName() + ".STOPSWIPE";
+            SignUpApplication.class.getName() + ".STOPSWIPE";
 
-    public AutographApplication()
+    public SignUpApplication()
     {
         super();
     } // AutographApplication
@@ -36,7 +36,7 @@ public final class AutographApplication extends Application
         @Override
         protected Boolean[] doInBackground(Void... noParams)
         {
-            mPrefs = new Preferences(AutographApplication.this);
+            mPrefs = new Preferences(SignUpApplication.this);
             final boolean ldap = mPrefs.getLdapPref();
             final boolean swipe = mPrefs.getSwipePref();
 
@@ -66,22 +66,22 @@ public final class AutographApplication extends Application
             if (result[LDAP])
             {
                 final Intent i  = new Intent(ACTION_LDAP);
-                LdapSwipeService.serviceAction(AutographApplication.this, i);
+                LdapSwipeService.serviceAction(SignUpApplication.this, i);
             }
             else
             {
                 final Intent i  = new Intent(ACTION_STOP_LDAP);
-                LdapSwipeService.serviceAction(AutographApplication.this, i);
+                LdapSwipeService.serviceAction(SignUpApplication.this, i);
             }
             if (result[SWIPE])
             {
                 final Intent i = new Intent(ACTION_SWIPE);
-                LdapSwipeService.serviceAction(AutographApplication.this, i);
+                LdapSwipeService.serviceAction(SignUpApplication.this, i);
             }
             else
             {
                 final Intent i = new Intent(ACTION_STOP_SWIPE);
-                LdapSwipeService.serviceAction(AutographApplication.this, i);
+                LdapSwipeService.serviceAction(SignUpApplication.this, i);
             }
 
         } // onPostExecute

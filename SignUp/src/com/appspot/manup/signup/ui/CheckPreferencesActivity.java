@@ -1,6 +1,6 @@
 package com.appspot.manup.signup.ui;
 
-import com.appspot.manup.signup.AutographPreferenceActivity;
+import com.appspot.manup.signup.SignUpPreferenceActivity;
 import com.appspot.manup.signup.Preferences;
 
 import android.app.Activity;
@@ -30,7 +30,7 @@ public abstract class CheckPreferencesActivity extends Activity
             if (!prefsSet)
             {
                 startActivity(new Intent(CheckPreferencesActivity.this,
-                        AutographPreferenceActivity.class));
+                        SignUpPreferenceActivity.class));
             } // if
         } // onPostExecute
 

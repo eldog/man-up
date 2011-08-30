@@ -41,7 +41,7 @@ public class LdapSwipeService extends IntentService
                 PendingIntent.getActivity(
                         this,
                         0 /* requestCode */,
-                        new Intent(this, AutographPreferenceActivity.class),
+                        new Intent(this, SignUpPreferenceActivity.class),
                         0 /* flags */));
         notification.flags |= Notification.FLAG_FOREGROUND_SERVICE;
         notification.flags |= Notification.FLAG_ONGOING_EVENT;
@@ -68,24 +68,24 @@ public class LdapSwipeService extends IntentService
     protected void onHandleIntent(final Intent intent)
     {
         final String action = intent.getAction();
-        if (action.equals(AutographApplication.ACTION_LDAP))
+        if (action.equals(SignUpApplication.ACTION_LDAP))
         {
             mSshThread = new SshForward();
             mSshThread.start();
             Log.d(TAG, "ldap started");
         }
-        else if (action.equals(AutographApplication.ACTION_SWIPE))
+        else if (action.equals(SignUpApplication.ACTION_SWIPE))
         {
             mSwipeServerThread = new SwipeUpThread(DataManager.getInstance(this));
             mSwipeServerThread.start();
             Log.d(TAG, "swipe started");
         }
-        else if (action.equals(AutographApplication.ACTION_STOP_LDAP))
+        else if (action.equals(SignUpApplication.ACTION_STOP_LDAP))
         {
             stopLdap();
             Log.d(TAG, "ldap stopped");
         }
-        else if (action.equals(AutographApplication.ACTION_STOP_SWIPE))
+        else if (action.equals(SignUpApplication.ACTION_STOP_SWIPE))
         {
             stopSwipe();
             Log.d(TAG, "swipe stopped");
