@@ -5,7 +5,7 @@ SSH_PID='/tmp/ssh_pid'
 
 while (( "$#" )); do
     case "$1" in
-        -k) KILL="kill" ;;
+        -k) KILL='kill' ;;
 
         -m) shift
             CS_MACHINE="$1" ;;
@@ -16,14 +16,16 @@ while (( "$#" )); do
     shift
 done
 
-if [[ -z "${KILL}" ]]; then
-    echo "Starting SSH tunnels to $CS_USERNAME"
+if [[ -n "${CS_MACHINE}" && -n "${CS_USERNAME}" && -z "${KILL}" ]]; then
+    echo "Starting SSH tunnels to ${CS_USERNAME}"
     ssh -N -L 8000:edir.man.ac.uk:389 \
-        "$CS_USERNAME@$CS_MACHINE.cs.man.ac.uk" &
+        "${CS_USERNAME}@${CS_MACHINE}.cs.man.ac.uk" &
     echo $! > "${SSH_PID}"
-else
-    echo "Stopping SSH tunnels."
+elif [[ -z "${CS_MACHINE}" && -z "${CS_USERNAME}" && -n "${KILL}" ]]; then
+    echo 'Stopping SSH tunnels.'
     kill `cat "${SSH_PID}"`
     rm -f "${SSH_PID}"
+else
+    echo 'Usage: ssh_tunnels.ssh (-m <cs_machine> -u <cs_username> | -k)'
 fi
 

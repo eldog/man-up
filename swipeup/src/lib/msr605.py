@@ -100,8 +100,8 @@ class DummyConnections(object):
 
     def write(self, text):
         if text == b'\x1Br':
-            raw_input('Press enter to swipe')
-            self._buf +='\x1bs\x1b\x01\x1b+\x1b\x02;900073014961?\x1b\x03\x1b+?\x1c\x1b0'
+            raw_input('Press enter to swipe\n')
+            self._buf += '\x1bs\x1b\x01\x1b+\x1b\x02;900073014961?\x1b\x03\x1b+?\x1c\x1b0'
         return len(text)
 
 
