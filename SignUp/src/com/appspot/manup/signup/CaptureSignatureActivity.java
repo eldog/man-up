@@ -18,6 +18,7 @@ public final class CaptureSignatureActivity extends CheckPreferencesActivity
     public static final String ACTION_CAPTURE =
             CaptureSignatureActivity.class.getName() + ".CAPTURE";
     public static final String EXTRA_ID = CaptureSignatureActivity.class.getName() + ".ID";
+    public static final String EXTRA_NAME = CaptureSignatureActivity.class.getName() + ".NAME";
 
     private static final int MENU_SUBMIT = Menu.FIRST;
     private static final int MENU_CLEAR = Menu.FIRST + 1;
@@ -57,7 +58,12 @@ public final class CaptureSignatureActivity extends CheckPreferencesActivity
     {
         super.onCreate(savedInstanceState);
         setContentView(mSignatureView = new DoodleView(this));
-        mId = getIntent().getLongExtra(EXTRA_ID, mId);
+        // TODO: This value needs to be set
+        final Intent intent = getIntent();
+        // STUDENT NAME value used for testing
+        final String name = intent.getStringExtra(EXTRA_NAME);
+        mSignatureView.setName((name != null) ? name : "STUDENT NAME");
+        mId = intent.getLongExtra(EXTRA_ID, mId);
     } // onCreate
 
     @Override

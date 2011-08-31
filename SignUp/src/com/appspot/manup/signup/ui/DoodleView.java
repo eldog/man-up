@@ -2,12 +2,17 @@ package com.appspot.manup.signup.ui;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Bitmap.Config;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
+
+import com.appspot.manup.signup.R;
 
 public final class DoodleView extends View
 {
@@ -16,15 +21,21 @@ public final class DoodleView extends View
 
     private static final float TOUCH_TOLERANCE = 4;
 
+    private static final int TEXT_SIZE_DIP = 16;
+    private static final int TEXT_X_COORDINATE = 250;
+    private static final int TEXT_Y_COORDINATE = 380;
+
     private final Paint mBitmapPaint = new Paint(Paint.DITHER_FLAG);
     private final Canvas mCanvas = new Canvas();
     private final Path mPath = new Path();
     private final Paint mPaint;
 
+    private String mName = "";
     private boolean mClearCanvas = true;
     private float mX = -1.0f;
     private float mY = -1.0f;
     private Bitmap mBitmap = null;
+    private Bitmap mBackgroundBitmap = null;
 
     {
         mPaint = new Paint();
@@ -42,17 +53,38 @@ public final class DoodleView extends View
         super(context);
     } // constructor
 
+    public void setName(final String name)
+    {
+        mName = name;
+    } // setName
+
     @Override
     protected void onSizeChanged(final int w, final int h, final int oldw, final int oldh)
     {
         super.onSizeChanged(w, h, oldw, oldh);
-        mCanvas.setBitmap(mBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888));
+        mBackgroundBitmap = Bitmap.createBitmap(BitmapFactory.decodeResource(
+                getResources(), R.drawable.signature));
+        mCanvas.setBitmap(mBitmap = Bitmap.createBitmap(w, h, Config.ARGB_8888));
+        drawText();
     } // onSizeChanged
+
+    private void drawText()
+    {
+        mCanvas.setBitmap(mBackgroundBitmap);
+        final Paint textPaint = new Paint();
+        textPaint.setColor(Color.BLACK);
+        textPaint.setAntiAlias(true);
+        final float px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, TEXT_SIZE_DIP,
+                getResources().getDisplayMetrics());
+        textPaint.setTextSize(px);
+        mCanvas.drawText(mName, TEXT_X_COORDINATE, TEXT_Y_COORDINATE, textPaint);
+        mCanvas.setBitmap(mBitmap);
+    }
 
     @Override
     protected void onDraw(final Canvas canvas)
     {
-        canvas.drawColor(Color.WHITE);
+        canvas.drawBitmap(mBackgroundBitmap, 0, 0, mBitmapPaint);
         canvas.drawBitmap(mBitmap, 0 /* x */, 0 /* y */, mBitmapPaint);
         canvas.drawPath(mPath, mPaint);
     } // onDraw
@@ -116,7 +148,8 @@ public final class DoodleView extends View
 
     public void clear()
     {
-        mCanvas.drawColor(Color.WHITE);
+        mBitmap.eraseColor(Color.TRANSPARENT);
+        drawText();
         invalidate();
     } // clear
 

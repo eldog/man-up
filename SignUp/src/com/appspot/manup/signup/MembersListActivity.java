@@ -110,6 +110,8 @@ public final class MembersListActivity extends CheckPreferencesActivity
                 final Intent intent = new Intent(MembersListActivity.this,
                         CaptureSignatureActivity.class);
                 intent.setAction(CaptureSignatureActivity.ACTION_CAPTURE);
+                // Temporary use
+                intent.putExtra(CaptureSignatureActivity.EXTRA_NAME, "Test Name");
                 intent.putExtra(CaptureSignatureActivity.EXTRA_ID,
                         c.getLong(c.getColumnIndexOrThrow(Member._ID)));
                 startActivity(intent);
