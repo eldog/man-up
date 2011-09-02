@@ -76,19 +76,19 @@ def main(argv=None):
     level = logging.INFO if args.verbose else logging.ERROR
     logging.basicConfig(level=level)
 
-    mag_stripe_queue = Queue.Queue()
+    student_id_queue = Queue.Queue()
     signup_queue = Queue.Queue()
     manup_queue = Queue.Queue()
 
     uom_ldap_client = UomLdapClient(
         args.ldap_host,
         args.ldap_port,
-        mag_stripe_queue,
+        student_id_queue,
         manup_queue)
     uom_ldap_client.start()
 
     card_reader_client = CardReadClient(
-        mag_stripe_queue,
+        student_id_queue,
         signup_queue,
         dummy=args.dummy)
     card_reader_client.start()

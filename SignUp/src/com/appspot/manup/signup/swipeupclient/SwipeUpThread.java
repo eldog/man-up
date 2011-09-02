@@ -109,7 +109,7 @@ public class SwipeUpThread extends Thread
         try
         {
             socket = waitForIncomingConnection(serverSocket);
-            final String magStripeNumber = readMagStripeNumber(socket);
+            final String magStripeNumber = readStudentId(socket);
 
             if (magStripeNumber == null)
             {
@@ -166,7 +166,7 @@ public class SwipeUpThread extends Thread
         return socket;
     } // read
 
-    private String readMagStripeNumber(final Socket socket) throws IOException,
+    private String readStudentId(final Socket socket) throws IOException,
             InterruptedException
     {
         try
@@ -196,7 +196,7 @@ public class SwipeUpThread extends Thread
         {
             socket.shutdownInput();
         } // finally
-    } // readMagStripe
+    } // readStudentId
 
     private boolean insertMagStripeNumber(final String magStripeNumber)
     {
