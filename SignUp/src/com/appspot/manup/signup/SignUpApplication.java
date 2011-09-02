@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.AsyncTask;
-import android.util.Log;
 
 import com.appspot.manup.signup.data.DataManager;
 import com.appspot.manup.signup.data.DataManager.MemberAddedListener;
@@ -15,6 +14,7 @@ import com.appspot.manup.signup.swipeupclient.SwipeUpClientService;
 
 public final class SignUpApplication extends Application
 {
+    @SuppressWarnings("unused")
     private static final String TAG = SignUpApplication.class.getSimpleName();
 
     private final class SignUpInitialiser extends AsyncTask<Void, Void, Void>
@@ -57,9 +57,7 @@ public final class SignUpApplication extends Application
         @Override
         public void onMemberAdded(final long id)
         {
-            final Intent intent = new Intent(SignUpApplication.this, LdapService.class);
-            intent.putExtra(LdapService.EXTRA_ID, id);
-            startService(intent);
+            startService(new Intent(SignUpApplication.this, LdapService.class));
         } // onMemberAdded
     };
 
@@ -103,7 +101,6 @@ public final class SignUpApplication extends Application
         final Intent intent = new Intent(this, SwipeUpClientService.class);
         if (prefs.listenForSwipeUp())
         {
-            Log.d(TAG, "Turning it on.");
             startService(intent);
         } // if
         else

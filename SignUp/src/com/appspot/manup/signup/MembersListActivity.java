@@ -1,10 +1,5 @@
 package com.appspot.manup.signup;
 
-import com.appspot.manup.signup.data.CursorLoader;
-import com.appspot.manup.signup.data.DataManager;
-import com.appspot.manup.signup.data.DataManager.Member;
-import com.appspot.manup.signup.ui.CheckPreferencesActivity;
-
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.AsyncTask;
@@ -20,20 +15,27 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 
+import com.appspot.manup.signup.data.CursorLoader;
+import com.appspot.manup.signup.data.DataManager;
+import com.appspot.manup.signup.data.DataManager.AdditionInfoAddedListener;
+import com.appspot.manup.signup.data.DataManager.Member;
+import com.appspot.manup.signup.data.DataManager.MemberAddedListener;
+import com.appspot.manup.signup.ui.CheckPreferencesActivity;
+
 public final class MembersListActivity extends CheckPreferencesActivity
 {
     @SuppressWarnings("unused")
     private static final String TAG = MembersListActivity.class.getSimpleName();
 
     private static final int MENU_SETTINGS = Menu.FIRST;
+    private static final int MENU_FLUSH_MEMBERS = MENU_SETTINGS + 1;
 
     private final class MemeberAdder extends AsyncTask<String, Void, Long>
     {
         @Override
         protected Long doInBackground(final String... studentId)
         {
-            return DataManager.getInstance(
-                    MembersListActivity.this).addMember(studentId[0]);
+            return mDataManager.addMember(studentId[0]);
         } // doInBackground
 
         @Override
@@ -46,7 +48,7 @@ public final class MembersListActivity extends CheckPreferencesActivity
         protected void onPostExecute(final Long id)
         {
             onStop();
-            if (id != -1)
+            if (id != -1L)
             {
                 startUncapturedSignatureLoader();
             } // if
@@ -54,8 +56,8 @@ public final class MembersListActivity extends CheckPreferencesActivity
 
         private void onStop()
         {
-           mMemberAdder = null;
-           mAdd.setEnabled(true);
+            mMemberAdder = null;
+            mAdd.setEnabled(true);
         } // onStop
 
     } // MemeberAdder
@@ -65,8 +67,7 @@ public final class MembersListActivity extends CheckPreferencesActivity
         @Override
         protected Cursor loadCursor()
         {
-            return DataManager.getInstance(MembersListActivity.this)
-                    .getMembersWithUncapturedSignatures();
+            return mDataManager.getMembersWithUncapturedSignatures();
         } // loadCursor
 
         @Override
@@ -77,6 +78,24 @@ public final class MembersListActivity extends CheckPreferencesActivity
 
     } // UncapturedSignaturesLoader
 
+    private final MemberAddedListener mMemberAddedListener = new MemberAddedListener()
+    {
+        @Override
+        public void onMemberAdded(final long id)
+        {
+            startUncapturedSignatureLoader();
+        } // onMemberAdded
+    };
+
+    private final AdditionInfoAddedListener mAdditionInfoAddedListener = new AdditionInfoAddedListener()
+    {
+        @Override
+        public void onAdditionalInfoAdded(final long id)
+        {
+            startUncapturedSignatureLoader();
+        } // onAdditionalInfoAdded
+    };
+
     private Button mAdd = null;
     private EditText mStudentId = null;
 
@@ -84,19 +103,22 @@ public final class MembersListActivity extends CheckPreferencesActivity
     private MemeberAdder mMemberAdder = null;
     private UncapturedSignaturesLoader mUncapturedSignaturesLoader = null;
 
+    private volatile DataManager mDataManager = null;
+
     @Override
     protected void onCreate(final Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.autograph_list);
+        mDataManager = DataManager.getInstance(this);
         mAdd = (Button) findViewById(R.id.add_button);
         mStudentId = (EditText) findViewById(R.id.student_id);
         mUncapturedSignatureAdapter = new SimpleCursorAdapter(
                 this,
                 R.layout.autograph_list_item,
                 null,
-                new String[] { Member.STUDENT_ID },
-                new int[] { R.id.student_id });
+                new String[] { Member.STUDENT_ID, Member.GIVEN_NAME, Member.SURNAME },
+                new int[] { R.id.student_id, R.id.given_name, R.id.surname });
         final ListView uncapturedSignaturesList =
                 (ListView) findViewById(R.id.members_with_uncaptured_signatures_list);
         uncapturedSignaturesList.setAdapter(mUncapturedSignatureAdapter);
@@ -123,6 +145,8 @@ public final class MembersListActivity extends CheckPreferencesActivity
     protected void onResume()
     {
         super.onResume();
+        mDataManager.registerAdditionInfoAddedListener(mAdditionInfoAddedListener);
+        mDataManager.registerMemberAddedListener(mMemberAddedListener);
         startUncapturedSignatureLoader();
     } // onResume
 
@@ -139,6 +163,8 @@ public final class MembersListActivity extends CheckPreferencesActivity
     @Override
     protected void onPause()
     {
+        mDataManager.unregisterAdditionalInfoAddedListener(mAdditionInfoAddedListener);
+        mDataManager.unregisterMemberAddedListener(mMemberAddedListener);
         if (mUncapturedSignaturesLoader != null)
         {
             mUncapturedSignaturesLoader.cancel(true);
@@ -165,6 +191,7 @@ public final class MembersListActivity extends CheckPreferencesActivity
     {
         super.onCreateOptionsMenu(menu);
         menu.add(0, MENU_SETTINGS, 0, "Settings");
+        menu.add(0, MENU_FLUSH_MEMBERS, 0, "Delete members");
         return true;
     } // onCreateOptionsMenu
 
@@ -175,6 +202,10 @@ public final class MembersListActivity extends CheckPreferencesActivity
         {
             case MENU_SETTINGS:
                 startActivity(new Intent(this, SignUpPreferenceActivity.class));
+                return true;
+            case MENU_FLUSH_MEMBERS:
+                mDataManager.flushMembers();
+                startUncapturedSignatureLoader();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);

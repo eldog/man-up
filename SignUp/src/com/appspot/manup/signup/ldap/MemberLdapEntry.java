@@ -32,10 +32,13 @@ public final class MemberLdapEntry
     private static String getStringValue(final LDAPEntry ldapEntry, final String attribute)
     {
         final StringBuilder valueBuilder = new StringBuilder();
-        for (Enumeration<?> values = ldapEntry.getAttribute(attribute)
-                .getStringValues(); values.hasMoreElements();)
+        for (final Enumeration<?> values = ldapEntry.getAttribute(attribute).getStringValues();;)
         {
             valueBuilder.append(values.nextElement());
+            if (!values.hasMoreElements())
+            {
+                break;
+            } // if
             valueBuilder.append(VALUE_SEPERATER);
         } // for
         return valueBuilder.toString();

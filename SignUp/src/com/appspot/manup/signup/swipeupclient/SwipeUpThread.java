@@ -109,21 +109,21 @@ public class SwipeUpThread extends Thread
         try
         {
             socket = waitForIncomingConnection(serverSocket);
-            final String magStripeNumber = readStudentId(socket);
+            final String studentId = readStudentId(socket);
 
-            if (magStripeNumber == null)
+            if (studentId == null)
             {
-                Log.w(TAG, "Mag stripe number could not be read.");
+                Log.w(TAG, "Student ID could not be read.");
                 return;
             } // if
 
-            Log.d(TAG, "Mag stripe number: " + magStripeNumber);
+            Log.d(TAG, "Student ID: " + studentId);
 
-            final boolean inserted = insertMagStripeNumber(magStripeNumber);
+            final boolean inserted = insertMagStripeNumber(studentId);
 
             if (!inserted)
             {
-                Log.e(TAG, "Failed to insert mag stripe number into database.");
+                Log.e(TAG, "Failed to insert student ID into database.");
             } // if
 
             writeResponse(socket, inserted);
@@ -152,7 +152,7 @@ public class SwipeUpThread extends Thread
             catch (final InterruptedIOException e)
             {
                 // Timed out, loop.
-                Log.v(TAG, "Timed out while waiting for incoming connection.", e);
+                Log.v(TAG, "Timed out while waiting for incoming connection.");
             } // catch
 
             if (Thread.interrupted())
@@ -182,7 +182,7 @@ public class SwipeUpThread extends Thread
                 } // try
                 catch (final SocketTimeoutException e)
                 {
-                    Log.v(TAG, "Timed out before a line was read.", e);
+                    Log.v(TAG, "Timed out before a line was read.");
                 } // catch
 
                 if (Thread.interrupted())

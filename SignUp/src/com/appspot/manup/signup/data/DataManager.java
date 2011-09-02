@@ -1,8 +1,6 @@
 package com.appspot.manup.signup.data;
 
 import java.io.File;
-import java.util.HashSet;
-import java.util.Set;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -40,7 +38,7 @@ public final class DataManager
         public static final String RETRIEVED_ADDITIONAL_INFO_NO = "no";
         public static final String RETRIEVED_ADDITIONAL_INFO_YES = "yes";
 
-        public static final String GIVEN_NAME = "gavin_name";
+        public static final String GIVEN_NAME = "given_name";
         public static final String SURNAME = "surname";
         public static final String EMAIL = "email";
         public static final String STUDENT_TYPE = "student_type";
@@ -57,7 +55,7 @@ public final class DataManager
     private static final class OpenHelper extends SQLiteOpenHelper
     {
         private static final String DATABASE_NAME = "members.db";
-        private static final int DATABASE_VERSION = 5;
+        private static final int DATABASE_VERSION = 8;
 
         public OpenHelper(final Context context)
         {
@@ -74,17 +72,21 @@ public final class DataManager
             "CREATE TABLE " + Member.TABLE_NAME + "("                                    +
                 Member._ID                       + " INTEGER PRIMARY KEY AUTOINCREMENT," +
                 Member.STUDENT_ID                + " TEXT NOT NULL UNIQUE,"              +
-                Member.SIGNATURE_STATE           + " TEXT NOT NULL "
-                    + "DEFAULT " + Member.SIGNATURE_STATE_UNCAPTURED + ","               +
+
                 Member.STUDENT_ID_VALIDATED      + " TEXT NOT NULL "
                     + "DEFAULT " + Member.STUDENT_ID_VALIDATED_NO + ","                  +
+
                 Member.RETRIEVED_ADDITIONAL_INFO + " TEXT NOT NULL "
                     + "DEFAULT " + Member.RETRIEVED_ADDITIONAL_INFO_NO + ","             +
+
                 Member.GIVEN_NAME                + " TEXT,"                              +
                 Member.SURNAME                   + " TEXT,"                              +
                 Member.EMAIL                     + " TEXT,"                              +
                 Member.STUDENT_TYPE              + " TEXT,"                              +
-                Member.DEPARTMENT                + " TEXT"                               +
+                Member.DEPARTMENT                + " TEXT,"                              +
+
+                Member.SIGNATURE_STATE           + " TEXT NOT NULL "
+                + "DEFAULT " + Member.SIGNATURE_STATE_UNCAPTURED                         +
             ")";
 
             //@formatter:on
@@ -126,78 +128,86 @@ public final class DataManager
     } // DataManager
 
     /*
-     * Listener
+     * Member Added Notification
      */
 
-    public interface MemberAddedListener
-    {
-        void onMemberAdded(long id);
-    } // StudentAddedListener
+    private EventNotifier<Long> mMemberAddedNotifier = new EventNotifier<Long>();
 
-    private final Set<MemberAddedListener> mMemberAddedListener =
-            new HashSet<MemberAddedListener>();
+    public static abstract class MemberAddedListener implements EventListener<Long>
+    {
+        @Override
+        public final void onEvent(final Long id)
+        {
+            onMemberAdded(id);
+        } // onEvent
+        public abstract void onMemberAdded(long id);
+    } // class MemberAddedListener
 
     public void registerMemberAddedListener(final MemberAddedListener listener)
     {
-        synchronized (mMemberAddedListener)
-        {
-            mMemberAddedListener.add(listener);
-        } // synchronized
+        mMemberAddedNotifier.registerListener(listener);
     } // registerMemberAddedListener
 
     public void unregisterMemberAddedListener(final MemberAddedListener listener)
     {
-        synchronized (mMemberAddedListener)
-        {
-            mMemberAddedListener.remove(listener);
-        } // synchronized
+        mMemberAddedNotifier.unregisterListener(listener);
     } // unregisterMemberAddedListener
 
-    private void notifyMemberAddedListeners(final long id)
+    /***/
+
+    /*
+     * Signature Captured Notification
+     */
+
+    private EventNotifier<Long> mSignatureCatpuredNotifier = new EventNotifier<Long>();
+
+    public static abstract class SignatureCapturedListener implements EventListener<Long>
     {
-        synchronized (mMemberAddedListener)
+        @Override
+        public final void onEvent(final Long id)
         {
-            for (final MemberAddedListener listener : mMemberAddedListener)
-            {
-                listener.onMemberAdded(id);
-            } // for
-        } // synchronized
-    } // notifyStudentAddedListeners
+            onSignatureCaptured(id);
+        } // onEvent
 
-    public interface SignatureCapturedListener
-    {
-        void onSignatureCaptured(final long id);
+        public abstract void onSignatureCaptured(final long id);
     } // SignatureCapturedListener
-
-    private final Set<SignatureCapturedListener> mSignatureCapturedListeners =
-            new HashSet<SignatureCapturedListener>();
 
     public void registerSignatureCapturedListener(final SignatureCapturedListener listener)
     {
-        synchronized (mSignatureCapturedListeners)
-        {
-            mSignatureCapturedListeners.add(listener);
-        } // synchronized
+        mSignatureCatpuredNotifier.registerListener(listener);
     } // registerSignatureCapturedListener
 
     public void unregisterSignatureCapturedListener(final SignatureCapturedListener listener)
     {
-        synchronized (mSignatureCapturedListeners)
-        {
-            mSignatureCapturedListeners.remove(listener);
-        } // synchronized
+        mSignatureCatpuredNotifier.unregisterListener(listener);
     } // unregisterSignatureCapturedListener
 
-    private void notifySignatureCapturedListeners(final long id)
+    /***/
+
+    /*
+     * Additional Info Added Notification
+     */
+    private final EventNotifier<Long> mAdditionalInfoAddedNotifier = new EventNotifier<Long>();
+
+    public static abstract class AdditionInfoAddedListener implements EventListener<Long>
     {
-        synchronized (mSignatureCapturedListeners)
+        @Override
+        public final void onEvent(final Long id)
         {
-            for (final SignatureCapturedListener listener : mSignatureCapturedListeners)
-            {
-                listener.onSignatureCaptured(id);
-            } // for
-        } // synchronized
-    } // notifySignatureCapturedListeners
+            onAdditionalInfoAdded(id);
+        } //
+        public abstract void onAdditionalInfoAdded(final long id);
+    } // AdditionInfoAddedListener
+
+    public void registerAdditionInfoAddedListener(AdditionInfoAddedListener listener)
+    {
+        mAdditionalInfoAddedNotifier.registerListener(listener);
+    } // registerAdditionInfoAddedListener
+
+    public void unregisterAdditionalInfoAddedListener(AdditionInfoAddedListener listener)
+    {
+        mAdditionalInfoAddedNotifier.unregisterListener(listener);
+    } // unregisterAdditionalInfoAddedListener
 
     /***/
 
@@ -208,14 +218,19 @@ public final class DataManager
         return insertMember(memberValues);
     } // addMember
 
-    public long addAdditionalMemberInfo(final MemberLdapEntry additionalInfo)
+    public boolean addAdditionalMemberInfo(final MemberLdapEntry additionalInfo)
     {
+        Log.d(TAG, "Student ID: " + additionalInfo.getStudentId());
         final long id = getId(additionalInfo.getStudentId());
         if (id == -1L)
         {
-            return -1L;
+            Log.e(TAG, "Failed to get ID");
+            return false;
         } // if
+
         final ContentValues additionalValues = additionalInfo.getContentValues();
+        Log.v(TAG, "Adding additional info for " + additionalInfo.getStudentId() + ": "
+                + additionalValues.toString());
         /*
          * As additional information was retrieved, the student ID must be
          * valid.
@@ -223,7 +238,12 @@ public final class DataManager
         additionalValues.put(Member.STUDENT_ID_VALIDATED, Member.STUDENT_ID_VALIDATED_VALID);
         additionalValues.put(Member.RETRIEVED_ADDITIONAL_INFO,
                 Member.RETRIEVED_ADDITIONAL_INFO_YES);
-        return updateMember(id, additionalValues);
+        final boolean addedAdditionalInfo = updateMember(id, additionalValues);
+        if (addedAdditionalInfo)
+        {
+            mAdditionalInfoAddedNotifier.notifyListeners(id);
+        } // if
+        return addedAdditionalInfo;
     } // addAdditionalMemberInfo
 
     public String getStudentId(final long id)
@@ -253,12 +273,24 @@ public final class DataManager
                 null /* orderBy */);
     } // getMembersWithSignaturesInState
 
+    public Cursor getMembersWithoutAdditionalInfo()
+    {
+        return mDb.query(
+                Member.TABLE_NAME,
+                null /* columns */,
+                Member.RETRIEVED_ADDITIONAL_INFO + "=?",
+                new String[] { Member.RETRIEVED_ADDITIONAL_INFO_NO },
+                null /* groupBy */,
+                null /* having */,
+                null /* orderBy */);
+    } // getMembersWithoutAdditionalInfo
+
     public boolean setSignatureCaptured(final long id)
     {
         final boolean updated = updateSignatureState(id, Member.SIGNATURE_STATE_CAPTURED);
         if (updated)
         {
-            notifySignatureCapturedListeners(id);
+            mSignatureCatpuredNotifier.notifyListeners(id);
         } // if
         return updated;
     } // setSignatureCaptured
@@ -277,8 +309,20 @@ public final class DataManager
     {
         final ContentValues newStateValue = new ContentValues(1);
         newStateValue.put(Member.SIGNATURE_STATE, newState);
-        return updateMember(id, newStateValue) == 1;
+        return updateMember(id, newStateValue);
     } // updateSignatureState
+
+    public boolean setStudentIdInvalid(final long id)
+    {
+        final ContentValues newStudentIdValidValue = new ContentValues(1);
+        newStudentIdValidValue.put(Member.STUDENT_ID_VALIDATED, Member.STUDENT_ID_VALIDATED_VALID);
+        return updateMember(id, newStudentIdValidValue);
+    } // setStudentIdInvalid
+
+    public int flushMembers()
+    {
+        return mDb.delete(Member.TABLE_NAME, null /* whereClause */, null /* whereArgs */);
+    } // flushMembers
 
     private long getId(final String studentId)
     {
@@ -315,13 +359,13 @@ public final class DataManager
         } // finally
     } // getMemberField
 
-    private int updateMember(final long id, final ContentValues updatedMemberValues)
+    private boolean updateMember(final long id, final ContentValues updatedMemberValues)
     {
         return mDb.update(
                 Member.TABLE_NAME,
                 updatedMemberValues,
                 Member._ID + "=?",
-                new String[] { Long.toString(id) });
+                new String[] { Long.toString(id) }) == 1;
     } // updateMember
 
     private long insertMember(final ContentValues memberValues)
@@ -330,9 +374,9 @@ public final class DataManager
                 Member.TABLE_NAME,
                 Member.STUDENT_ID /* nullColumnHack */,
                 memberValues);
-        if (id != -1)
+        if (id != -1L)
         {
-            notifyMemberAddedListeners(id);
+            mMemberAddedNotifier.notifyListeners(id);
         } // if
         return id;
     } // insertMember

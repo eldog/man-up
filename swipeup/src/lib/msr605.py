@@ -100,8 +100,10 @@ class DummyConnections(object):
 
     def write(self, text):
         if text == b'\x1Br':
-            raw_input('Press enter to swipe\n')
-            self._buf += '\x1bs\x1b\x01\x1b+\x1b\x02;900073014961?\x1b\x03\x1b+?\x1c\x1b0'
+            studentId = raw_input('Enter mag stripe, leave blank for default: ')
+            if not studentId:
+                studentId = '900073014961'
+            self._buf += '\x1bs\x1b\x01\x1b+\x1b\x02;%s?\x1b\x03\x1b+?\x1c\x1b0' % studentId
         return len(text)
 
 
