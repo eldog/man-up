@@ -29,7 +29,7 @@ public final class CaptureSignatureActivity extends CheckPreferencesActivity
         @Override
         public void onWriteComplete(Intent intent)
         {
-            final long id = intent.getLongExtra(WriteSignatureService.EXTRA_ID, -1);
+            final long id = intent.getLongExtra(WriteSignatureService.EXTRA_ID, -1L);
             final boolean successful =
                     intent.getBooleanExtra(WriteSignatureService.EXTRA_SUCCESSFUL, false);
             final String s = id + ": " + ((successful) ? "Successfully written" : "Write failed");
@@ -57,12 +57,11 @@ public final class CaptureSignatureActivity extends CheckPreferencesActivity
     public void onCreate(final Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        setContentView(mSignatureView = new DoodleView(this));
+        setContentView(R.layout.capture_signature);
+        mSignatureView = (DoodleView) findViewById(R.id.signature);
         // TODO: This value needs to be set
         final Intent intent = getIntent();
         // STUDENT NAME value used for testing
-        final String name = intent.getStringExtra(EXTRA_NAME);
-        mSignatureView.setName((name != null) ? name : "STUDENT NAME");
         mId = intent.getLongExtra(EXTRA_ID, mId);
     } // onCreate
 
