@@ -63,7 +63,7 @@ public final class LdapService extends Service implements OnChangeListener
             {
                 case CMD_START_PORT_FORWARDING:
                     mPortforwardingStarted = startPortForwarding();
-                    break;
+                    /* fall through */
                 case CMD_RETRIEVE_EXTRA_INFO:
                     if (mPortforwardingStarted)
                     {
