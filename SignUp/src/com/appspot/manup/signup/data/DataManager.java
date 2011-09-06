@@ -351,11 +351,11 @@ public final class DataManager
     {
         return getDb().query(Member.TABLE_NAME,
                 null /* all columns */,
-                null /*selection*/,
-                null /*selectionArgs*/,
-                null /*groupBy*/,
-                null /*having*/,
-                null /*orderBy*/);
+                null /* selection */,
+                null /* selectionArgs */,
+                null /* groupBy */,
+                null /* having */,
+                null /* orderBy */);
     } // getMembers()
 
     public Cursor getMembersWithSignatures()
@@ -390,7 +390,10 @@ public final class DataManager
         final boolean stateChanged = updateSignatureState(id, Member.SIGNATURE_STATE_UPLOADED);
         if (stateChanged)
         {
-            deleteMember(id);
+            if (deleteMemberSignature(id))
+            {
+                notifyListeners();
+            } // if
         } // if
         return stateChanged;
     } // setSignatureUploaded(long)
@@ -472,7 +475,7 @@ public final class DataManager
         return updated;
     } // updateMember
 
-    private boolean deleteMember(final long id)
+    private boolean deleteMemberSignature(final long id)
     {
         final File signature = getSignatureFile(id);
         if (signature == null)
@@ -480,7 +483,12 @@ public final class DataManager
             return false;
         } // if
 
-        if (!signature.exists() || signature.delete())
+        return (!signature.exists() || signature.delete());
+    } // deleteMemberSignature
+
+    private boolean deleteMember(final long id)
+    {
+        if (deleteMemberSignature(id))
         {
             final int membersDeleted = getDb().delete(
                     Member.TABLE_NAME,
