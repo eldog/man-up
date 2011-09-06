@@ -30,12 +30,20 @@
         android:textSize="18sp"
         android:layout_below="@+id/person_id"
         android:layout_toRightOf="@+id/given_name" />
-    <TextView
+    <ImageView
         android:id="@+id/extra_info_state"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:paddingTop="2dip"
         android:paddingBottom="3dip"
-        android:textSize="18sp"
+        android:layout_centerVertical="true"
+        android:layout_toLeftOf="@+id/signature_state" />
+    <ImageView
+        android:id="@+id/signature_state"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingTop="2dip"
+        android:paddingBottom="3dip"
+        android:layout_centerVertical="true"
         android:layout_alignParentRight="true" />
 </RelativeLayout>

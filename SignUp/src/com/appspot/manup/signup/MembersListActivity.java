@@ -13,7 +13,6 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.SimpleCursorAdapter;
 
 import com.appspot.manup.signup.data.DataManager;
 import com.appspot.manup.signup.data.DataManager.Member;
@@ -103,7 +102,7 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
     private Button mAdd = null;
     private EditText mPersonId = null;
     private DataLoader mLoader = null;
-    private SimpleCursorAdapter mUncapturedSignatureAdapter = null;
+    private MembersResourceCursorAdapter mUncapturedSignatureAdapter = null;
 
     private volatile DataManager mDataManager = null;
     //private volatile long mResumedAtUnixTime = Long.MIN_VALUE;
@@ -116,12 +115,12 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
         mDataManager = DataManager.getDataManager(this);
         mAdd = (Button) findViewById(R.id.add_button);
         mPersonId = (EditText) findViewById(R.id.person_id);
-        mUncapturedSignatureAdapter = new SimpleCursorAdapter(
+        mUncapturedSignatureAdapter = new MembersResourceCursorAdapter(
                 this,
                 R.layout.member_list_item,
                 null /* cursor */,
                 new String[] { Member.PERSON_ID, Member.GIVEN_NAME, Member.SURNAME,
-                        Member.EXTRA_INFO_STATE },
+                        Member.EXTRA_INFO_STATE, Member.SIGNATURE_STATE },
                 new int[] { R.id.person_id, R.id.given_name, R.id.surname, R.id.extra_info_state });
         final ListView uncapturedSignaturesList =
                 (ListView) findViewById(R.id.members_with_uncaptured_signatures_list);
