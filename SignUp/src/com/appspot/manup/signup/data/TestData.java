@@ -47,75 +47,61 @@ final class TestData
     private static final ContentValues sMember33;
     private static final ContentValues sMember34;
     private static final ContentValues sMember35;
-    private static final ContentValues sMember36;
-    private static final ContentValues sMember37;
-    private static final ContentValues sMember38;
-    private static final ContentValues sMember39;
-    private static final ContentValues sMember40;
-    private static final ContentValues sMember41;
-    private static final ContentValues sMember42;
-    private static final ContentValues sMember43;
-    private static final ContentValues sMember44;
-    private static final ContentValues sMember45;
-    private static final ContentValues sMember46;
-    private static final ContentValues sMember47;
-    private static final ContentValues sMember48;
-    private static final ContentValues sMember49;
 
     private static final ContentValues[] sMembers;
 
     static
     {
         sMember0 = new ContentValues();
-        sMember0.put(Member.PERSON_ID, "1251653");
+        sMember0.put(Member.PERSON_ID, "8168056");
 
         sMember1 = new ContentValues();
-        sMember1.put(Member.PERSON_ID, "7114407");
+        sMember1.put(Member.PERSON_ID, "4893606");
         sMember1.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, "1315520076");
 
         sMember2 = new ContentValues();
-        sMember2.put(Member.PERSON_ID, "7432208");
+        sMember2.put(Member.PERSON_ID, "8312158");
         sMember2.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_INVALID");
 
         sMember3 = new ContentValues();
-        sMember3.put(Member.PERSON_ID, "7705189");
+        sMember3.put(Member.PERSON_ID, "3116878");
         sMember3.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, "1315520077");
         sMember3.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_INVALID");
 
         sMember4 = new ContentValues();
-        sMember4.put(Member.PERSON_ID, "1565480");
+        sMember4.put(Member.PERSON_ID, "4646665");
         sMember4.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_VALID");
 
         sMember5 = new ContentValues();
-        sMember5.put(Member.PERSON_ID, "7467304");
+        sMember5.put(Member.PERSON_ID, "4283249");
         sMember5.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_VALID");
         sMember5.put(Member.EXTRA_INFO_STATE, "EXTRA_INFO_STATE_RETRIEVING");
 
         sMember6 = new ContentValues();
-        sMember6.put(Member.PERSON_ID, "1186112");
+        sMember6.put(Member.PERSON_ID, "5543548");
         sMember6.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_VALID");
         sMember6.put(Member.EXTRA_INFO_STATE, "EXTRA_INFO_STATE_RETRIEVED");
         sMember6.put(Member.GIVEN_NAME, "A");
         sMember6.put(Member.SURNAME, "B");
 
         sMember7 = new ContentValues();
-        sMember7.put(Member.PERSON_ID, "3111341");
+        sMember7.put(Member.PERSON_ID, "1275605");
         sMember7.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_VALID");
         sMember7.put(Member.EXTRA_INFO_STATE, "EXTRA_INFO_STATE_ERROR");
 
         sMember8 = new ContentValues();
-        sMember8.put(Member.PERSON_ID, "3182520");
+        sMember8.put(Member.PERSON_ID, "2836479");
         sMember8.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, "1315520078");
         sMember8.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_VALID");
 
         sMember9 = new ContentValues();
-        sMember9.put(Member.PERSON_ID, "8067501");
+        sMember9.put(Member.PERSON_ID, "7235524");
         sMember9.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, "1315520079");
         sMember9.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_VALID");
         sMember9.put(Member.EXTRA_INFO_STATE, "EXTRA_INFO_STATE_RETRIEVING");
 
         sMember10 = new ContentValues();
-        sMember10.put(Member.PERSON_ID, "9667626");
+        sMember10.put(Member.PERSON_ID, "7701797");
         sMember10.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, "1315520080");
         sMember10.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_VALID");
         sMember10.put(Member.EXTRA_INFO_STATE, "EXTRA_INFO_STATE_RETRIEVED");
@@ -123,136 +109,158 @@ final class TestData
         sMember10.put(Member.SURNAME, "C");
 
         sMember11 = new ContentValues();
-        sMember11.put(Member.PERSON_ID, "5654930");
+        sMember11.put(Member.PERSON_ID, "3438263");
         sMember11.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, "1315520081");
         sMember11.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_VALID");
         sMember11.put(Member.EXTRA_INFO_STATE, "EXTRA_INFO_STATE_ERROR");
 
         sMember12 = new ContentValues();
-        sMember12.put(Member.PERSON_ID, "8285035");
+        sMember12.put(Member.PERSON_ID, "4742294");
+        sMember12.put(Member.SIGNATURE_STATE, "SIGNATURE_STATE_CAPTURED");
 
         sMember13 = new ContentValues();
-        sMember13.put(Member.PERSON_ID, "1983885");
+        sMember13.put(Member.PERSON_ID, "9940587");
+        sMember13.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, "1315520082");
+        sMember13.put(Member.SIGNATURE_STATE, "SIGNATURE_STATE_CAPTURED");
 
         sMember14 = new ContentValues();
-        sMember14.put(Member.PERSON_ID, "2903217");
+        sMember14.put(Member.PERSON_ID, "4214642");
+        sMember14.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_INVALID");
+        sMember14.put(Member.SIGNATURE_STATE, "SIGNATURE_STATE_CAPTURED");
 
         sMember15 = new ContentValues();
-        sMember15.put(Member.PERSON_ID, "1241806");
+        sMember15.put(Member.PERSON_ID, "5842526");
+        sMember15.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, "1315520083");
+        sMember15.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_INVALID");
+        sMember15.put(Member.SIGNATURE_STATE, "SIGNATURE_STATE_CAPTURED");
 
         sMember16 = new ContentValues();
-        sMember16.put(Member.PERSON_ID, "7958893");
+        sMember16.put(Member.PERSON_ID, "5215440");
+        sMember16.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_VALID");
+        sMember16.put(Member.SIGNATURE_STATE, "SIGNATURE_STATE_CAPTURED");
 
         sMember17 = new ContentValues();
-        sMember17.put(Member.PERSON_ID, "2715489");
+        sMember17.put(Member.PERSON_ID, "8529757");
+        sMember17.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_VALID");
+        sMember17.put(Member.EXTRA_INFO_STATE, "EXTRA_INFO_STATE_RETRIEVING");
+        sMember17.put(Member.SIGNATURE_STATE, "SIGNATURE_STATE_CAPTURED");
 
         sMember18 = new ContentValues();
-        sMember18.put(Member.PERSON_ID, "1471562");
+        sMember18.put(Member.PERSON_ID, "4406004");
+        sMember18.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_VALID");
+        sMember18.put(Member.EXTRA_INFO_STATE, "EXTRA_INFO_STATE_RETRIEVED");
+        sMember18.put(Member.GIVEN_NAME, "C");
+        sMember18.put(Member.SURNAME, "D");
+        sMember18.put(Member.SIGNATURE_STATE, "SIGNATURE_STATE_CAPTURED");
 
         sMember19 = new ContentValues();
-        sMember19.put(Member.PERSON_ID, "8211282");
+        sMember19.put(Member.PERSON_ID, "3569967");
+        sMember19.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_VALID");
+        sMember19.put(Member.EXTRA_INFO_STATE, "EXTRA_INFO_STATE_ERROR");
+        sMember19.put(Member.SIGNATURE_STATE, "SIGNATURE_STATE_CAPTURED");
 
         sMember20 = new ContentValues();
-        sMember20.put(Member.PERSON_ID, "4687728");
+        sMember20.put(Member.PERSON_ID, "3541869");
+        sMember20.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, "1315520084");
+        sMember20.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_VALID");
+        sMember20.put(Member.SIGNATURE_STATE, "SIGNATURE_STATE_CAPTURED");
 
         sMember21 = new ContentValues();
-        sMember21.put(Member.PERSON_ID, "9106333");
+        sMember21.put(Member.PERSON_ID, "1506514");
+        sMember21.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, "1315520085");
+        sMember21.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_VALID");
+        sMember21.put(Member.EXTRA_INFO_STATE, "EXTRA_INFO_STATE_RETRIEVING");
+        sMember21.put(Member.SIGNATURE_STATE, "SIGNATURE_STATE_CAPTURED");
 
         sMember22 = new ContentValues();
-        sMember22.put(Member.PERSON_ID, "1654818");
+        sMember22.put(Member.PERSON_ID, "5941668");
+        sMember22.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, "1315520086");
+        sMember22.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_VALID");
+        sMember22.put(Member.EXTRA_INFO_STATE, "EXTRA_INFO_STATE_RETRIEVED");
+        sMember22.put(Member.GIVEN_NAME, "D");
+        sMember22.put(Member.SURNAME, "E");
+        sMember22.put(Member.SIGNATURE_STATE, "SIGNATURE_STATE_CAPTURED");
 
         sMember23 = new ContentValues();
-        sMember23.put(Member.PERSON_ID, "5418022");
+        sMember23.put(Member.PERSON_ID, "4811108");
+        sMember23.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, "1315520087");
+        sMember23.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_VALID");
+        sMember23.put(Member.EXTRA_INFO_STATE, "EXTRA_INFO_STATE_ERROR");
+        sMember23.put(Member.SIGNATURE_STATE, "SIGNATURE_STATE_CAPTURED");
 
         sMember24 = new ContentValues();
-        sMember24.put(Member.PERSON_ID, "2247532");
+        sMember24.put(Member.PERSON_ID, "9514781");
+        sMember24.put(Member.SIGNATURE_STATE, "SIGNATURE_STATE_UPLOADED");
 
         sMember25 = new ContentValues();
-        sMember25.put(Member.PERSON_ID, "5175942");
+        sMember25.put(Member.PERSON_ID, "5608521");
+        sMember25.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, "1315520088");
+        sMember25.put(Member.SIGNATURE_STATE, "SIGNATURE_STATE_UPLOADED");
 
         sMember26 = new ContentValues();
-        sMember26.put(Member.PERSON_ID, "9323315");
+        sMember26.put(Member.PERSON_ID, "9760034");
+        sMember26.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_INVALID");
+        sMember26.put(Member.SIGNATURE_STATE, "SIGNATURE_STATE_UPLOADED");
 
         sMember27 = new ContentValues();
-        sMember27.put(Member.PERSON_ID, "9375179");
-        sMember27.put(Member.SIGNATURE_STATE, "SIGNATURE_STATE_CAPTURED");
+        sMember27.put(Member.PERSON_ID, "4738671");
+        sMember27.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, "1315520089");
+        sMember27.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_INVALID");
+        sMember27.put(Member.SIGNATURE_STATE, "SIGNATURE_STATE_UPLOADED");
 
         sMember28 = new ContentValues();
-        sMember28.put(Member.PERSON_ID, "1537265");
-        sMember28.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, "1315520082");
-        sMember28.put(Member.SIGNATURE_STATE, "SIGNATURE_STATE_CAPTURED");
+        sMember28.put(Member.PERSON_ID, "3272986");
+        sMember28.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_VALID");
+        sMember28.put(Member.SIGNATURE_STATE, "SIGNATURE_STATE_UPLOADED");
 
         sMember29 = new ContentValues();
-        sMember29.put(Member.PERSON_ID, "2506188");
-        sMember29.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_INVALID");
-        sMember29.put(Member.SIGNATURE_STATE, "SIGNATURE_STATE_CAPTURED");
+        sMember29.put(Member.PERSON_ID, "9587452");
+        sMember29.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_VALID");
+        sMember29.put(Member.EXTRA_INFO_STATE, "EXTRA_INFO_STATE_RETRIEVING");
+        sMember29.put(Member.SIGNATURE_STATE, "SIGNATURE_STATE_UPLOADED");
 
         sMember30 = new ContentValues();
-        sMember30.put(Member.PERSON_ID, "9155487");
-        sMember30.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, "1315520083");
-        sMember30.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_INVALID");
-        sMember30.put(Member.SIGNATURE_STATE, "SIGNATURE_STATE_CAPTURED");
+        sMember30.put(Member.PERSON_ID, "3006740");
+        sMember30.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_VALID");
+        sMember30.put(Member.EXTRA_INFO_STATE, "EXTRA_INFO_STATE_RETRIEVED");
+        sMember30.put(Member.GIVEN_NAME, "E");
+        sMember30.put(Member.SURNAME, "F");
+        sMember30.put(Member.SIGNATURE_STATE, "SIGNATURE_STATE_UPLOADED");
 
         sMember31 = new ContentValues();
-        sMember31.put(Member.PERSON_ID, "1156772");
+        sMember31.put(Member.PERSON_ID, "5919093");
+        sMember31.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_VALID");
+        sMember31.put(Member.EXTRA_INFO_STATE, "EXTRA_INFO_STATE_ERROR");
+        sMember31.put(Member.SIGNATURE_STATE, "SIGNATURE_STATE_UPLOADED");
 
         sMember32 = new ContentValues();
-        sMember32.put(Member.PERSON_ID, "2543068");
+        sMember32.put(Member.PERSON_ID, "8362147");
+        sMember32.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, "1315520090");
+        sMember32.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_VALID");
+        sMember32.put(Member.SIGNATURE_STATE, "SIGNATURE_STATE_UPLOADED");
 
         sMember33 = new ContentValues();
-        sMember33.put(Member.PERSON_ID, "1606997");
+        sMember33.put(Member.PERSON_ID, "2597171");
+        sMember33.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, "1315520091");
+        sMember33.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_VALID");
+        sMember33.put(Member.EXTRA_INFO_STATE, "EXTRA_INFO_STATE_RETRIEVING");
+        sMember33.put(Member.SIGNATURE_STATE, "SIGNATURE_STATE_UPLOADED");
 
         sMember34 = new ContentValues();
-        sMember34.put(Member.PERSON_ID, "6997723");
+        sMember34.put(Member.PERSON_ID, "7388261");
+        sMember34.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, "1415321077");
+        sMember34.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_VALID");
+        sMember34.put(Member.EXTRA_INFO_STATE, "EXTRA_INFO_STATE_RETRIEVED");
+        sMember34.put(Member.GIVEN_NAME, "Tariq");
+        sMember34.put(Member.SURNAME, "Patel");
+        sMember34.put(Member.SIGNATURE_STATE, "SIGNATURE_STATE_UPLOADED");
 
         sMember35 = new ContentValues();
-        sMember35.put(Member.PERSON_ID, "9059011");
-
-        sMember36 = new ContentValues();
-        sMember36.put(Member.PERSON_ID, "2636314");
-
-        sMember37 = new ContentValues();
-        sMember37.put(Member.PERSON_ID, "3736089");
-
-        sMember38 = new ContentValues();
-        sMember38.put(Member.PERSON_ID, "7341371");
-
-        sMember39 = new ContentValues();
-        sMember39.put(Member.PERSON_ID, "4549000");
-
-        sMember40 = new ContentValues();
-        sMember40.put(Member.PERSON_ID, "7919686");
-        sMember40.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, "1315321077");
-
-        sMember41 = new ContentValues();
-        sMember41.put(Member.PERSON_ID, "6252746");
-        sMember41.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, "1315322077");
-        sMember41.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_VALID");
-        sMember41.put(Member.EXTRA_INFO_STATE, "EXTRA_INFO_STATE_RETRIEVING");
-
-        sMember42 = new ContentValues();
-
-        sMember43 = new ContentValues();
-
-        sMember44 = new ContentValues();
-
-        sMember45 = new ContentValues();
-
-        sMember46 = new ContentValues();
-
-        sMember47 = new ContentValues();
-
-        sMember48 = new ContentValues();
-        sMember48.put(Member.PERSON_ID, "7388261");
-        sMember48.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, "1415321077");
-        sMember48.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_VALID");
-        sMember48.put(Member.EXTRA_INFO_STATE, "EXTRA_INFO_STATE_RETRIEVED");
-        sMember48.put(Member.GIVEN_NAME, "Tariq");
-        sMember48.put(Member.SURNAME, "Patel");
-        sMember48.put(Member.SIGNATURE_STATE, "SIGNATURE_STATE_UPLOADED");
-
-        sMember49 = new ContentValues();
-        sMember49.put(Member.PERSON_ID, "7388261");
+        sMember35.put(Member.PERSON_ID, "6748088");
+        sMember35.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, "1315520093");
+        sMember35.put(Member.PERSON_ID_VALIDATED, "PERSON_ID_VALIDATED_VALID");
+        sMember35.put(Member.EXTRA_INFO_STATE, "EXTRA_INFO_STATE_ERROR");
+        sMember35.put(Member.SIGNATURE_STATE, "SIGNATURE_STATE_UPLOADED");
 
         sMembers = new ContentValues[] {
                 sMember0,
@@ -290,21 +298,7 @@ final class TestData
                 sMember32,
                 sMember33,
                 sMember34,
-                sMember35,
-                sMember36,
-                sMember37,
-                sMember38,
-                sMember39,
-                sMember40,
-                sMember41,
-                sMember42,
-                sMember43,
-                sMember44,
-                sMember45,
-                sMember46,
-                sMember47,
-                sMember48,
-                sMember49
+                sMember35
         };
 
     } // static
