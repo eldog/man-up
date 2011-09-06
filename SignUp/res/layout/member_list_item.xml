@@ -1,35 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:paddingLeft="2dip"
+    android:paddingRight="2dip">
     <TextView
         android:id="@+id/person_id"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:paddingTop="2dip"
         android:paddingBottom="3dip"
-        android:textSize="18sp" />
+        android:textSize="25sp" />
     <TextView
         android:id="@+id/given_name"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:paddingTop="2dip"
         android:paddingBottom="3dip"
-        android:textSize="18sp" />
+        android:textSize="18sp"
+        android:layout_below="@+id/person_id" />
     <TextView
         android:id="@+id/surname"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:paddingTop="2dip"
         android:paddingBottom="3dip"
-        android:textSize="18sp" />
+        android:paddingLeft="3dip"
+        android:textSize="18sp"
+        android:layout_below="@+id/person_id"
+        android:layout_toRightOf="@+id/given_name" />
     <TextView
         android:id="@+id/extra_info_state"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:paddingTop="2dip"
         android:paddingBottom="3dip"
-        android:textSize="18sp" />
-</LinearLayout>
+        android:textSize="18sp"
+        android:layout_alignParentRight="true" />
+</RelativeLayout>

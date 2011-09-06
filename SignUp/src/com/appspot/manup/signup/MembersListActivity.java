@@ -106,7 +106,7 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
     private SimpleCursorAdapter mUncapturedSignatureAdapter = null;
 
     private volatile DataManager mDataManager = null;
-    private volatile long mResumedAtUnixTime = Long.MIN_VALUE;
+    //private volatile long mResumedAtUnixTime = Long.MIN_VALUE;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState)
@@ -147,7 +147,7 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
     protected void onResume()
     {
         super.onResume();
-        mResumedAtUnixTime = DataManager.getUnixTime();
+     //   mResumedAtUnixTime = DataManager.getUnixTime();
         mDataManager.registerListener(this);
         loadData();
     } // onResume()
