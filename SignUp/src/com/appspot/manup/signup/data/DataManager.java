@@ -35,7 +35,8 @@ public final class DataManager
 
         public static final String PERSON_ID = "person_id";
         public static final String PERSON_ID_VALIDATED = "person_id_validated";
-        public static final String LATEST_SIGNATURE_REQUEST = "latest_signature_request";
+        public static final String LATEST_PENDING_SIGNATURE_REQUEST =
+                "latest_pending_signature_request";
         public static final String EXTRA_INFO_STATE = "extra_info_state";
         public static final String GIVEN_NAME = "given_name";
         public static final String SURNAME = "surname";
@@ -50,7 +51,7 @@ public final class DataManager
         public static final String SIGNATURE_STATE_CAPTURED = "captured";
         public static final String SIGNATURE_STATE_UPLOADED = "uploaded";
 
-        public static final String PERSON_ID_VALIDATED_NO = "no";
+        public static final String PERSON_ID_VALIDATED_UNKNWON = "unknown";
         public static final String PERSON_ID_VALIDATED_VALID = "valid";
         public static final String PERSON_ID_VALIDATED_INVALID = "invalid";
 
@@ -70,7 +71,7 @@ public final class DataManager
     private static final class MemberDbOpenHelper extends SQLiteOpenHelper
     {
         private static final String DATABASE_NAME = "members.db";
-        private static final int DATABASE_VERSION = 12;
+        private static final int DATABASE_VERSION = 13;
 
         public MemberDbOpenHelper(final Context context)
         {
@@ -91,10 +92,10 @@ public final class DataManager
                 Member.PERSON_ID + " TEXT NOT NULL UNIQUE "
                     + "CHECK (length(" + Member.PERSON_ID + ")=" + Member.PERSON_ID_LENGTH + ")," +
 
-                Member.LATEST_SIGNATURE_REQUEST + " INTEGER," +
+                Member.LATEST_PENDING_SIGNATURE_REQUEST + " INTEGER," +
 
                 Member.PERSON_ID_VALIDATED + " TEXT NOT NULL "
-                    + "DEFAULT " + Member.PERSON_ID_VALIDATED_NO + "," +
+                    + "DEFAULT " + Member.PERSON_ID_VALIDATED_UNKNWON + "," +
 
                 Member.EXTRA_INFO_STATE + " TEXT NOT NULL "
                     + "DEFAULT " + Member.EXTRA_INFO_STATE_NONE + "," +
@@ -310,7 +311,7 @@ public final class DataManager
                 } // if
             } // if
             final ContentValues requestValues = new ContentValues(1);
-            requestValues.put(Member.LATEST_SIGNATURE_REQUEST, getUnixTime());
+            requestValues.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, getUnixTime());
             requestMade = updateMember(id, requestValues);
             if (requestMade)
             {
@@ -333,18 +334,18 @@ public final class DataManager
         return getDb().query(
                 Member.TABLE_NAME,
                 null /* all columns */,
-                Member.LATEST_SIGNATURE_REQUEST + ">=?",
+                Member.LATEST_PENDING_SIGNATURE_REQUEST + ">=?",
                 new String[] { Long.toString(sinceUnixTime) },
                 null /* group by */,
                 null /* having */,
-                Member.LATEST_SIGNATURE_REQUEST + " DESC");
+                Member.LATEST_PENDING_SIGNATURE_REQUEST + " DESC");
     } // getSignatureRequests(long)
 
     public boolean memberHasSignature(final long id)
     {
         return Member.SIGNATURE_STATE_CAPTURED.equals(
                 getMemberField(Member._ID, Long.toString(id), Member.SIGNATURE_STATE));
-    }  // memberHasSignature(long)
+    } // memberHasSignature(long)
 
     public Cursor getMembersWithoutSignatures()
     {
@@ -391,8 +392,12 @@ public final class DataManager
 
     private boolean updateSignatureState(final long id, final String newState)
     {
-        final ContentValues newStateValue = new ContentValues(1);
+        final ContentValues newStateValue = new ContentValues(2);
         newStateValue.put(Member.SIGNATURE_STATE, newState);
+        if (Member.SIGNATURE_STATE_CAPTURED.equals(newState))
+        {
+            newStateValue.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, (String) null);
+        } // if
         return updateMember(id, newStateValue);
     } // updateSignatureState(long, String)
 

@@ -255,6 +255,7 @@ public final class LdapService extends Service implements OnChangeListener
     public void onChange(final DataManager dataManager)
     {
         Log.d(TAG, "onChange called.");
+        mHandler.removeMessages(CMD_RETRIEVE_EXTRA_INFO);
         mHandler.sendEmptyMessage(CMD_RETRIEVE_EXTRA_INFO);
     } // onChange(DataManager)
 
