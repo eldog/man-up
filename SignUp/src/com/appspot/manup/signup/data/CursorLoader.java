@@ -13,32 +13,33 @@ public abstract class CursorLoader extends AsyncTask<Void, Void, Cursor>
     public CursorLoader()
     {
         super();
-    } // CursorLoader
+    } // constructor()
 
     @Override
     protected final void onPreExecute()
     {
         // Do nothing.
-    } // onPreExecute
+    } // onPreExecute()
 
     @Override
     protected final Cursor doInBackground(final Void... noParams)
     {
-        return mCursor = loadCursor();
-    } // doInBackground
+        mCursor = loadCursor();
+        return mCursor;
+    } // doInBackground(Void...)
 
     @Override
     protected final void onProgressUpdate(final Void... noValues)
     {
         throw new AssertionError();
-    } // onProgressUpdate
+    } // onProgressUpdate(Void...)
 
     @Override
     protected final void onPostExecute(final Cursor cursor)
     {
         mCursor = null;
         onCursorLoaded(cursor);
-    } // onPostExecute
+    } // onPostExecute(Cursor)
 
     @Override
     protected final void onCancelled()
@@ -48,10 +49,10 @@ public abstract class CursorLoader extends AsyncTask<Void, Void, Cursor>
             mCursor.close();
             mCursor = null;
         } // if
-    } // onCancelled
+    } // onCancelled()
 
     protected abstract Cursor loadCursor();
 
     protected abstract void onCursorLoaded(Cursor cursor);
 
-} // CursorLoader
+} // class CursorLoader

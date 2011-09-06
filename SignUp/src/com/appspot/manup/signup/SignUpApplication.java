@@ -1,14 +1,9 @@
 package com.appspot.manup.signup;
 
 import android.app.Application;
-import android.content.Intent;
-import android.content.SharedPreferences;
-import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
+import android.content.Context;
 import android.os.AsyncTask;
 
-import com.appspot.manup.signup.data.DataManager;
-import com.appspot.manup.signup.data.DataManager.MemberAddedListener;
-import com.appspot.manup.signup.data.DataManager.SignatureCapturedListener;
 import com.appspot.manup.signup.ldap.LdapService;
 import com.appspot.manup.signup.swipeupclient.SwipeUpClientService;
 
@@ -23,90 +18,24 @@ public final class SignUpApplication extends Application
         protected Void doInBackground(final Void... noParams)
         {
             final Preferences prefs = new Preferences(SignUpApplication.this);
-            mDataManager = DataManager.getInstance(SignUpApplication.this);
-            mDataManager.registerSignatureCapturedListener(mSignatureCapturedListener);
-            prefs.registerOnSharedPreferenceChangeListener(mOnSharedPreferenceChangeListener);
-            configureLdapLook(prefs);
-            configureListenForSwipeUp(prefs);
+            final Context context = SignUpApplication.this;
+            LdapService.controlService(context, prefs);
+            SwipeUpClientService.controlService(context, prefs);
             return null;
-        } // doInBackground
+        } // doInBackground(Void)
 
-    } // CheckServicePrefs
-
-    private final OnSharedPreferenceChangeListener mOnSharedPreferenceChangeListener =
-            new OnSharedPreferenceChangeListener()
-    {
-        @Override
-        public void onSharedPreferenceChanged(final SharedPreferences sharedPreferences,
-                final String key)
-        {
-            final Preferences prefs = new Preferences(sharedPreferences);
-            if (prefs.isLdapLookEnabledKey(key))
-            {
-                configureLdapLook(prefs);
-            } // if
-            else if (prefs.isListenForSwipeUpKey(key))
-            {
-                configureListenForSwipeUp(prefs);
-            } // else if
-        } // onSharedPreferenceChanged
-    };
-
-    private final MemberAddedListener mMemberAddedListener = new MemberAddedListener()
-    {
-        @Override
-        public void onMemberAdded(final long id)
-        {
-            startService(new Intent(SignUpApplication.this, LdapService.class));
-        } // onMemberAdded
-    };
-
-    private final SignatureCapturedListener mSignatureCapturedListener = new SignatureCapturedListener()
-    {
-        @Override
-        public void onSignatureCaptured(final long id)
-        {
-            startService(new Intent(SignUpApplication.this, UploadService.class));
-        } // onSignatureCaptured
-    };
-
-    private volatile DataManager mDataManager = null;
+    } // class CheckServicePrefs
 
     public SignUpApplication()
     {
         super();
-    } // constructor
+    } // constructor()
 
     @Override
     public void onCreate()
     {
         super.onCreate();
         new SignUpInitialiser().execute();
-    } // onCreate
-
-    private void configureLdapLook(final Preferences prefs)
-    {
-        if (prefs.ldapLookupEnabled())
-        {
-            mDataManager.registerMemberAddedListener(mMemberAddedListener);
-        } // if
-        else
-        {
-            mDataManager.unregisterMemberAddedListener(mMemberAddedListener);
-        } // else
-    } // configureLdapLook
-
-    private void configureListenForSwipeUp(final Preferences prefs)
-    {
-        final Intent intent = new Intent(this, SwipeUpClientService.class);
-        if (prefs.listenForSwipeUp())
-        {
-            startService(intent);
-        } // if
-        else
-        {
-            stopService(intent);
-        } // else
-    } // configureListenForSwipeUp
+    } // onCreate()
 
 } // class SignUpApplication

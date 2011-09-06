@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="add_student_id_button">Add</string>
+    <string name="add_personal_id_button">Add</string>
     <string name="app_name">SignUp</string>
-    <string name="student_id">Student ID</string>
+    <string name="personal_id">Student ID</string>
     <string name="notification_message">Toggle LDAP and Swipe services</string>
 </resources>

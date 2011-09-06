@@ -5,41 +5,38 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.InterruptedIOException;
 import java.io.PrintWriter;
+import java.net.BindException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 
-import com.appspot.manup.signup.NetworkUtils;
-import com.appspot.manup.signup.data.DataManager;
-
+import android.content.Context;
 import android.os.Process;
 import android.util.Log;
 
-/**
- *
- * Opens socket server.
- *
- * Can be killed by an interrupt
- *
- */
-public class SwipeUpThread extends Thread
+import com.appspot.manup.signup.NetworkUtils;
+import com.appspot.manup.signup.data.DataManager;
+
+class SwipeUpThread extends Thread
 {
     private static final String TAG = SwipeUpThread.class.getSimpleName();
 
     private static final int PORT = 12345;
     private static final int BACKLOG = 10;
 
-    private static final int READ_TIMEOUT_MILLISECONDS = 10000;
+    private static final long READ_TIMEOUT_MILLISECONDS = 10000L;
     private static final int SERVER_SOCKET_TIMEOUT_MILLISECONDS = 10000;
     private static final int SOCKET_TIMEOUT_MILLISECONDS = 1000;
+    private static final long GET_SERVER_SOCKET_RETRY_DELAY_MS = 1000L;
+    private static final int MAX_GET_SERVER_SOCKET_RERIES = 100;
 
-    private final DataManager mSignatureDatabase;
+    private final DataManager mDataManager;
 
-    public SwipeUpThread(DataManager signatureDatabase)
+    public SwipeUpThread(final Context context)
     {
         super(TAG);
-        mSignatureDatabase = signatureDatabase;
+        mDataManager = DataManager.getDataManager(context);
     } // SwipeServerThread
 
     @Override
@@ -63,25 +60,24 @@ public class SwipeUpThread extends Thread
 
     private void handleRequests() throws IOException, InterruptedException
     {
-        InetAddress hostInetAddress = NetworkUtils.getLocalIpAddress();
-        if (hostInetAddress == null)
+        InetAddress hostAddress = NetworkUtils.getLocalIpAddress();
+        if (hostAddress == null)
         {
             Log.e(TAG, "Could not get host inet address, aborting running server");
             return;
         } // if
-        Log.d(TAG, "Host inet: " + hostInetAddress);
+        Log.d(TAG, "Host inet: " + hostAddress);
 
         ServerSocket serverSocket = null;
         try
         {
-            serverSocket = new ServerSocket(PORT, BACKLOG, hostInetAddress);
-            serverSocket.setSoTimeout(SERVER_SOCKET_TIMEOUT_MILLISECONDS);
+            serverSocket = getServerSocket(hostAddress);
 
             Log.d(TAG, "Server socket: " + serverSocket.getInetAddress() + ":"
                     + serverSocket.getLocalPort());
 
             // Terminates when handleRequest() is interrupted.
-            for(;;)
+            for (;;)
             {
                 try
                 {
@@ -91,7 +87,7 @@ public class SwipeUpThread extends Thread
                 {
                     Log.d(TAG, "Failed to handle request.", e);
                 } // catch
-            } // while
+            } // for
         } // try
         finally
         {
@@ -100,7 +96,35 @@ public class SwipeUpThread extends Thread
                 serverSocket.close();
             } // if
         } // finally
-    } // handleRequests
+    } // handleRequests()
+
+    private ServerSocket getServerSocket(final InetAddress hostAddress) throws IOException,
+            InterruptedException
+    {
+        ServerSocket serverSocket = null;
+        for (int tries = 0; serverSocket == null; tries++)
+        {
+            try
+            {
+                serverSocket = new ServerSocket(PORT, BACKLOG, hostAddress);
+            } // try
+            catch (final BindException e)
+            {
+                if (tries >= MAX_GET_SERVER_SOCKET_RERIES)
+                {
+                    Log.d(TAG, "Failed to get server socket, too many tries.");
+                    throw e;
+                } // for
+            } // catch
+            if (interrupted())
+            {
+                throw new InterruptedException("Interrupted while getting server socket.");
+            } // if
+            Thread.sleep(GET_SERVER_SOCKET_RETRY_DELAY_MS);
+        } // for
+        serverSocket.setSoTimeout(SERVER_SOCKET_TIMEOUT_MILLISECONDS);
+        return serverSocket;
+    } // getServerSocket(InetAddress)
 
     private void handleRequest(final ServerSocket serverSocket) throws InterruptedException,
             IOException
@@ -109,24 +133,24 @@ public class SwipeUpThread extends Thread
         try
         {
             socket = waitForIncomingConnection(serverSocket);
-            final String studentId = readStudentId(socket);
+            final String personId = readPersonId(socket);
 
-            if (studentId == null)
+            if (personId == null)
             {
-                Log.w(TAG, "Student ID could not be read.");
+                Log.w(TAG, "Person ID could not be read.");
                 return;
             } // if
 
-            Log.d(TAG, "Student ID: " + studentId);
+            Log.d(TAG, "Recieved person ID '" + personId + "' from SwipeUp.");
 
-            final boolean inserted = insertMagStripeNumber(studentId);
+            final boolean signatureRequested = mDataManager.requestSignature(personId);
 
-            if (!inserted)
+            if (!signatureRequested)
             {
-                Log.e(TAG, "Failed to insert student ID into database.");
+                Log.e(TAG, "Failed to insert person ID into database.");
             } // if
 
-            writeResponse(socket, inserted);
+            writeResponse(socket, signatureRequested);
         } // try
         finally
         {
@@ -155,7 +179,7 @@ public class SwipeUpThread extends Thread
                 Log.v(TAG, "Timed out while waiting for incoming connection.");
             } // catch
 
-            if (Thread.interrupted())
+            if (interrupted())
             {
                 throw new InterruptedException(
                         "Interrupted while waiting for incoming connection.");
@@ -166,8 +190,7 @@ public class SwipeUpThread extends Thread
         return socket;
     } // read
 
-    private String readStudentId(final Socket socket) throws IOException,
-            InterruptedException
+    private String readPersonId(final Socket socket) throws IOException, InterruptedException
     {
         try
         {
@@ -185,23 +208,18 @@ public class SwipeUpThread extends Thread
                     Log.v(TAG, "Timed out before a line was read.");
                 } // catch
 
-                if (Thread.interrupted())
+                if (interrupted())
                 {
                     throw new InterruptedException("Interrupted while reading from socket.");
                 } // if
             } // while
-            throw new SocketTimeoutException("Timed out before mag stripe was read.");
+            throw new SocketTimeoutException("Timed out before person ID was read.");
         } // try
         finally
         {
             socket.shutdownInput();
         } // finally
-    } // readStudentId
-
-    private boolean insertMagStripeNumber(final String magStripeNumber)
-    {
-        return mSignatureDatabase.addMember(magStripeNumber) != -1;
-    } // insertMagStripeNumber
+    } // readPersonId(Socket)
 
     private void writeResponse(final Socket socket, final boolean inserted) throws IOException
     {
@@ -215,6 +233,6 @@ public class SwipeUpThread extends Thread
         {
             socket.shutdownOutput();
         } // finally
-    } // writeResponse
+    } // writeResponse(Socket, boolean)
 
-} // SwipeServerThread
+} // class SwipeServerThread

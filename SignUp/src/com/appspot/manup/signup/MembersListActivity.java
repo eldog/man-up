@@ -4,7 +4,7 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.text.TextUtils;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -15,110 +15,128 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 
-import com.appspot.manup.signup.data.CursorLoader;
 import com.appspot.manup.signup.data.DataManager;
-import com.appspot.manup.signup.data.DataManager.AdditionInfoAddedListener;
 import com.appspot.manup.signup.data.DataManager.Member;
-import com.appspot.manup.signup.data.DataManager.MemberAddedListener;
+import com.appspot.manup.signup.data.DataManager.OnChangeListener;
 import com.appspot.manup.signup.ui.CheckPreferencesActivity;
 
-public final class MembersListActivity extends CheckPreferencesActivity
+public final class MembersListActivity extends CheckPreferencesActivity implements OnChangeListener
 {
-    @SuppressWarnings("unused")
     private static final String TAG = MembersListActivity.class.getSimpleName();
 
     private static final int MENU_SETTINGS = Menu.FIRST;
-    private static final int MENU_FLUSH_MEMBERS = MENU_SETTINGS + 1;
+    private static final int MENU_UPLOAD_SIGNATURES = Menu.FIRST + 1;
+    private static final int MENU_FLUSH_MEMBERS = Menu.FIRST + 2;
 
-    private final class MemeberAdder extends AsyncTask<String, Void, Long>
+    private final class DataLoader extends AsyncTask<Void, Void, Void>
     {
+        private volatile Cursor c1 = null, c2 = null;
+
         @Override
-        protected Long doInBackground(final String... studentId)
+        protected Void doInBackground(Void... params)
         {
-            return mDataManager.addMember(studentId[0]);
-        } // doInBackground
+            c1 = mDataManager.getMembersWithoutSignatures();
+            c2 = mDataManager.getSignatureRequests(mResumedAtUnixTime);
+            Log.d(TAG, "They've been loaded.");
+            if (isCancelled())
+            {
+                c1.close();
+                c2.close();
+            } // if
+            return null;
+        }
 
         @Override
         protected void onCancelled()
         {
-            onStop();
-        } // onCancelled
+            if (c1 != null)
+                c1.close();
+            if (c2 != null)
+                c2.close();
+            Log.d(TAG, "Closed them.");
+        }
+
+        @Override
+        protected void onPostExecute(Void result)
+        {
+            mUncapturedSignatureAdapter.changeCursor(c1);
+            if (c2 == null)
+            {
+                return;
+            } // if
+            Intent intent = null;
+            if (c2.moveToFirst())
+            {
+                intent = new Intent(MembersListActivity.this,
+                        CaptureSignatureActivity.class);
+                intent.putExtra(CaptureSignatureActivity.EXTRA_ID,
+                        c2.getLong(c2.getColumnIndexOrThrow(Member._ID)));
+                Log.d(TAG, "Finished? " + isFinishing());
+                startActivity(intent);
+            } // if
+            Log.d(TAG, "Closing in onCursorLoaded " + c2);
+            c2.close();
+            if (intent != null)
+            {
+
+            } // if
+        }
+    }
+
+    private final class MemberAdder extends AsyncTask<String, Void, Long>
+    {
+        @Override
+        protected Long doInBackground(final String... personId)
+        {
+            return mDataManager.addMember(personId[0]);
+        } // doInBackground(Void)
+
+        @Override
+        protected void onCancelled()
+        {
+            cleanUp();
+        } // onCancelled()
 
         @Override
         protected void onPostExecute(final Long id)
         {
-            onStop();
-            if (id != -1L)
+            cleanUp();
+            if (id != DataManager.OPERATION_FAILED)
             {
-                startUncapturedSignatureLoader();
+                mPersonId.setText(null);
             } // if
-        } // onPostExecute
+        } // onPostExecute(Long)
 
-        private void onStop()
+        private void cleanUp()
         {
-            mMemberAdder = null;
             mAdd.setEnabled(true);
-        } // onStop
+        } // cleanUp()
 
-    } // MemeberAdder
-
-    private final class UncapturedSignaturesLoader extends CursorLoader
-    {
-        @Override
-        protected Cursor loadCursor()
-        {
-            return mDataManager.getMembersWithUncapturedSignatures();
-        } // loadCursor
-
-        @Override
-        protected void onCursorLoaded(final Cursor uncapturedSignatures)
-        {
-            mUncapturedSignatureAdapter.changeCursor(uncapturedSignatures);
-        } // onCursorLoaded
-
-    } // UncapturedSignaturesLoader
-
-    private final MemberAddedListener mMemberAddedListener = new MemberAddedListener()
-    {
-        @Override
-        public void onMemberAdded(final long id)
-        {
-            startUncapturedSignatureLoader();
-        } // onMemberAdded
-    };
-
-    private final AdditionInfoAddedListener mAdditionInfoAddedListener = new AdditionInfoAddedListener()
-    {
-        @Override
-        public void onAdditionalInfoAdded(final long id)
-        {
-            startUncapturedSignatureLoader();
-        } // onAdditionalInfoAdded
-    };
+    } // class MemberAdder
 
     private Button mAdd = null;
-    private EditText mStudentId = null;
-
+    private EditText mPersonId = null;
+    private DataLoader mLoader = null;
     private SimpleCursorAdapter mUncapturedSignatureAdapter = null;
-    private MemeberAdder mMemberAdder = null;
-    private UncapturedSignaturesLoader mUncapturedSignaturesLoader = null;
 
     private volatile DataManager mDataManager = null;
+    private volatile long mResumedAtUnixTime = Long.MIN_VALUE;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.autograph_list);
-        mDataManager = DataManager.getInstance(this);
+        setContentView(R.layout.members_list);
+        mDataManager = DataManager.getDataManager(this);
         mAdd = (Button) findViewById(R.id.add_button);
-        mStudentId = (EditText) findViewById(R.id.student_id);
+        mPersonId = (EditText) findViewById(R.id.person_id);
         mUncapturedSignatureAdapter = new SimpleCursorAdapter(
                 this,
-                R.layout.autograph_list_item,
-                null,
-                new String[] { Member.STUDENT_ID, Member.GIVEN_NAME, Member.SURNAME },
-                new int[] { R.id.student_id, R.id.given_name, R.id.surname });
+                R.layout.member_list_item,
+                null /* cursor */,
+                new String[] { Member.PERSON_ID, Member.GIVEN_NAME, Member.SURNAME,
+                        Member.EXTRA_INFO_STATE },
+                new int[] { R.id.person_id, R.id.given_name, R.id.surname, R.id.extra_info_state });
         final ListView uncapturedSignaturesList =
                 (ListView) findViewById(R.id.members_with_uncaptured_signatures_list);
         uncapturedSignaturesList.setAdapter(mUncapturedSignatureAdapter);
@@ -132,68 +150,58 @@ public final class MembersListActivity extends CheckPreferencesActivity
                 final Intent intent = new Intent(MembersListActivity.this,
                         CaptureSignatureActivity.class);
                 intent.setAction(CaptureSignatureActivity.ACTION_CAPTURE);
-                // Temporary use
-                intent.putExtra(CaptureSignatureActivity.EXTRA_NAME, "Test Name");
                 intent.putExtra(CaptureSignatureActivity.EXTRA_ID,
                         c.getLong(c.getColumnIndexOrThrow(Member._ID)));
                 startActivity(intent);
-            } // onItemClick
+            } // onItemClick(AdapterView, View, int, long)
         });
-    } // onCreate
+    } // onCreate(Bundle)
 
     @Override
     protected void onResume()
     {
         super.onResume();
-        mDataManager.registerAdditionInfoAddedListener(mAdditionInfoAddedListener);
-        mDataManager.registerMemberAddedListener(mMemberAddedListener);
-        startUncapturedSignatureLoader();
-    } // onResume
+        mResumedAtUnixTime = DataManager.getUnixTime();
+        mDataManager.registerListener(this);
+        loadData();
+    } // onResume()
 
-    private void startUncapturedSignatureLoader()
+    private void loadData()
     {
-        if (mUncapturedSignaturesLoader != null)
+        Log.d(TAG, "Loading data. " + Thread.currentThread().getName());
+        if (mLoader != null)
         {
-            mUncapturedSignaturesLoader.cancel(true);
+            mLoader.cancel(true);
         } // if
-        mUncapturedSignaturesLoader = (UncapturedSignaturesLoader)
-                new UncapturedSignaturesLoader().execute();
-    } // startUncapturedSignatureLoader
+        mLoader = (DataLoader) new DataLoader().execute();
+    } // loadData()
 
     @Override
     protected void onPause()
     {
-        mDataManager.unregisterAdditionalInfoAddedListener(mAdditionInfoAddedListener);
-        mDataManager.unregisterMemberAddedListener(mMemberAddedListener);
-        if (mUncapturedSignaturesLoader != null)
+        mDataManager.unregisterListener(this);
+        if (mLoader != null)
         {
-            mUncapturedSignaturesLoader.cancel(true);
-            mUncapturedSignaturesLoader = null;
+            mLoader.cancel(true);
         } // if
-        if (mMemberAdder != null)
+        final Cursor cursor = mUncapturedSignatureAdapter.getCursor();
+        if (cursor != null)
         {
-            mMemberAdder.cancel(true);
-            mMemberAdder = null;
-        } // if
-        if (mUncapturedSignatureAdapter != null)
-        {
-            final Cursor c = mUncapturedSignatureAdapter.getCursor();
-            if (c != null)
-            {
-                c.close();
-            } // if
+            Log.d(TAG, "Closing cursor " + cursor);
+            cursor.close();
         } // if
         super.onPause();
-    } // onPause
+    } // onPause()
 
     @Override
     public boolean onCreateOptionsMenu(final Menu menu)
     {
         super.onCreateOptionsMenu(menu);
         menu.add(0, MENU_SETTINGS, 0, "Settings");
+        menu.add(0, MENU_UPLOAD_SIGNATURES, 0, "Upload signatures");
         menu.add(0, MENU_FLUSH_MEMBERS, 0, "Delete members");
         return true;
-    } // onCreateOptionsMenu
+    } // onCreateOptionsMenu(Menu)
 
     @Override
     public boolean onOptionsItemSelected(final MenuItem item)
@@ -203,23 +211,40 @@ public final class MembersListActivity extends CheckPreferencesActivity
             case MENU_SETTINGS:
                 startActivity(new Intent(this, SignUpPreferenceActivity.class));
                 return true;
+            case MENU_UPLOAD_SIGNATURES:
+                startService(new Intent(this, UploadService.class));
+                return true;
             case MENU_FLUSH_MEMBERS:
                 mDataManager.flushMembers();
-                startUncapturedSignatureLoader();
+                loadData();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
         } // switch
-    } // onOptionsItemSelected
+    } // onOptionsItemSelected(MenuItem)
 
     public void onAddClick(final View v)
     {
-        final String studentId = mStudentId.getText().toString();
-        if (!TextUtils.isEmpty(studentId))
+        final String personId = mPersonId.getText().toString();
+        if (DataManager.isValidPersonId(personId))
         {
-            new MemeberAdder().execute(studentId);
             mAdd.setEnabled(false);
+            new MemberAdder().execute(personId);
         } // if
-    } // onAddClick
+    } // onAddClick(View)
 
-} // AutographListActivity
+    @Override
+    public void onChange(final DataManager dataManager)
+    {
+        Log.d(TAG, "onChange called.");
+        runOnUiThread(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                loadData();
+            } // run()
+        });
+    } // onChange(DataManager)
+
+} // class MembersListActivity

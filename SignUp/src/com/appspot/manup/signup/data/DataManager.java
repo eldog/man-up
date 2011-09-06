@@ -1,13 +1,17 @@
 package com.appspot.manup.signup.data;
 
 import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
 
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteConstraintException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.provider.BaseColumns;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.appspot.manup.signup.ldap.MemberLdapEntry;
@@ -16,284 +20,364 @@ public final class DataManager
 {
     private static final String TAG = DataManager.class.getSimpleName();
 
+    public static final long OPERATION_FAILED = -1L;
+
     private static final String SIGNATURE_FILE_EXT = ".png";
+
+    public interface OnChangeListener
+    {
+        void onChange(DataManager dataManager);
+    } // interface OnChangeListener
 
     public static final class Member implements BaseColumns
     {
         private static final String TABLE_NAME = "member";
 
-        public static final String STUDENT_ID = "student_id";
-
+        public static final String PERSON_ID = "person_id";
+        public static final String PERSON_ID_VALIDATED = "person_id_validated";
+        public static final String LATEST_SIGNATURE_REQUEST = "latest_signature_request";
+        public static final String EXTRA_INFO_STATE = "extra_info_state";
+        public static final String GIVEN_NAME = "given_name";
+        public static final String SURNAME = "surname";
+        public static final String EMAIL = "email";
+        public static final String MEMBER_TYPE = "member_type";
+        public static final String DEPARTMENT = "department";
         public static final String SIGNATURE_STATE = "signature_state";
+
+        public static final int PERSON_ID_LENGTH = 7;
+
         public static final String SIGNATURE_STATE_UNCAPTURED = "uncaptured";
         public static final String SIGNATURE_STATE_CAPTURED = "captured";
         public static final String SIGNATURE_STATE_UPLOADED = "uploaded";
 
-        public static final String STUDENT_ID_VALIDATED = "student_id_validated";
-        public static final String STUDENT_ID_VALIDATED_NO = "no";
-        public static final String STUDENT_ID_VALIDATED_VALID = "valid";
-        public static final String STUDENT_ID_VALIDATED_INVALID = "invalid";
+        public static final String PERSON_ID_VALIDATED_NO = "no";
+        public static final String PERSON_ID_VALIDATED_VALID = "valid";
+        public static final String PERSON_ID_VALIDATED_INVALID = "invalid";
 
-        public static final String RETRIEVED_ADDITIONAL_INFO = "retrieved_additional_info";
-        public static final String RETRIEVED_ADDITIONAL_INFO_NO = "no";
-        public static final String RETRIEVED_ADDITIONAL_INFO_YES = "yes";
-
-        public static final String GIVEN_NAME = "given_name";
-        public static final String SURNAME = "surname";
-        public static final String EMAIL = "email";
-        public static final String STUDENT_TYPE = "student_type";
-        public static final String DEPARTMENT = "department";
+        public static final String EXTRA_INFO_STATE_NONE = "none";
+        public static final String EXTRA_INFO_STATE_RETRIEVING = "retrieving";
+        public static final String EXTRA_INFO_STATE_RETRIEVED = "retrieved";
+        public static final String EXTRA_INFO_STATE_ERROR = "error";
 
         private Member()
         {
             super();
             throw new AssertionError();
-        } // Signature
+        } // constructor()
 
-    } // Signature
+    } // class Member
 
-    private static final class OpenHelper extends SQLiteOpenHelper
+    private static final class MemberDbOpenHelper extends SQLiteOpenHelper
     {
         private static final String DATABASE_NAME = "members.db";
-        private static final int DATABASE_VERSION = 8;
+        private static final int DATABASE_VERSION = 12;
 
-        public OpenHelper(final Context context)
+        public MemberDbOpenHelper(final Context context)
         {
-            super(context, DATABASE_NAME, null /* factory */, DATABASE_VERSION);
-        } // OpenHelper
+            super(context, DATABASE_NAME, null /* cursor factory */, DATABASE_VERSION);
+        } // constructor(Context)
 
         @Override
         public void onCreate(final SQLiteDatabase db)
         {
             //@formatter:off
 
-            final String createTableSql =
+            final String createMemberTableSql =
 
-            "CREATE TABLE " + Member.TABLE_NAME + "("                                    +
-                Member._ID                       + " INTEGER PRIMARY KEY AUTOINCREMENT," +
-                Member.STUDENT_ID                + " TEXT NOT NULL UNIQUE,"              +
+            "CREATE TABLE " + Member.TABLE_NAME + "(" +
 
-                Member.STUDENT_ID_VALIDATED      + " TEXT NOT NULL "
-                    + "DEFAULT " + Member.STUDENT_ID_VALIDATED_NO + ","                  +
+                Member._ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
 
-                Member.RETRIEVED_ADDITIONAL_INFO + " TEXT NOT NULL "
-                    + "DEFAULT " + Member.RETRIEVED_ADDITIONAL_INFO_NO + ","             +
+                Member.PERSON_ID + " TEXT NOT NULL UNIQUE "
+                    + "CHECK (length(" + Member.PERSON_ID + ")=" + Member.PERSON_ID_LENGTH + ")," +
 
-                Member.GIVEN_NAME                + " TEXT,"                              +
-                Member.SURNAME                   + " TEXT,"                              +
-                Member.EMAIL                     + " TEXT,"                              +
-                Member.STUDENT_TYPE              + " TEXT,"                              +
-                Member.DEPARTMENT                + " TEXT,"                              +
+                Member.LATEST_SIGNATURE_REQUEST + " INTEGER," +
 
-                Member.SIGNATURE_STATE           + " TEXT NOT NULL "
-                + "DEFAULT " + Member.SIGNATURE_STATE_UNCAPTURED                         +
+                Member.PERSON_ID_VALIDATED + " TEXT NOT NULL "
+                    + "DEFAULT " + Member.PERSON_ID_VALIDATED_NO + "," +
+
+                Member.EXTRA_INFO_STATE + " TEXT NOT NULL "
+                    + "DEFAULT " + Member.EXTRA_INFO_STATE_NONE + "," +
+
+                Member.GIVEN_NAME + " TEXT," +
+                Member.SURNAME + " TEXT," +
+                Member.EMAIL+ " TEXT," +
+                Member.MEMBER_TYPE + " TEXT," +
+                Member.DEPARTMENT + " TEXT," +
+
+                Member.SIGNATURE_STATE + " TEXT NOT NULL "
+                    + "DEFAULT " + Member.SIGNATURE_STATE_UNCAPTURED +
             ")";
 
             //@formatter:on
 
-            Log.v(TAG, createTableSql);
+            Log.v(TAG, createMemberTableSql);
 
-            db.execSQL(createTableSql);
+            db.execSQL(createMemberTableSql);
         } // onCreate
 
         @Override
         public void onUpgrade(final SQLiteDatabase db, final int oldVersion, final int newVersion)
         {
-            Log.w("DB Upgrade", "Upgrading database, this will drop tables and recreate.");
             db.execSQL("DROP TABLE IF EXISTS " + Member.TABLE_NAME);
             onCreate(db);
-        } // onUpgrade
+        } // onUpgrade(SQLiteDatabase, int, int)
 
-    } // OpenHelper
+    } // class MemberDbOpenHelper
 
-    private static DataManager sDataHelper = null;
+    private static DataManager sSingleton = null;
 
-    public static synchronized DataManager getInstance(final Context context)
+    public static synchronized DataManager getDataManager(final Context context)
     {
-        if (sDataHelper == null)
+        if (sSingleton == null)
         {
-            sDataHelper = new DataManager(context);
+            sSingleton = new DataManager(context);
         } // if
-        return sDataHelper;
-    } // getInstance
+        return sSingleton;
+    } // getDataManager(Context)
 
+    public static long getUnixTime()
+    {
+        return System.currentTimeMillis() / 1000L;
+    } // getUnixTime()
+
+    public static boolean isValidPersonId(final String possiblePersonId)
+    {
+        return possiblePersonId.length() == Member.PERSON_ID_LENGTH
+                && TextUtils.isDigitsOnly(possiblePersonId);
+    } // isValidPersonId(String)
+
+    private final Object mLock = new Object();
+    private final Set<OnChangeListener> mListeners = new HashSet<OnChangeListener>();
     private final Context mContext;
-    private volatile SQLiteDatabase mDb = null;
+    private SQLiteDatabase mDb = null;
 
     private DataManager(final Context context)
     {
         super();
         mContext = context.getApplicationContext();
-        mDb = new OpenHelper(mContext).getWritableDatabase();
-    } // DataManager
+    } // DataManager(Context)
 
-    /*
-     * Member Added Notification
-     */
-
-    private EventNotifier<Long> mMemberAddedNotifier = new EventNotifier<Long>();
-
-    public static abstract class MemberAddedListener implements EventListener<Long>
+    private SQLiteDatabase getDb()
     {
-        @Override
-        public final void onEvent(final Long id)
+        synchronized (mLock)
         {
-            onMemberAdded(id);
-        } // onEvent
-        public abstract void onMemberAdded(long id);
-    } // class MemberAddedListener
+            if (mDb == null)
+            {
+                mDb = new MemberDbOpenHelper(mContext).getWritableDatabase();
+            } // if
+        } // synchronized
+        return mDb;
+    } // getDb()
 
-    public void registerMemberAddedListener(final MemberAddedListener listener)
+    public void registerListener(final OnChangeListener listener)
     {
-        mMemberAddedNotifier.registerListener(listener);
-    } // registerMemberAddedListener
-
-    public void unregisterMemberAddedListener(final MemberAddedListener listener)
-    {
-        mMemberAddedNotifier.unregisterListener(listener);
-    } // unregisterMemberAddedListener
-
-    /***/
-
-    /*
-     * Signature Captured Notification
-     */
-
-    private EventNotifier<Long> mSignatureCatpuredNotifier = new EventNotifier<Long>();
-
-    public static abstract class SignatureCapturedListener implements EventListener<Long>
-    {
-        @Override
-        public final void onEvent(final Long id)
+        synchronized (mListeners)
         {
-            onSignatureCaptured(id);
-        } // onEvent
+            mListeners.add(listener);
+        } // synchronized
+    } // registerListener(OnChangeListener)
 
-        public abstract void onSignatureCaptured(final long id);
-    } // SignatureCapturedListener
-
-    public void registerSignatureCapturedListener(final SignatureCapturedListener listener)
+    public void unregisterListener(final OnChangeListener listener)
     {
-        mSignatureCatpuredNotifier.registerListener(listener);
-    } // registerSignatureCapturedListener
-
-    public void unregisterSignatureCapturedListener(final SignatureCapturedListener listener)
-    {
-        mSignatureCatpuredNotifier.unregisterListener(listener);
-    } // unregisterSignatureCapturedListener
-
-    /***/
-
-    /*
-     * Additional Info Added Notification
-     */
-    private final EventNotifier<Long> mAdditionalInfoAddedNotifier = new EventNotifier<Long>();
-
-    public static abstract class AdditionInfoAddedListener implements EventListener<Long>
-    {
-        @Override
-        public final void onEvent(final Long id)
+        synchronized (mListeners)
         {
-            onAdditionalInfoAdded(id);
-        } //
-        public abstract void onAdditionalInfoAdded(final long id);
-    } // AdditionInfoAddedListener
+            mListeners.remove(listener);
+        } // synchronized
+    } // unregisterListener(OnChangeListener)
 
-    public void registerAdditionInfoAddedListener(AdditionInfoAddedListener listener)
+    private void notifyListeners()
     {
-        mAdditionalInfoAddedNotifier.registerListener(listener);
-    } // registerAdditionInfoAddedListener
+        synchronized (mListeners)
+        {
+            for (final OnChangeListener listener : mListeners)
+            {
+                listener.onChange(this);
+            } // for
+        } // synchronized
+    } // notifyListeners()
 
-    public void unregisterAdditionalInfoAddedListener(AdditionInfoAddedListener listener)
-    {
-        mAdditionalInfoAddedNotifier.unregisterListener(listener);
-    } // unregisterAdditionalInfoAddedListener
-
-    /***/
-
-    public long addMember(final String studentId)
+    /**
+     * Add a new member.
+     *
+     * @param personId
+     *            the person ID of the new member
+     * @return the internal ID of the newly added member, or
+     *         {@link #OPERATION_FAILED} if it was not possible to add the
+     *         member.
+     */
+    public long addMember(final String personId)
     {
         final ContentValues memberValues = new ContentValues(1);
-        memberValues.put(Member.STUDENT_ID, studentId);
-        return insertMember(memberValues);
-    } // addMember
-
-    public boolean addAdditionalMemberInfo(final MemberLdapEntry additionalInfo)
-    {
-        Log.d(TAG, "Student ID: " + additionalInfo.getStudentId());
-        final long id = getId(additionalInfo.getStudentId());
-        if (id == -1L)
+        memberValues.put(Member.PERSON_ID, personId);
+        final long id;
+        try
         {
-            Log.e(TAG, "Failed to get ID");
+            id = getDb().insert(
+                    Member.TABLE_NAME,
+                    Member.PERSON_ID /* null column hack */,
+                    memberValues);
+        } // try
+        catch (final SQLiteConstraintException e)
+        {
+            Log.d(TAG, "addMember(" + personId + ") failed", e);
+            return OPERATION_FAILED;
+        } // catch
+        if (id != OPERATION_FAILED)
+        {
+            notifyListeners();
+        } // if
+        return id;
+    } // addMember(String)
+
+    /**
+     * Get members without extra info. Also excludes members with invalid person
+     * IDs as it will not be possible to obtain extra information for them.
+     *
+     * @return a cursor containing members without extra info, or null it was
+     *         not possible to retrieve those members.
+     */
+    public Cursor getMembersWithoutExtraInfo()
+    {
+        return getDb().query(
+                Member.TABLE_NAME,
+                null /* all columns */,
+                Member.EXTRA_INFO_STATE + "=? AND " + Member.PERSON_ID_VALIDATED + "!=?",
+                new String[] {
+                        Member.EXTRA_INFO_STATE_NONE,
+                        Member.PERSON_ID_VALIDATED_INVALID },
+                null /* group by */,
+                null /* having */,
+                null /* order by */);
+    } // getMembersWithoutExtraInfo()
+
+    public boolean setExtraInfoStateToRetrieving(final long id)
+    {
+        return setExtraInfoState(id, Member.EXTRA_INFO_STATE_RETRIEVING);
+    } // setExtraInfoStateToRetrieving(long)
+
+    public boolean setExtraInfoStateToError(final long id)
+    {
+        return setExtraInfoState(id, Member.EXTRA_INFO_STATE_ERROR);
+    } // setExtraInfoState(long)
+
+    private boolean setExtraInfoState(final long id, final String newState)
+    {
+        final ContentValues memberInfoStateValues = new ContentValues(1);
+        memberInfoStateValues.put(Member.EXTRA_INFO_STATE, newState);
+        return updateMember(id, memberInfoStateValues);
+    } // setExtraInfoState(String)
+
+    public boolean addExtraInfo(final MemberLdapEntry memberEntry)
+    {
+        final long id = getId(memberEntry.getPersonId());
+        if (id == OPERATION_FAILED)
+        {
+            Log.e(TAG, "Failed to get internal ID of the member " + memberEntry.getPersonId());
             return false;
         } // if
 
-        final ContentValues additionalValues = additionalInfo.getContentValues();
-        Log.v(TAG, "Adding additional info for " + additionalInfo.getStudentId() + ": "
-                + additionalValues.toString());
-        /*
-         * As additional information was retrieved, the student ID must be
-         * valid.
-         */
-        additionalValues.put(Member.STUDENT_ID_VALIDATED, Member.STUDENT_ID_VALIDATED_VALID);
-        additionalValues.put(Member.RETRIEVED_ADDITIONAL_INFO,
-                Member.RETRIEVED_ADDITIONAL_INFO_YES);
-        final boolean addedAdditionalInfo = updateMember(id, additionalValues);
-        if (addedAdditionalInfo)
+        final ContentValues extraValues = memberEntry.getContentValues();
+        Log.v(TAG, "Adding extra info for " + memberEntry.getPersonId() + ": "
+                + extraValues.toString());
+
+        // As extra information was retrieved, the person ID must be valid.
+        extraValues.put(Member.PERSON_ID_VALIDATED, Member.PERSON_ID_VALIDATED_VALID);
+        extraValues.put(Member.EXTRA_INFO_STATE, Member.EXTRA_INFO_STATE_RETRIEVED);
+        final boolean addedextraInfo = updateMember(id, extraValues);
+
+        if (addedextraInfo)
         {
-            mAdditionalInfoAddedNotifier.notifyListeners(id);
+            notifyListeners();
         } // if
-        return addedAdditionalInfo;
-    } // addAdditionalMemberInfo
 
-    public String getStudentId(final long id)
-    {
-        return getMemberField(Member._ID, Long.toString(id), Member.STUDENT_ID);
-    } // getMagStripe
+        return addedextraInfo;
+    } // addExtraInfo(MemberLdapEntry)
 
-    public Cursor getMembersWithUncapturedSignatures()
+    public boolean requestSignature(final String personId)
     {
+        final SQLiteDatabase db = getDb();
+        boolean requestMade = false;
+        db.beginTransaction();
+        try
+        {
+            long id = getId(personId);
+            if (id == OPERATION_FAILED)
+            {
+                if ((id = addMember(personId)) == OPERATION_FAILED)
+                {
+                    return false;
+                } // if
+            } // if
+            final ContentValues requestValues = new ContentValues(1);
+            requestValues.put(Member.LATEST_SIGNATURE_REQUEST, getUnixTime());
+            requestMade = updateMember(id, requestValues);
+            if (requestMade)
+            {
+                db.setTransactionSuccessful();
+            } // if
+        } // try
+        finally
+        {
+            db.endTransaction();
+        } // finally
+        if (requestMade)
+        {
+            notifyListeners();
+        } // if
+        return requestMade;
+    } // requestSignature(String)
+
+    public Cursor getSignatureRequests(final long sinceUnixTime)
+    {
+        return getDb().query(
+                Member.TABLE_NAME,
+                null /* all columns */,
+                Member.LATEST_SIGNATURE_REQUEST + ">=?",
+                new String[] { Long.toString(sinceUnixTime) },
+                null /* group by */,
+                null /* having */,
+                Member.LATEST_SIGNATURE_REQUEST + " DESC");
+    } // getSignatureRequests(long)
+
+    public boolean memberHasSignature(final long id)
+    {
+        return Member.SIGNATURE_STATE_CAPTURED.equals(
+                getMemberField(Member._ID, Long.toString(id), Member.SIGNATURE_STATE));
+    }  // memberHasSignature(long)
+
+    public Cursor getMembersWithoutSignatures()
+    {
+        Log.d(TAG, "Called on " + Thread.currentThread().getName());
         return getMembersWithSignaturesInState(Member.SIGNATURE_STATE_UNCAPTURED);
-    } // getMembersWithUncapturedSignatures
+    } // getMembersWithUncapturedSignatures()
 
-    public Cursor getMembersWithCapturedSignatures()
+    public Cursor getMembersWithSignatures()
     {
         return getMembersWithSignaturesInState(Member.SIGNATURE_STATE_CAPTURED);
     } // getMembersWithCapturedSignatures
 
     private Cursor getMembersWithSignaturesInState(final String signatureState)
     {
-        return mDb.query(
+        return getDb().query(
                 Member.TABLE_NAME,
                 null /* columns */,
                 Member.SIGNATURE_STATE + "=?",
                 new String[] { signatureState },
-                null /* groupBy */,
+                null /* group by */,
                 null /* having */,
-                null /* orderBy */);
-    } // getMembersWithSignaturesInState
-
-    public Cursor getMembersWithoutAdditionalInfo()
-    {
-        return mDb.query(
-                Member.TABLE_NAME,
-                null /* columns */,
-                Member.RETRIEVED_ADDITIONAL_INFO + "=?",
-                new String[] { Member.RETRIEVED_ADDITIONAL_INFO_NO },
-                null /* groupBy */,
-                null /* having */,
-                null /* orderBy */);
-    } // getMembersWithoutAdditionalInfo
+                null /* order by */);
+    } // getMembersWithSignaturesInState(String)
 
     public boolean setSignatureCaptured(final long id)
     {
         final boolean updated = updateSignatureState(id, Member.SIGNATURE_STATE_CAPTURED);
         if (updated)
         {
-            mSignatureCatpuredNotifier.notifyListeners(id);
+            notifyListeners();
         } // if
         return updated;
-    } // setSignatureCaptured
+    } // setSignatureCaptured(long)
 
     public boolean setSignatureUploaded(final long id)
     {
@@ -303,32 +387,37 @@ public final class DataManager
             deleteMember(id);
         } // if
         return stateChanged;
-    } // setSignatureUploaded
+    } // setSignatureUploaded(long)
 
     private boolean updateSignatureState(final long id, final String newState)
     {
         final ContentValues newStateValue = new ContentValues(1);
         newStateValue.put(Member.SIGNATURE_STATE, newState);
         return updateMember(id, newStateValue);
-    } // updateSignatureState
+    } // updateSignatureState(long, String)
 
-    public boolean setStudentIdInvalid(final long id)
+    public boolean setPersonIdInvalid(final long id)
     {
-        final ContentValues newStudentIdValidValue = new ContentValues(1);
-        newStudentIdValidValue.put(Member.STUDENT_ID_VALIDATED, Member.STUDENT_ID_VALIDATED_VALID);
-        return updateMember(id, newStudentIdValidValue);
-    } // setStudentIdInvalid
+        final ContentValues newPersonIdValidValue = new ContentValues(1);
+        newPersonIdValidValue.put(Member.PERSON_ID_VALIDATED, Member.PERSON_ID_VALIDATED_INVALID);
+        return updateMember(id, newPersonIdValidValue);
+    } // setPersonIdInvalid(long)
 
     public int flushMembers()
     {
-        return mDb.delete(Member.TABLE_NAME, null /* whereClause */, null /* whereArgs */);
+        return getDb().delete(Member.TABLE_NAME, null /* whereClause */, null /* whereArgs */);
     } // flushMembers
 
-    private long getId(final String studentId)
+    public String getPersonId(final long id)
     {
-        final String id = getMemberField(Member.STUDENT_ID, studentId, Member._ID);
-        return id != null ? Long.parseLong(id) : -1L;
-    } // getId
+        return getMemberField(Member._ID, Long.toString(id), Member.PERSON_ID);
+    } // getPersonId(long)
+
+    private long getId(final String personId)
+    {
+        final String id = getMemberField(Member.PERSON_ID, personId, Member._ID);
+        return id != null ? Long.parseLong(id) : OPERATION_FAILED;
+    } // getId(String)
 
     private String getMemberField(final String uniqueColumn, final String uniqueValue,
             final String returnColumn)
@@ -336,14 +425,14 @@ public final class DataManager
         Cursor c = null;
         try
         {
-            c = mDb.query(
+            c = getDb().query(
                     Member.TABLE_NAME,
                     new String[] { returnColumn },
                     uniqueColumn + "=?",
                     new String[] { uniqueValue },
-                    null /* groupBy */,
+                    null /* group by */,
                     null /* having */,
-                    null /* orderBy */);
+                    null /* order by */);
             if (c != null && c.moveToFirst())
             {
                 return c.getString(0);
@@ -357,29 +446,21 @@ public final class DataManager
                 c.close();
             } // if
         } // finally
-    } // getMemberField
+    } // getMemberField(String, String, String)
 
     private boolean updateMember(final long id, final ContentValues updatedMemberValues)
     {
-        return mDb.update(
+        final boolean updated = getDb().update(
                 Member.TABLE_NAME,
                 updatedMemberValues,
                 Member._ID + "=?",
                 new String[] { Long.toString(id) }) == 1;
-    } // updateMember
-
-    private long insertMember(final ContentValues memberValues)
-    {
-        final long id = mDb.insert(
-                Member.TABLE_NAME,
-                Member.STUDENT_ID /* nullColumnHack */,
-                memberValues);
-        if (id != -1L)
+        if (updated)
         {
-            mMemberAddedNotifier.notifyListeners(id);
+            notifyListeners();
         } // if
-        return id;
-    } // insertMember
+        return updated;
+    } // updateMember
 
     private boolean deleteMember(final long id)
     {
@@ -391,7 +472,7 @@ public final class DataManager
 
         if (!signature.exists() || signature.delete())
         {
-            final int membersDeleted = mDb.delete(
+            final int membersDeleted = getDb().delete(
                     Member.TABLE_NAME,
                     Member._ID + "=?",
                     new String[] { Long.toString(id) });

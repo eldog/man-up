@@ -6,11 +6,13 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
-import com.appspot.manup.signup.WriteSignatureService.WriteCompleteListener;
+import com.appspot.manup.signup.data.DataManager;
+import com.appspot.manup.signup.data.DataManager.OnChangeListener;
 import com.appspot.manup.signup.ui.CheckPreferencesActivity;
 import com.appspot.manup.signup.ui.DoodleView;
 
-public final class CaptureSignatureActivity extends CheckPreferencesActivity
+public final class CaptureSignatureActivity extends CheckPreferencesActivity implements
+        OnChangeListener
 {
     @SuppressWarnings("unused")
     private static final String TAG = CaptureSignatureActivity.class.getSimpleName();
@@ -18,34 +20,13 @@ public final class CaptureSignatureActivity extends CheckPreferencesActivity
     public static final String ACTION_CAPTURE =
             CaptureSignatureActivity.class.getName() + ".CAPTURE";
     public static final String EXTRA_ID = CaptureSignatureActivity.class.getName() + ".ID";
-    public static final String EXTRA_NAME = CaptureSignatureActivity.class.getName() + ".NAME";
 
     private static final int MENU_SUBMIT = Menu.FIRST;
     private static final int MENU_CLEAR = Menu.FIRST + 1;
     private static final int MENU_SETTINGS = Menu.FIRST + 2;
 
-    private final WriteCompleteListener mWriteListener = new WriteCompleteListener()
-    {
-        @Override
-        public void onWriteComplete(Intent intent)
-        {
-            final long id = intent.getLongExtra(WriteSignatureService.EXTRA_ID, -1L);
-            final boolean successful =
-                    intent.getBooleanExtra(WriteSignatureService.EXTRA_SUCCESSFUL, false);
-            final String s = id + ": " + ((successful) ? "Successfully written" : "Write failed");
-            runOnUiThread(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    Toast.makeText(CaptureSignatureActivity.this, s, Toast.LENGTH_SHORT).show();
-                    CaptureSignatureActivity.this.finish();
-                } // run
-            });
-        } // onWriteComplete
-    };
-
-    private long mId = -1L;
+    private long mId = Long.MIN_VALUE;
+    private DataManager mDataManager = null;
     private DoodleView mSignatureView = null;
 
     public CaptureSignatureActivity()
@@ -59,11 +40,24 @@ public final class CaptureSignatureActivity extends CheckPreferencesActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.capture_signature);
         mSignatureView = (DoodleView) findViewById(R.id.signature);
-        // TODO: This value needs to be set
         final Intent intent = getIntent();
-        // STUDENT NAME value used for testing
         mId = intent.getLongExtra(EXTRA_ID, mId);
+        mDataManager = DataManager.getDataManager(this);
     } // onCreate
+
+    @Override
+    protected void onResume()
+    {
+        super.onResume();
+        mDataManager.registerListener(this);
+    } // onResume
+
+    @Override
+    protected void onPause()
+    {
+        mDataManager.unregisterListener(this);
+        super.onPause();
+    } // onPause
 
     @Override
     public boolean onCreateOptionsMenu(final Menu menu)
@@ -98,11 +92,20 @@ public final class CaptureSignatureActivity extends CheckPreferencesActivity
     {
         if (mSignatureView.isClear())
         {
-            Toast.makeText(this, "A signature is required", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Please sign.", Toast.LENGTH_SHORT).show();
             return;
         } // if
-        WriteSignatureService.writeSignature(this, mWriteListener, mId, mSignatureView.getDoodle());
+        WriteSignatureService.writeSignature(this, mId, mSignatureView.getDoodle());
     } // onSubmit
 
-} // CaptureSignatureActivity
+    @Override
+    public void onChange(final DataManager dataManager)
+    {
+        if (dataManager.memberHasSignature(mId))
+        {
+            finish();
+        } // if
+    } // onChange(DataManager)
+
+} // class CaptureSignatureActivity
 

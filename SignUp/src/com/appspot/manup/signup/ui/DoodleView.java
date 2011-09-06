@@ -22,10 +22,10 @@ public final class DoodleView extends View
     private final Path mPath = new Path();
     private final Paint mPathPaint;
 
-    private boolean mClearCanvas = true;
-    private float mX = -1.0f;
-    private float mY = -1.0f;
-    private Bitmap mBitmap = null;
+    private boolean mNothingDrawn = true;
+    private float mLastX = Float.MIN_VALUE;
+    private float mLastY = Float.MIN_VALUE;
+    private Bitmap mDoodle = null;
 
     {
         mPathPaint = new Paint();
@@ -56,16 +56,15 @@ public final class DoodleView extends View
     @Override
     protected void onSizeChanged(final int w, final int h, final int oldw, final int oldh)
     {
-        mBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-        mCanvas.setBitmap(mBitmap);
-    } // onSizeChanged
+        mCanvas.setBitmap(mDoodle = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888));
+    } // onSizeChanged(int, int, int, int)
 
     @Override
     protected void onDraw(final Canvas canvas)
     {
-        canvas.drawBitmap(mBitmap, 0 /* x */, 0 /* y */, mBitmapPaint);
+        canvas.drawBitmap(mDoodle, 0.0f /* left */, 0.0f /* top */, mBitmapPaint);
         canvas.drawPath(mPath, mPathPaint);
-    } // onDraw
+    } // onDraw(Canvas)
 
     @Override
     public boolean onTouchEvent(final MotionEvent event)
@@ -76,62 +75,71 @@ public final class DoodleView extends View
         switch (event.getAction())
         {
             case MotionEvent.ACTION_DOWN:
-                touchStart(x, y);
+                pathStart(x, y);
                 break;
             case MotionEvent.ACTION_MOVE:
-                touchMove(x, y);
+                pathMove(x, y);
                 break;
             case MotionEvent.ACTION_UP:
-                touchUp();
+                pathEnd();
                 break;
         } // switch
+
         invalidate();
         return true;
-    } // onTouchEvent
+    } // onTouchEvent(MotionEvent)
 
-    private void touchStart(final float x, final float y)
+    private void pathStart(final float x, final float y)
     {
         mPath.moveTo(x, y);
-        mX = x;
-        mY = y;
-    } // touchStart
+        mLastX = x;
+        mLastY = y;
+    } // pathStart(float, float)
 
-    private void touchMove(final float x, final float y)
+    private void pathMove(final float x, final float y)
     {
-        final float dx = Math.abs(x - mX);
-        final float dy = Math.abs(y - mY);
-        if (dx >= TOUCH_TOLERANCE || dy >= TOUCH_TOLERANCE)
+        if (isSignificantMove(x, y))
         {
-            mPath.quadTo(mX, mY, (x + mX) / 2.0f, (y + mY) / 2.0f);
-            mX = x;
-            mY = y;
+            mPath.quadTo(mLastX, mLastY, (x + mLastX) / 2.0f, (y + mLastY) / 2.0f);
+            mLastX = x;
+            mLastY = y;
         } // if
-    } // touchMove
+    } // pathMove(float, float)
 
-    private void touchUp()
+    private boolean isSignificantMove(final float x, final float y)
     {
-        mPath.lineTo(mX, mY);
-        // Commit the path to our offscreen.
+        final float xMovement = Math.abs(x - mLastX);
+        final float yMovement = Math.abs(y - mLastY);
+        return xMovement >= TOUCH_TOLERANCE || yMovement >= TOUCH_TOLERANCE;
+    } // isSignificantMove(float, float)
+
+    private void pathEnd()
+    {
+        // Save the finished path.
         mCanvas.drawPath(mPath, mPathPaint);
-        // Kill this so we don't double draw.
+        /*
+         * Reset the path so that we don't join the end of this path to the
+         * start of the next.
+         */
         mPath.reset();
-        mClearCanvas = false;
-    } // touchUp
+        mNothingDrawn = false;
+    } // pathEnd()
 
     public boolean isClear()
     {
-        return mClearCanvas;
-    } // isClear
+        return mNothingDrawn;
+    } // isClear()
 
     public void clear()
     {
-        mBitmap.eraseColor(Color.TRANSPARENT);
+        mDoodle.eraseColor(Color.TRANSPARENT);
+        mNothingDrawn = true;
         invalidate();
-    } // clear
+    } // clear()
 
     public Bitmap getDoodle()
     {
-        return mBitmap;
-    } // getBitMap
+        return mDoodle;
+    } // getBitMap()
 
 } // class DoodleView

@@ -8,17 +8,17 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
         <EditText
-            android:id="@+id/student_id"
+            android:id="@+id/person_id"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:hint="@string/student_id"
+            android:hint="@string/personal_id"
             android:inputType="number" />
         <Button
             android:id="@+id/add_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/add_student_id_button"
+            android:text="@string/add_personal_id_button"
             android:onClick="onAddClick" />
     </LinearLayout>
     <ListView

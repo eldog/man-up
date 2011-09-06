@@ -1,84 +1,94 @@
 package com.appspot.manup.signup.ldap;
 
-import java.util.Enumeration;
-
 import android.content.ContentValues;
+import android.text.TextUtils;
 
 import com.appspot.manup.signup.data.DataManager.Member;
 import com.novell.ldap.LDAPEntry;
 
 public final class MemberLdapEntry
 {
-    private static final String LDAP_STUDENT_ID = "umanPersonID";
+    private static final String LDAP_PERSON_ID = "umanPersonID";
     private static final String LDAP_GIVEN_NAME = "givenName";
     private static final String LDAP_SURNAME = "sn";
     private static final String LDAP_EMAIL = "mail";
     private static final String LDAP_DEPARTMENT = "ou";
-    private static final String LDAP_STUDENT_TYPE = "employeeType";
+    private static final String LDAP_EMPLOYEE_TYPE = "employeeType";
 
-    private static final String VALUE_SEPERATER = ", ";
+    private static final String VALUE_DELIMITER = ", ";
 
-    public static MemberLdapEntry fromLdapEntry(final LDAPEntry ldapEntry)
+    public static MemberLdapEntry fromLdapEntry(final LDAPEntry memberEntry)
     {
         return new MemberLdapEntry(
-                getStringValue(ldapEntry, LDAP_STUDENT_ID),
-                getStringValue(ldapEntry, LDAP_GIVEN_NAME),
-                getStringValue(ldapEntry, LDAP_SURNAME),
-                getStringValue(ldapEntry, LDAP_EMAIL),
-                getStringValue(ldapEntry, LDAP_DEPARTMENT),
-                getStringValue(ldapEntry, LDAP_STUDENT_TYPE));
+                getStringValue(memberEntry, LDAP_PERSON_ID),
+                getStringValue(memberEntry, LDAP_GIVEN_NAME),
+                getStringValue(memberEntry, LDAP_SURNAME),
+                getStringValue(memberEntry, LDAP_EMAIL),
+                getStringValue(memberEntry, LDAP_DEPARTMENT),
+                getStringValue(memberEntry, LDAP_EMPLOYEE_TYPE));
     } // fromLdapEntry
 
-    private static String getStringValue(final LDAPEntry ldapEntry, final String attribute)
+    private static String getStringValue(final LDAPEntry memberEntry, final String attribute)
     {
-        final StringBuilder valueBuilder = new StringBuilder();
-        for (final Enumeration<?> values = ldapEntry.getAttribute(attribute).getStringValues();;)
-        {
-            valueBuilder.append(values.nextElement());
-            if (!values.hasMoreElements())
-            {
-                break;
-            } // if
-            valueBuilder.append(VALUE_SEPERATER);
-        } // for
-        return valueBuilder.toString();
+        return TextUtils.join(VALUE_DELIMITER, memberEntry.getAttribute(attribute)
+                .getStringValueArray());
     } // getStringValue
 
-    private final String mStudentId;
+    private final String mPersonId;
     private final String mGivenName;
     private final String mSurname;
     private final String mEmail;
     private final String mDepartment;
-    private final String mStudentType;
+    private final String mMemberType;
 
-    private MemberLdapEntry(final String studentId, final String givenName, final String surname,
-            final String email, final String department, final String studentType)
+    private MemberLdapEntry(final String personId, final String givenName, final String surname,
+            final String email, final String department, final String memberType)
     {
         super();
-        mStudentId = studentId;
+        mPersonId = personId;
         mGivenName = givenName;
         mSurname = surname;
         mEmail = email;
         mDepartment = department;
-        mStudentType = studentType;
-    } // UomLdapEntry
+        mMemberType = memberType;
+    } // constructor(String, String, String, String, String, String)
 
     public ContentValues getContentValues()
     {
         final ContentValues contentValues = new ContentValues(6);
-        contentValues.put(Member.STUDENT_ID, mStudentId);
+        contentValues.put(Member.PERSON_ID, mPersonId);
         contentValues.put(Member.GIVEN_NAME, mGivenName);
         contentValues.put(Member.SURNAME, mSurname);
         contentValues.put(Member.EMAIL, mEmail);
         contentValues.put(Member.DEPARTMENT, mDepartment);
-        contentValues.put(Member.STUDENT_TYPE, mStudentType);
+        contentValues.put(Member.MEMBER_TYPE, mMemberType);
         return contentValues;
     } // createContentValuesFromLdap
 
-    public String getStudentId()
+    @Override
+    public String toString()
     {
-        return mStudentId;
-    } // getStudentId
+        return new StringBuilder(MemberLdapEntry.class.getSimpleName())
+        .append("\n{\n\tPerson ID: ")
+        .append(mPersonId)
+        .append("\n\tGiven Name: ")
+        .append(mGivenName)
+        .append("\n\tSurname: ")
+        .append(mSurname)
+        .append("\n\tEmail: ")
+        .append(mEmail)
+        .append("\n\tDepartment: ")
+        .append(mDepartment)
+        .append("\n\tMember Type: ")
+        .append(mMemberType)
+        .append("\n}")
+        .toString();
+    } // toString()
+
+    public String getPersonId()
+    {
+        return mPersonId;
+    } // getPersonId()
 
     public String getGivenName()
     {
@@ -100,9 +110,9 @@ public final class MemberLdapEntry
         return mDepartment;
     } // getDepartment
 
-    public String getStudentType()
+    public String getMemberType()
     {
-        return mStudentType;
-    } // getStudentType
+        return mMemberType;
+    } // getMemberType()
 
-} // UomLdapEntry
+} // class MemberLdapEntry

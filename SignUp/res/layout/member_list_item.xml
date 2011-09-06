@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
     <TextView
-        android:id="@+id/student_id"
+        android:id="@+id/person_id"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingTop="2dip"
@@ -20,6 +20,13 @@
         android:textSize="18sp" />
     <TextView
         android:id="@+id/surname"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="2dip"
+        android:paddingBottom="3dip"
+        android:textSize="18sp" />
+    <TextView
+        android:id="@+id/extra_info_state"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingTop="2dip"

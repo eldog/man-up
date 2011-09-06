@@ -34,7 +34,7 @@ public final class UploadService extends IntentService
     public UploadService()
     {
         super(TAG);
-    } // UploadService
+    } // constructor()
 
     @Override
     protected void onHandleIntent(final Intent intent)
@@ -42,21 +42,21 @@ public final class UploadService extends IntentService
         Cursor c = null;
         try
         {
-            c = DataManager.getInstance(this).getMembersWithCapturedSignatures();
+            c = DataManager.getDataManager(this).getMembersWithSignatures();
             if (c == null)
             {
                 Log.w(TAG, "Failed to get captured signatures. Aborting.");
                 return;
             } // if
 
-            final int idColumn = c.getColumnIndex(Member._ID);
-            final int studentIdColumn = c.getColumnIndex(Member.STUDENT_ID);
+            final int idColumn = c.getColumnIndexOrThrow(Member._ID);
+            final int personIdColumn = c.getColumnIndexOrThrow(Member.PERSON_ID);
 
             while (c.moveToNext())
             {
                 try
                 {
-                    uploadSignature(c.getLong(idColumn), c.getString(studentIdColumn));
+                    uploadSignature(c.getLong(idColumn), c.getString(personIdColumn));
                 } // try
                 catch (final IOException e)
                 {
@@ -75,7 +75,7 @@ public final class UploadService extends IntentService
         } // finally
     } // uploadSignatures
 
-    private void uploadSignature(final long id, final String studentId) throws IOException
+    private void uploadSignature(final long id, final String personId) throws IOException
     {
         final Preferences prefs = new Preferences(this);
         if (!prefs.hasHost())
@@ -94,7 +94,7 @@ public final class UploadService extends IntentService
                     null /* userInfo */,
                     prefs.getHost(),
                     prefs.getPort(),
-                    "/members/" + studentId,
+                    "/members/" + personId,
                     null /* query */,
                     null /* fragment */);
         } // try
@@ -103,7 +103,7 @@ public final class UploadService extends IntentService
             throw new AssertionError(e);
         } // catch
 
-        final DataManager db = DataManager.getInstance(this);
+        final DataManager db = DataManager.getDataManager(this);
         final File imageFile = db.getSignatureFile(id);
         if (imageFile == null)
         {
