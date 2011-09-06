@@ -27,21 +27,22 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
     private static final int MENU_SETTINGS = Menu.FIRST;
     private static final int MENU_UPLOAD_SIGNATURES = Menu.FIRST + 1;
     private static final int MENU_FLUSH_MEMBERS = Menu.FIRST + 2;
+    private static final int MENU_LOAD_TEST_DATA = Menu.FIRST + 3;
 
     private final class DataLoader extends AsyncTask<Void, Void, Void>
     {
-        private volatile Cursor c1 = null, c2 = null;
+        private volatile Cursor c1 = null;// , c2 = null;
 
         @Override
         protected Void doInBackground(Void... params)
         {
             c1 = mDataManager.getMembersWithoutSignatures();
-            c2 = mDataManager.getSignatureRequests(mResumedAtUnixTime);
+            // c2 = mDataManager.getSignatureRequests(mResumedAtUnixTime);
             Log.d(TAG, "They've been loaded.");
             if (isCancelled())
             {
                 c1.close();
-                c2.close();
+                // c2.close();
             } // if
             return null;
         }
@@ -51,35 +52,20 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
         {
             if (c1 != null)
                 c1.close();
-            if (c2 != null)
-                c2.close();
-            Log.d(TAG, "Closed them.");
+            /*
+             * if (c2 != null) c2.close();
+             */Log.d(TAG, "Closed them.");
         }
 
         @Override
         protected void onPostExecute(Void result)
         {
             mUncapturedSignatureAdapter.changeCursor(c1);
-            if (c2 == null)
-            {
-                return;
-            } // if
-            Intent intent = null;
-            if (c2.moveToFirst())
-            {
-                intent = new Intent(MembersListActivity.this,
-                        CaptureSignatureActivity.class);
-                intent.putExtra(CaptureSignatureActivity.EXTRA_ID,
-                        c2.getLong(c2.getColumnIndexOrThrow(Member._ID)));
-                Log.d(TAG, "Finished? " + isFinishing());
-                startActivity(intent);
-            } // if
-            Log.d(TAG, "Closing in onCursorLoaded " + c2);
-            c2.close();
-            if (intent != null)
-            {
-
-            } // if
+            /*
+             * if (c2 == null) { return; } // if
+             *
+             * Log.d(TAG, "Closing in onCursorLoaded " + c2); c2.close();
+             */
         }
     }
 
@@ -200,6 +186,7 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
         menu.add(0, MENU_SETTINGS, 0, "Settings");
         menu.add(0, MENU_UPLOAD_SIGNATURES, 0, "Upload signatures");
         menu.add(0, MENU_FLUSH_MEMBERS, 0, "Delete members");
+        menu.add(0, MENU_LOAD_TEST_DATA, 0, "Load test data");
         return true;
     } // onCreateOptionsMenu(Menu)
 
@@ -216,6 +203,10 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
                 return true;
             case MENU_FLUSH_MEMBERS:
                 mDataManager.flushMembers();
+                loadData();
+                return true;
+            case MENU_LOAD_TEST_DATA:
+                mDataManager.loadTestData();
                 loadData();
                 return true;
             default:

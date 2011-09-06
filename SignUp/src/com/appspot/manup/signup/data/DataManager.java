@@ -499,4 +499,37 @@ public final class DataManager
         return new File(externalDir, Long.toString(id) + SIGNATURE_FILE_EXT);
     } // getSignatureFile
 
+    public long loadTestData()
+    {
+        flushMembers();
+        final SQLiteDatabase db = getDb();
+        final ContentValues[] cvs = TestData.getMembers();
+        db.beginTransaction();
+        try
+        {
+            for (final ContentValues cv : cvs)
+            {
+                addMember(cv);
+            } // for
+            db.setTransactionSuccessful();
+            return cvs.length;
+        } // try
+        catch (final SQLiteConstraintException e)
+        {
+            return OPERATION_FAILED;
+        } // catch
+        finally
+        {
+            db.endTransaction();
+        } // finally
+    } // loadTestData
+
+    private long addMember(final ContentValues cv) throws SQLiteConstraintException
+    {
+        return getDb().insert(
+                Member.TABLE_NAME,
+                null /* null column hack */,
+                cv);
+    } // addMember(ContentValues)
+
 } // class DataManager
