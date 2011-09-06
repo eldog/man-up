@@ -347,11 +347,16 @@ public final class DataManager
                 getMemberField(Member._ID, Long.toString(id), Member.SIGNATURE_STATE));
     } // memberHasSignature(long)
 
-    public Cursor getMembersWithoutSignatures()
+    public Cursor getMembers()
     {
-        Log.d(TAG, "Called on " + Thread.currentThread().getName());
-        return getMembersWithSignaturesInState(Member.SIGNATURE_STATE_UNCAPTURED);
-    } // getMembersWithUncapturedSignatures()
+        return getDb().query(Member.TABLE_NAME,
+                null /* all columns */,
+                null /*selection*/,
+                null /*selectionArgs*/,
+                null /*groupBy*/,
+                null /*having*/,
+                null /*orderBy*/);
+    } // getMembers()
 
     public Cursor getMembersWithSignatures()
     {

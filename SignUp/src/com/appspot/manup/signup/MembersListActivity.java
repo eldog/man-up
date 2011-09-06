@@ -36,7 +36,7 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
         @Override
         protected Void doInBackground(Void... params)
         {
-            c1 = mDataManager.getMembersWithoutSignatures();
+            c1 = mDataManager.getMembers();
             // c2 = mDataManager.getSignatureRequests(mResumedAtUnixTime);
             Log.d(TAG, "They've been loaded.");
             if (isCancelled())
