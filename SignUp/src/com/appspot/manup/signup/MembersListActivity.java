@@ -30,43 +30,36 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
 
     private final class DataLoader extends AsyncTask<Void, Void, Void>
     {
-        private volatile Cursor c1 = null;// , c2 = null;
+        private volatile Cursor c1 = null;
 
         @Override
-        protected Void doInBackground(Void... params)
+        protected Void doInBackground(final Void... noParams)
         {
             c1 = mDataManager.getMembers();
-            // c2 = mDataManager.getSignatureRequests(mResumedAtUnixTime);
             Log.d(TAG, "They've been loaded.");
             if (isCancelled())
             {
                 c1.close();
-                // c2.close();
             } // if
             return null;
-        }
+        } // doInBackground
 
         @Override
         protected void onCancelled()
         {
             if (c1 != null)
+            {
                 c1.close();
-            /*
-             * if (c2 != null) c2.close();
-             */Log.d(TAG, "Closed them.");
-        }
+            }
+            Log.d(TAG, "Closed them.");
+        } // onCancelled
 
         @Override
-        protected void onPostExecute(Void result)
+        protected void onPostExecute(Void noResult)
         {
             mUncapturedSignatureAdapter.changeCursor(c1);
-            /*
-             * if (c2 == null) { return; } // if
-             *
-             * Log.d(TAG, "Closing in onCursorLoaded " + c2); c2.close();
-             */
-        }
-    }
+        } // onPostExecute
+    } // DataLoader
 
     private final class MemberAdder extends AsyncTask<String, Void, Long>
     {
@@ -102,10 +95,8 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
     private Button mAdd = null;
     private EditText mPersonId = null;
     private DataLoader mLoader = null;
-    private MembersResourceCursorAdapter mUncapturedSignatureAdapter = null;
-
+    private MembersCursorAdapter mUncapturedSignatureAdapter = null;
     private volatile DataManager mDataManager = null;
-    //private volatile long mResumedAtUnixTime = Long.MIN_VALUE;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState)
@@ -115,15 +106,12 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
         mDataManager = DataManager.getDataManager(this);
         mAdd = (Button) findViewById(R.id.add_button);
         mPersonId = (EditText) findViewById(R.id.person_id);
-        mUncapturedSignatureAdapter = new MembersResourceCursorAdapter(
-                this,
-                R.layout.member_list_item,
-                null /* cursor */,
-                new String[] { Member.PERSON_ID, Member.GIVEN_NAME, Member.SURNAME,
-                        Member.EXTRA_INFO_STATE, Member.SIGNATURE_STATE },
-                new int[] { R.id.person_id, R.id.given_name, R.id.surname, R.id.extra_info_state });
+
+        mUncapturedSignatureAdapter = new MembersCursorAdapter(this);
+
         final ListView uncapturedSignaturesList =
                 (ListView) findViewById(R.id.members_with_uncaptured_signatures_list);
+
         uncapturedSignaturesList.setAdapter(mUncapturedSignatureAdapter);
         uncapturedSignaturesList.setOnItemClickListener(new OnItemClickListener()
         {
@@ -131,13 +119,17 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
             public void onItemClick(final AdapterView<?> parent, final View view,
                     final int position, final long id)
             {
-                final Cursor c = (Cursor) mUncapturedSignatureAdapter.getItem(position);
-                final Intent intent = new Intent(MembersListActivity.this,
-                        CaptureSignatureActivity.class);
-                intent.setAction(CaptureSignatureActivity.ACTION_CAPTURE);
-                intent.putExtra(CaptureSignatureActivity.EXTRA_ID,
-                        c.getLong(c.getColumnIndexOrThrow(Member._ID)));
-                startActivity(intent);
+                final Object item = mUncapturedSignatureAdapter.getItem(position);
+                if (item instanceof Cursor)
+                {
+                    final Cursor c = (Cursor) item;
+                    final Intent intent = new Intent(MembersListActivity.this,
+                            CaptureSignatureActivity.class);
+                    intent.setAction(CaptureSignatureActivity.ACTION_CAPTURE);
+                    intent.putExtra(CaptureSignatureActivity.EXTRA_ID,
+                            c.getLong(c.getColumnIndexOrThrow(Member._ID)));
+                    startActivity(intent);
+                } // if
             } // onItemClick(AdapterView, View, int, long)
         });
     } // onCreate(Bundle)
@@ -146,7 +138,6 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
     protected void onResume()
     {
         super.onResume();
-     //   mResumedAtUnixTime = DataManager.getUnixTime();
         mDataManager.registerListener(this);
         loadData();
     } // onResume()

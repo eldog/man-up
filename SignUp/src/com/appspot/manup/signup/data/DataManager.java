@@ -486,6 +486,7 @@ public final class DataManager
         return (!signature.exists() || signature.delete());
     } // deleteMemberSignature
 
+    @SuppressWarnings("unused")
     private boolean deleteMember(final long id)
     {
         if (deleteMemberSignature(id))
