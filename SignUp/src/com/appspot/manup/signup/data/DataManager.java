@@ -243,9 +243,9 @@ public final class DataManager
         return getDb().query(
                 Member.TABLE_NAME,
                 null /* all columns */,
-                Member.EXTRA_INFO_STATE + "=? AND " + Member.PERSON_ID_VALIDATED + "!=?",
+                Member.EXTRA_INFO_STATE + "!=? AND " + Member.PERSON_ID_VALIDATED + "!=?",
                 new String[] {
-                        Member.EXTRA_INFO_STATE_NONE,
+                        Member.EXTRA_INFO_STATE_RETRIEVED,
                         Member.PERSON_ID_VALIDATED_INVALID },
                 null /* group by */,
                 null /* having */,
@@ -486,23 +486,6 @@ public final class DataManager
         return (!signature.exists() || signature.delete());
     } // deleteMemberSignature
 
-    @SuppressWarnings("unused")
-    private boolean deleteMember(final long id)
-    {
-        if (deleteMemberSignature(id))
-        {
-            final int membersDeleted = getDb().delete(
-                    Member.TABLE_NAME,
-                    Member._ID + "=?",
-                    new String[] { Long.toString(id) });
-            return membersDeleted == 1;
-        } // if
-
-        Log.w(TAG, "Failed to delete image file for " + id);
-
-        return false;
-    } // deleteMember
-
     public File getSignatureFile(final long id)
     {
         final File externalDir = mContext.getExternalFilesDir(null /* type */);
@@ -516,34 +499,29 @@ public final class DataManager
     public long loadTestData()
     {
         flushMembers();
-        final SQLiteDatabase db = getDb();
         final ContentValues[] cvs = TestData.getMembers();
+        final SQLiteDatabase db = getDb();
         db.beginTransaction();
         try
         {
             for (final ContentValues cv : cvs)
             {
-                addMember(cv);
+                if (db.insert(
+                        Member.TABLE_NAME,
+                        null /* null column hack */,
+                        cv) == OPERATION_FAILED)
+                {
+                    return OPERATION_FAILED;
+                } // if
             } // for
             db.setTransactionSuccessful();
-            return cvs.length;
         } // try
-        catch (final SQLiteConstraintException e)
-        {
-            return OPERATION_FAILED;
-        } // catch
         finally
         {
             db.endTransaction();
         } // finally
-    } // loadTestData
-
-    private long addMember(final ContentValues cv) throws SQLiteConstraintException
-    {
-        return getDb().insert(
-                Member.TABLE_NAME,
-                null /* null column hack */,
-                cv);
-    } // addMember(ContentValues)
+        notifyListeners();
+        return cvs.length;
+    } // loadTestData()
 
 } // class DataManager

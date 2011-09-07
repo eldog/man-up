@@ -1,9 +1,13 @@
 package com.appspot.manup.signup.ldap;
 
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.database.Cursor;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -58,17 +62,13 @@ public final class LdapService extends Service implements OnChangeListener
         @Override
         public void handleMessage(final Message msg)
         {
-            Log.d(TAG, "Got message. " + msg.what);
             switch (msg.what)
             {
                 case CMD_START_PORT_FORWARDING:
-                    mPortforwardingStarted = startPortForwarding();
-                    /* fall through */
+                    startPortForwarding();
+                    break;
                 case CMD_RETRIEVE_EXTRA_INFO:
-                    if (mPortforwardingStarted)
-                    {
-                        retrieveExtraInfo();
-                    } // if
+                    retrieveExtraInfo();
                     break;
                 default:
                     throw new AssertionError();
@@ -76,11 +76,36 @@ public final class LdapService extends Service implements OnChangeListener
         } // handleMessage(Message)
     } // class LdapLookupHandler
 
+    private final BroadcastReceiver mNetworkReciever = new BroadcastReceiver()
+    {
+        @Override
+        public void onReceive(final Context context, final Intent intent)
+        {
+            final NetworkInfo info =
+                    (NetworkInfo) intent.getParcelableExtra(ConnectivityManager.EXTRA_NETWORK_INFO);
+            final DataManager dataManager = DataManager.getDataManager(context);
+            if (info.isConnected())
+            {
+                dataManager.registerListener(LdapService.this);
+                mHandler.sendEmptyMessage(CMD_START_PORT_FORWARDING);
+                mHandler.sendEmptyMessage(CMD_RETRIEVE_EXTRA_INFO);
+            } // if
+            else
+            {
+                dataManager.unregisterListener(LdapService.this);
+            } // else
+        } // onReceive(Context, Intent)
+    };
+
     private final JSch mJsch = new JSch();
-    private DataManager mDataManager = null;
+    private final IntentFilter mIntentFilter;
     private LdapLookupHandler mHandler = null;
-    private volatile boolean mPortforwardingStarted = false;
+    private volatile DataManager mDataManager = null;
     private volatile Session mSession = null;
+
+    {
+        mIntentFilter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
+    }
 
     public LdapService()
     {
@@ -91,18 +116,23 @@ public final class LdapService extends Service implements OnChangeListener
     public void onCreate()
     {
         super.onCreate();
-
+        mDataManager = DataManager.getDataManager(this);
         final HandlerThread thread = new HandlerThread(TAG, Process.THREAD_PRIORITY_BACKGROUND);
         thread.start();
         mHandler = new LdapLookupHandler(thread.getLooper());
         mHandler.sendEmptyMessage(CMD_START_PORT_FORWARDING);
-        mDataManager = DataManager.getDataManager(this);
-        mDataManager.registerListener(this);
+        mHandler.sendEmptyMessage(CMD_RETRIEVE_EXTRA_INFO);
+        // CONNECTIVITY_ACTION is sticky, let the receiver register with the data manager.
+        registerReceiver(mNetworkReciever, mIntentFilter);
     } // onCreate()
 
     private boolean startPortForwarding()
     {
         final Preferences prefs = new Preferences(this);
+        if (mSession != null && mSession.isConnected())
+        {
+            return true;
+        } // if
         try
         {
             /*
@@ -121,8 +151,7 @@ public final class LdapService extends Service implements OnChangeListener
             {
                 mSession.disconnect();
             } // if
-            Log.e(TAG, "Failed to start port forwarding, stopping service.");
-            stopSelf();
+            Log.e(TAG, "Failed to start port forwarding.");
             return false;
         } // catch
         Log.v(TAG, "Port forwaridng started.");
@@ -155,7 +184,7 @@ public final class LdapService extends Service implements OnChangeListener
                 } // try
                 catch (final LDAPException e)
                 {
-                    Log.e(TAG, "Failed to query LDAP server", e);
+                    Log.w(TAG, "Failed to query LDAP server", e);
                 } // catch
             } while (cursor.moveToNext() && !Thread.interrupted());
         } // try
@@ -166,7 +195,7 @@ public final class LdapService extends Service implements OnChangeListener
                 cursor.close();
             } // if
         } // finally
-    } // onHandleIntent
+    } // retrieveExtraInfo()
 
     private void queryLdapServer(final long id, final String personId) throws LDAPException
     {
@@ -195,6 +224,12 @@ public final class LdapService extends Service implements OnChangeListener
                 Log.e(TAG, "Failed to add extra infomation for person ID " + personId);
             } // if
         } // try
+        catch (final LDAPException e)
+        {
+            Log.d(TAG, "Setting error.");
+            mDataManager.setExtraInfoStateToError(id);
+            throw e;
+        } // catch
         finally
         {
             if (conn != null)
@@ -254,7 +289,6 @@ public final class LdapService extends Service implements OnChangeListener
     @Override
     public void onChange(final DataManager dataManager)
     {
-        Log.d(TAG, "onChange called.");
         mHandler.removeMessages(CMD_RETRIEVE_EXTRA_INFO);
         mHandler.sendEmptyMessage(CMD_RETRIEVE_EXTRA_INFO);
     } // onChange(DataManager)
