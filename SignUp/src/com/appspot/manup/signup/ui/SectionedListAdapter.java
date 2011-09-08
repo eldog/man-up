@@ -54,24 +54,13 @@ public abstract class SectionedListAdapter implements ListAdapter
 
         long getItemId(final int listPos)
         {
-            if (mCursorsValid)
+            if (isHeader(listPos))
             {
-                if (isHeader(listPos))
-                {
-                    return -mSectionId;
-                } // if
-                else
-                {
-                    return getItem(listPos).getLong(mIdCol);
-                } // else
+                return -mSectionId;
             } // if
             else
             {
-                /*
-                 * I'm not sure this is the right thing to do, I'm just coping
-                 * CursorAdapter.
-                 */
-                return 0;
+                return getItem(listPos).getLong(mIdCol);
             } // else
         } // getItemId(int)
 
@@ -297,7 +286,18 @@ public abstract class SectionedListAdapter implements ListAdapter
     @Override
     public long getItemId(int listPos)
     {
-        return getSection(listPos).getItemId(listPos);
+        if (mCursorsValid)
+        {
+            return getSection(listPos).getItemId(listPos);
+        } // if
+        else
+        {
+            /*
+             * I'm not sure this is the right thing to do, I'm just coping
+             * CursorAdapter.
+             */
+            return 0;
+        } // else
     } // getItemId(int)
 
     @Override
