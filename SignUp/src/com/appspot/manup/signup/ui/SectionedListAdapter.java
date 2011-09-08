@@ -19,7 +19,6 @@ public abstract class SectionedListAdapter implements ListAdapter
     private static final int VIEW_TYPE_HEADER = 0;
     private static final int VIEW_TYPE_ITEM = 1;
     private static final int VIEW_TYPE_COUNT = 2;
-    private static final int VIEW_TYPE_INVALID = Integer.MIN_VALUE;
 
     private final class Section
     {
@@ -299,10 +298,6 @@ public abstract class SectionedListAdapter implements ListAdapter
     @Override
     public int getItemViewType(final int listPos)
     {
-        if (!mCursorsValid)
-        {
-            return VIEW_TYPE_INVALID;
-        } // if
         return getSection(listPos).getItemViewType(listPos);
     } // getItemViewType(int)
 
