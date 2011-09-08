@@ -41,13 +41,16 @@ final class MemberAdapter extends SectionedListAdapter
         protected void onCancelled()
         {
             mMemberLoader = null;
-            for (final Cursor cursor : mCursors)
+            if (mCursors != null)
             {
-                if (cursor != null)
+                for (final Cursor cursor : mCursors)
                 {
-                    cursor.close();
-                } // if
-            } // for
+                    if (cursor != null)
+                    {
+                        cursor.close();
+                    } // if
+                } // for
+            } // if
         } // onCancelled
 
         @Override

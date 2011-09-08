@@ -7,6 +7,7 @@ import java.util.Set;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteConstraintException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
@@ -199,7 +200,7 @@ public final class DataManager
     } // notifyListeners()
 
     /**
-     * Add a new member.
+     * Add a new member. Adding a member also implies a request for a signature.
      *
      * @param personId
      *            the person ID of the new member
@@ -211,6 +212,7 @@ public final class DataManager
     {
         final ContentValues memberValues = new ContentValues(1);
         memberValues.put(Member.PERSON_ID, personId);
+        memberValues.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, getUnixTime());
         final long id;
         try
         {
@@ -305,10 +307,7 @@ public final class DataManager
             long id = getId(personId);
             if (id == OPERATION_FAILED)
             {
-                if ((id = addMember(personId)) == OPERATION_FAILED)
-                {
-                    return false;
-                } // if
+                return addMember(personId) == OPERATION_FAILED;
             } // if
             final ContentValues requestValues = new ContentValues(1);
             requestValues.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, getUnixTime());
@@ -353,7 +352,7 @@ public final class DataManager
                 Member.TABLE_NAME,
                 null /* all columns */,
                 Member.LATEST_PENDING_SIGNATURE_REQUEST + " IS NOT NULL",
-                null /* selectionArgs */,
+                null /* selection args */,
                 null /* groupBy */,
                 null /* having */,
                 Member.LATEST_PENDING_SIGNATURE_REQUEST + " DESC");
@@ -530,8 +529,12 @@ public final class DataManager
         final SQLiteDatabase db = getDb();
         for (final ContentValues cv : cvs)
         {
-                db.insert(Member.TABLE_NAME, null /* null column hack */, cv);
+            if (db.insert(Member.TABLE_NAME, null /* null column hack */, cv) == OPERATION_FAILED)
+            {
+                Log.e(TAG, "Failed to insert test data. " + cv);
+            } // if
         } // for
+        DatabaseUtils.dumpCursor(db.query(Member.TABLE_NAME, null, null, null, null, null, null));
         return cvs.length;
     } // loadTestData()
 } // class DataManager

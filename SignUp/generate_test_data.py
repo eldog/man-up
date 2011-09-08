@@ -74,7 +74,7 @@ def main(argv=None):
             members.append('')
         m = i
         members.append('        sMembers = new ContentValues[] {')
-        for i in range(m):
+        for i in range(m + 1):
             members.append('                sMember%d,' % i)
         members.append('        };')
         members.append('')
