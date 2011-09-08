@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -21,44 +20,13 @@ import com.appspot.manup.signup.ui.CheckPreferencesActivity;
 
 public final class MembersListActivity extends CheckPreferencesActivity implements OnChangeListener
 {
+    @SuppressWarnings("unused")
     private static final String TAG = MembersListActivity.class.getSimpleName();
 
     private static final int MENU_SETTINGS = Menu.FIRST;
     private static final int MENU_UPLOAD_SIGNATURES = Menu.FIRST + 1;
     private static final int MENU_FLUSH_MEMBERS = Menu.FIRST + 2;
     private static final int MENU_LOAD_TEST_DATA = Menu.FIRST + 3;
-
-    private final class DataLoader extends AsyncTask<Void, Void, Void>
-    {
-        private volatile Cursor c1 = null;
-
-        @Override
-        protected Void doInBackground(final Void... noParams)
-        {
-            c1 = mDataManager.getMembersWithPendingRequests();
-            Log.d(TAG, "They've been loaded.");
-            if (isCancelled())
-            {
-                c1.close();
-            } // if
-            return null;
-        } // doInBackground
-
-        @Override
-        protected void onCancelled()
-        {
-            if (c1 != null)
-            {
-                c1.close();
-            }
-            Log.d(TAG, "Closed them.");
-        } // onCancelled
-
-        @Override
-        protected void onPostExecute(Void noResult)
-        {
-        } // onPostExecute
-    } // DataLoader
 
     private final class MemberAdder extends AsyncTask<String, Void, Long>
     {
@@ -93,7 +61,6 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
 
     private Button mAdd = null;
     private EditText mPersonId = null;
-    private DataLoader mLoader = null;
     private MemberAdapter mMemberAdapter = null;
     private volatile DataManager mDataManager = null;
 
@@ -144,22 +111,12 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
     private void loadData()
     {
         mMemberAdapter.loadCursor();
-        Log.d(TAG, "Loading data. " + Thread.currentThread().getName());
-        if (mLoader != null)
-        {
-            mLoader.cancel(true);
-        } // if
-        mLoader = (DataLoader) new DataLoader().execute();
     } // loadData()
 
     @Override
     protected void onPause()
     {
         mDataManager.unregisterListener(this);
-        if (mLoader != null)
-        {
-            mLoader.cancel(true);
-        } // if
         mMemberAdapter.close();
         super.onPause();
     } // onPause()
@@ -212,15 +169,7 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
     @Override
     public void onChange(final DataManager dataManager)
     {
-        Log.d(TAG, "onChange called.");
-        runOnUiThread(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                loadData();
-            } // run()
-        });
+        loadData();
     } // onChange(DataManager)
 
 } // class MembersListActivity
