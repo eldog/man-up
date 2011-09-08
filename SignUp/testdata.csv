@@ -1,2 +1,7 @@
-"PERSON_ID","LATEST_PENDING_SIGNATURE_REQUEST","PERSON_ID_VALIDATED","EXTRA_INFO_STATE","GIVEN_NAME","SURNAME","SIGNATURE_STATE"
-7301496,,,,,,
+"PERSON_ID","PERSON_ID_VALIDATED","LATEST_PENDING_SIGNATURE_REQUEST","EXTRA_INFO_STATE","GIVEN_NAME","SURNAME","SIGNATURE_STATE"
+7301496,"valid",1315400101,"retrieved","Peter","Sutton","captured"
+7145461,"valid",1315400100,"retrieved","Lloyd","Henning","captured"
+7178899,"valid",,"retrieved","Jack","Youd","uncaptured"
+7588142,"valid",,"retrieved","Lucy","Mckenna","uncaptured"
+7102497,"valid",,"retrieved","Steve","Woby","uploaded"
+7375725,"valid",,"retrieved","Lilly","Sommer","uploaded"

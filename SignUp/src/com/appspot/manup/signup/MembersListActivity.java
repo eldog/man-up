@@ -35,7 +35,7 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
         @Override
         protected Void doInBackground(final Void... noParams)
         {
-            c1 = mDataManager.getMembers();
+            c1 = mDataManager.getMembersWithPendingRequests();
             Log.d(TAG, "They've been loaded.");
             if (isCancelled())
             {
@@ -57,7 +57,6 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
         @Override
         protected void onPostExecute(Void noResult)
         {
-            mUncapturedSignatureAdapter.changeCursor(c1);
         } // onPostExecute
     } // DataLoader
 
@@ -95,7 +94,7 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
     private Button mAdd = null;
     private EditText mPersonId = null;
     private DataLoader mLoader = null;
-    private MembersCursorAdapter mUncapturedSignatureAdapter = null;
+    private MemberAdapter mMemberAdapter = null;
     private volatile DataManager mDataManager = null;
 
     @Override
@@ -107,19 +106,19 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
         mAdd = (Button) findViewById(R.id.add_button);
         mPersonId = (EditText) findViewById(R.id.person_id);
 
-        mUncapturedSignatureAdapter = new MembersCursorAdapter(this);
+        mMemberAdapter = new MemberAdapter(this);
 
         final ListView uncapturedSignaturesList =
                 (ListView) findViewById(R.id.members_with_uncaptured_signatures_list);
 
-        uncapturedSignaturesList.setAdapter(mUncapturedSignatureAdapter);
+        uncapturedSignaturesList.setAdapter(mMemberAdapter);
         uncapturedSignaturesList.setOnItemClickListener(new OnItemClickListener()
         {
             @Override
             public void onItemClick(final AdapterView<?> parent, final View view,
                     final int position, final long id)
             {
-                final Object item = mUncapturedSignatureAdapter.getItem(position);
+                final Object item = mMemberAdapter.getItem(position);
                 if (item instanceof Cursor)
                 {
                     final Cursor c = (Cursor) item;
@@ -144,6 +143,7 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
 
     private void loadData()
     {
+        mMemberAdapter.loadCursor();
         Log.d(TAG, "Loading data. " + Thread.currentThread().getName());
         if (mLoader != null)
         {
@@ -160,12 +160,7 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
         {
             mLoader.cancel(true);
         } // if
-        final Cursor cursor = mUncapturedSignatureAdapter.getCursor();
-        if (cursor != null)
-        {
-            Log.d(TAG, "Closing cursor " + cursor);
-            cursor.close();
-        } // if
+        mMemberAdapter.close();
         super.onPause();
     } // onPause()
 

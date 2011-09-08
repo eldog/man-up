@@ -76,12 +76,11 @@ def main(argv=None):
         members.append('        sMembers = new ContentValues[] {')
         for i in range(m):
             members.append('                sMember%d,' % i)
-        members.append('                sMember%d' % (i))
         members.append('        };')
         members.append('')
 
     declarations = []
-    for i in range(m+1):
+    for i in range(m + 1):
         declarations.append(
             '    private static final ContentValues sMember%d;' % i)
     code = TEMPLATE % ('\n'.join(declarations), '\n'.join(members))

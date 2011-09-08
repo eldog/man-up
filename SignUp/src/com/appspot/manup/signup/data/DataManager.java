@@ -347,16 +347,43 @@ public final class DataManager
                 getMemberField(Member._ID, Long.toString(id), Member.SIGNATURE_STATE));
     } // memberHasSignature(long)
 
-    public Cursor getMembers()
+    public Cursor getMembersWithPendingRequests()
     {
-        return getDb().query(Member.TABLE_NAME,
+        return getDb().query(
+                Member.TABLE_NAME,
                 null /* all columns */,
-                null /* selection */,
+                Member.LATEST_PENDING_SIGNATURE_REQUEST + " IS NOT NULL",
                 null /* selectionArgs */,
                 null /* groupBy */,
                 null /* having */,
-                null /* orderBy */);
+                Member.LATEST_PENDING_SIGNATURE_REQUEST + " DESC");
     } // getMembers()
+
+    public Cursor getMembersWithSignaturesAndNoRequests()
+    {
+        return getDb().query(
+                Member.TABLE_NAME,
+                null /* columns */,
+                Member.SIGNATURE_STATE + "=? AND "
+                        + Member.LATEST_PENDING_SIGNATURE_REQUEST + " IS NULL",
+                new String[] { Member.SIGNATURE_STATE_CAPTURED },
+                null /* group by */,
+                null /* having */,
+                null /* order by */);
+    } // getMembersWithSignaturesAndNoRequests()
+
+    public Cursor getMembersWithUploadedSignaturesAndNoRequests()
+    {
+        return getDb().query(
+                Member.TABLE_NAME,
+                null /* columns */,
+                Member.SIGNATURE_STATE + "=? AND "
+                        + Member.LATEST_PENDING_SIGNATURE_REQUEST + " IS NULL",
+                new String[] { Member.SIGNATURE_STATE_UPLOADED },
+                null /* group by */,
+                null /* having */,
+                null /* order by */);
+    } // getMembersWithSignaturesAndNoRequests()
 
     public Cursor getMembersWithSignatures()
     {
@@ -501,27 +528,10 @@ public final class DataManager
         flushMembers();
         final ContentValues[] cvs = TestData.getMembers();
         final SQLiteDatabase db = getDb();
-        db.beginTransaction();
-        try
+        for (final ContentValues cv : cvs)
         {
-            for (final ContentValues cv : cvs)
-            {
-                if (db.insert(
-                        Member.TABLE_NAME,
-                        null /* null column hack */,
-                        cv) == OPERATION_FAILED)
-                {
-                    return OPERATION_FAILED;
-                } // if
-            } // for
-            db.setTransactionSuccessful();
-        } // try
-        finally
-        {
-            db.endTransaction();
-        } // finally
-        notifyListeners();
+                db.insert(Member.TABLE_NAME, null /* null column hack */, cv);
+        } // for
         return cvs.length;
     } // loadTestData()
-
 } // class DataManager
