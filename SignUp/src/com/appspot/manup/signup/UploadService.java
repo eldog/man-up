@@ -2,6 +2,7 @@ package com.appspot.manup.signup;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -58,6 +59,10 @@ public final class UploadService extends IntentService
                 {
                     uploadSignature(c.getLong(idColumn), c.getString(personIdColumn));
                 } // try
+                catch (final FileNotFoundException e)
+                {
+                    Log.w(TAG, "Could not find signature file. Skipping", e);
+                }
                 catch (final IOException e)
                 {
                     Log.w(TAG, "Failed to upload signature. Aborting.", e);
@@ -75,7 +80,8 @@ public final class UploadService extends IntentService
         } // finally
     } // uploadSignatures
 
-    private void uploadSignature(final long id, final String personId) throws IOException
+    private void uploadSignature(final long id, final String personId)
+            throws FileNotFoundException, IOException
     {
         final Preferences prefs = new Preferences(this);
         if (!prefs.hasHost())
