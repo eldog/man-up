@@ -47,7 +47,7 @@ public abstract class SectionedListAdapter implements ListAdapter
         {
             if (!mCursor.moveToPosition(toCursorPos(listPos)))
             {
-                throw new IllegalStateException("couldn't move cursor to position " + listPos);
+                throw new IllegalStateException("Couldn't move cursor to position " + listPos);
             } // if
             return mCursor;
         } // getItem(int)
@@ -186,8 +186,9 @@ public abstract class SectionedListAdapter implements ListAdapter
     {
         if (!mCursorsValid)
         {
-            throw new IllegalStateException("this should only be called when the cursor is valid");
-        }
+            throw new IllegalStateException(
+                    "This should only be called when the cursors are valid.");
+        } // if
 
         final Section section = getSection(listPos);
 
