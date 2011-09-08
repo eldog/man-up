@@ -22,7 +22,7 @@ public final class DoodleView extends View
     private final Path mPath = new Path();
     private final Paint mPathPaint;
 
-    private boolean mNothingDrawn = true;
+    private boolean mIsClear = true;
     private float mLastX = Float.MIN_VALUE;
     private float mLastY = Float.MIN_VALUE;
     private Bitmap mDoodle = null;
@@ -117,29 +117,26 @@ public final class DoodleView extends View
     {
         // Save the finished path.
         mCanvas.drawPath(mPath, mPathPaint);
-        /*
-         * Reset the path so that we don't join the end of this path to the
-         * start of the next.
-         */
+        // Prevent the end of this path being joined to that start of the next.
         mPath.reset();
-        mNothingDrawn = false;
+        mIsClear = false;
     } // pathEnd()
 
     public boolean isClear()
     {
-        return mNothingDrawn;
+        return mIsClear;
     } // isClear()
 
     public void clear()
     {
         mDoodle.eraseColor(Color.TRANSPARENT);
-        mNothingDrawn = true;
+        mIsClear = true;
         invalidate();
     } // clear()
 
     public Bitmap getDoodle()
     {
         return mDoodle;
-    } // getBitMap()
+    } // getDoodle()
 
 } // class DoodleView
