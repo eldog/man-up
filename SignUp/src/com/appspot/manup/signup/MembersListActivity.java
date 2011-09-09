@@ -4,14 +4,18 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.TextView.OnEditorActionListener;
 
 import com.appspot.manup.signup.data.DataManager;
 import com.appspot.manup.signup.data.DataManager.Member;
@@ -50,15 +54,25 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
             {
                 mPersonId.setText(null);
             } // if
+            else
+            {
+                /*
+                 * Assume that if the operations failed it was because the
+                 * person ID already exists.
+                 */
+                mPersonId.setError(getString(R.string.person_id_already_exists));
+            } // else
         } // onPostExecute(Long)
 
         private void cleanUp()
         {
+            mMemberAdder = null;
             mAdd.setEnabled(true);
         } // cleanUp()
 
     } // class MemberAdder
 
+    private MemberAdder mMemberAdder = null;
     private Button mAdd = null;
     private EditText mPersonId = null;
     private MemberAdapter mMemberAdapter = null;
@@ -72,6 +86,23 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
         mDataManager = DataManager.getDataManager(this);
         mAdd = (Button) findViewById(R.id.add_button);
         mPersonId = (EditText) findViewById(R.id.person_id);
+        mPersonId.setOnEditorActionListener(new OnEditorActionListener()
+        {
+            @Override
+            public boolean onEditorAction(final TextView v, final int actionId,
+                    final KeyEvent event)
+            {
+                if (actionId == EditorInfo.IME_ACTION_DONE)
+                {
+                    onAddClick(null);
+                    return true;
+                } // if
+                else
+                {
+                    return false;
+                } // else
+            } // onEditorAction(TextView, int, KeyEvent)
+        });
 
         mMemberAdapter = new MemberAdapter(this);
 
@@ -162,8 +193,16 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
         if (DataManager.isValidPersonId(personId))
         {
             mAdd.setEnabled(false);
-            new MemberAdder().execute(personId);
+            if (mMemberAdder != null)
+            {
+                mMemberAdder.cancel(true);
+            } // if
+            mMemberAdder = (MemberAdder) new MemberAdder().execute(personId);
         } // if
+        else
+        {
+            mPersonId.setError(getString(R.string.person_id_incorrect_length));
+        } // else
     } // onAddClick(View)
 
     @Override

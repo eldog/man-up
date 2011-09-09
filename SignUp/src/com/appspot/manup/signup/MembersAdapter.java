@@ -94,17 +94,17 @@ final class MemberAdapter extends SectionedListAdapter
     @Override
     protected void bindHeader(final Context context, final View headerView, final int sectionIndex)
     {
-        final String header;
+        final int header;
         switch (sectionIndex)
         {
             case SECTION_PENDING:
-                header = "Pending";
+                header = R.string.pending_signature_requests;
                 break;
             case SECTION_TO_UPLOAD:
-                header = "Ready to Upload";
+                header = R.string.signature_captured;
                 break;
             case SECTION_UPLOADED:
-                header = "Uploaded";
+                header = R.string.signature_uploaded;
                 break;
             default:
                 throw new AssertionError();

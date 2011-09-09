@@ -2,6 +2,10 @@
 <resources>
     <string name="add_personal_id_button">Add</string>
     <string name="app_name">SignUp</string>
+    <string name="pending_signature_requests">Waiting for signature</string>
+    <string name="signature_captured">Got signature</string>
+    <string name="signature_uploaded">Signature uploaded</string>
     <string name="person_id">Student ID</string>
-    <string name="notification_message">Toggle LDAP and Swipe services</string>
+    <string name="person_id_incorrect_length">Must be 7 digits long</string>
+    <string name="person_id_already_exists">ID already exists</string>
 </resources>
