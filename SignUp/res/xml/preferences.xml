@@ -25,4 +25,7 @@
         android:key="swipeup_port"
         android:title="SwipeUp Port"
         android:inputType="number" />
+    <CheckBoxPreference
+        android:key="admin_mode"
+        android:title="Admin Mode" />
 </PreferenceScreen>

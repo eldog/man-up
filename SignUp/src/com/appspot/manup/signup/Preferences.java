@@ -13,6 +13,7 @@ public final class Preferences
      * changing.
      */
 
+    private static final String KEY_ADMIN_MODE = "admin_mode";
     private static final String KEY_CS_HOST = "cs_host";
     private static final String KEY_CS_PASSWORD = "cs_password";
     private static final String KEY_CS_USERNAME = "cs_username";
@@ -45,6 +46,11 @@ public final class Preferences
     {
         mPrefs.unregisterOnSharedPreferenceChangeListener(listener);
     } // unregisterOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener)
+
+    public boolean isInAdminMode()
+    {
+        return mPrefs.getBoolean(KEY_ADMIN_MODE, false);
+    } // isInAdminMode()
 
     public boolean ldapLookupEnabled()
     {
