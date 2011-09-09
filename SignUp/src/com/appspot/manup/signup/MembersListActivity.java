@@ -20,6 +20,7 @@ import android.widget.TextView.OnEditorActionListener;
 import com.appspot.manup.signup.data.DataManager;
 import com.appspot.manup.signup.data.DataManager.Member;
 import com.appspot.manup.signup.data.DataManager.OnChangeListener;
+import com.appspot.manup.signup.ldap.LdapService;
 import com.appspot.manup.signup.ui.CheckPreferencesActivity;
 
 public final class MembersListActivity extends CheckPreferencesActivity implements OnChangeListener
@@ -135,6 +136,8 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
     {
         super.onResume();
         mDataManager.registerListener(this);
+        startService(new Intent(this, UploadService.class));
+        startService(new Intent(this, LdapService.class));
         loadData();
     } // onResume()
 

@@ -122,7 +122,8 @@ public final class LdapService extends Service implements OnChangeListener
         mHandler = new LdapLookupHandler(thread.getLooper());
         mHandler.sendEmptyMessage(CMD_START_PORT_FORWARDING);
         mHandler.sendEmptyMessage(CMD_RETRIEVE_EXTRA_INFO);
-        // CONNECTIVITY_ACTION is sticky, let the receiver register with the data manager.
+        // CONNECTIVITY_ACTION is sticky, let the receiver register with the
+        // data manager.
         registerReceiver(mNetworkReciever, mIntentFilter);
     } // onCreate()
 
