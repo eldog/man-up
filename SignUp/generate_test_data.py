@@ -44,7 +44,7 @@ final class TestData
         for (int i = startIndex; i < endIndex; i++)
         {
             copies[i] = getMember(i);
-        }
+        } // for
         return copies;
     } // getMembers(int, int)
 
