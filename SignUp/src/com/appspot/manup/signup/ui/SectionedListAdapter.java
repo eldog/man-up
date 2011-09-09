@@ -237,13 +237,14 @@ public abstract class SectionedListAdapter implements ListAdapter
         for (int i = 0; i < mSectionCount; i++)
         {
             final Cursor cursor = mCursors[i];
-
-            if (cursor != null && cursor.getCount() > 0)
+            if (cursor != null)
             {
-                cursor.unregisterDataSetObserver(mObserver);
+                if (cursor.getCount() > 0)
+                {
+                    cursor.unregisterDataSetObserver(mObserver);
+                } // if
                 cursor.close();
             } // if
-
             mCursors[i] = null;
         } // for
         mSections.clear();

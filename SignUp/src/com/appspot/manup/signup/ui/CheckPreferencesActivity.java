@@ -1,11 +1,11 @@
 package com.appspot.manup.signup.ui;
 
-import com.appspot.manup.signup.SignUpPreferenceActivity;
-import com.appspot.manup.signup.Preferences;
-
 import android.app.Activity;
 import android.content.Intent;
 import android.os.AsyncTask;
+
+import com.appspot.manup.signup.Preferences;
+import com.appspot.manup.signup.SignUpPreferenceActivity;
 
 public abstract class CheckPreferencesActivity extends Activity
 {

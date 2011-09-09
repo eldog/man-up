@@ -108,11 +108,6 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
         loadData();
     } // onResume()
 
-    private void loadData()
-    {
-        mMemberAdapter.loadCursor();
-    } // loadData()
-
     @Override
     protected void onPause()
     {
@@ -120,6 +115,12 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
         mMemberAdapter.close();
         super.onPause();
     } // onPause()
+
+    @Override
+    public void onBackPressed()
+    {
+        // Prevent people of accidently exiting SignUp. Do nothing.
+    } // onBackPressed()
 
     @Override
     public boolean onCreateOptionsMenu(final Menu menu)
@@ -171,5 +172,10 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
     {
         loadData();
     } // onChange(DataManager)
+
+    private void loadData()
+    {
+        mMemberAdapter.loadCursor();
+    } // loadData()
 
 } // class MembersListActivity
