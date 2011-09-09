@@ -62,7 +62,7 @@ public final class UploadService extends IntentService
                 catch (final FileNotFoundException e)
                 {
                     Log.w(TAG, "Could not find signature file. Skipping", e);
-                }
+                } // catch
                 catch (final IOException e)
                 {
                     Log.w(TAG, "Failed to upload signature. Aborting.", e);

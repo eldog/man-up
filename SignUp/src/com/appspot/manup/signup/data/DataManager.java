@@ -307,11 +307,14 @@ public final class DataManager
             long id = getId(personId);
             if (id == OPERATION_FAILED)
             {
-                return addMember(personId) == OPERATION_FAILED;
+                requestMade = addMember(personId) != OPERATION_FAILED;
             } // if
-            final ContentValues requestValues = new ContentValues(1);
-            requestValues.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, getUnixTime());
-            requestMade = updateMember(id, requestValues);
+            else
+            {
+                final ContentValues requestValues = new ContentValues(1);
+                requestValues.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, getUnixTime());
+                requestMade = updateMember(id, requestValues);
+            } // else
             if (requestMade)
             {
                 db.setTransactionSuccessful();
