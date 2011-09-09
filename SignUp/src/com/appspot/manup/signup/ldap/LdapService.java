@@ -140,9 +140,9 @@ public final class LdapService extends Service implements OnChangeListener
              * Throws JschException if user name or host not set, so no need for
              * us to check.
              */
-            mSession = mJsch.getSession(prefs.getLdapUsername(), prefs.getLdapHost());
+            mSession = mJsch.getSession(prefs.getCsUsername(), prefs.getCsHost());
             mSession.setConfig("StrictHostKeyChecking", "no");
-            mSession.setPassword(prefs.getPassword());
+            mSession.setPassword(prefs.getCsPassword());
             mSession.connect();
             mSession.setPortForwardingL(FORWARD_PORT, LDAP_HOST, LDAP_PORT);
         } // try

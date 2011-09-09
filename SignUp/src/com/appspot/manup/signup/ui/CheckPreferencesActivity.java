@@ -14,7 +14,7 @@ public abstract class CheckPreferencesActivity extends Activity
         @Override
         protected Boolean doInBackground(final Void... noParams)
         {
-            return new Preferences(CheckPreferencesActivity.this).preferencesSet();
+            return new Preferences(CheckPreferencesActivity.this).areRequiredPreferencesSet();
         } // doInBackground
 
         @Override

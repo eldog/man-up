@@ -125,11 +125,11 @@ public final class UploadService extends Service implements OnChangeListener
             throws FileNotFoundException, IOException
     {
         final Preferences prefs = new Preferences(this);
-        if (!prefs.hasHost())
+        if (!prefs.hasSwipeUpHost())
         {
             throw new IOException("Host not set");
         }
-        if (!prefs.hasPort())
+        if (!prefs.hasSwipePort())
         {
             throw new IOException("Port not set");
         }
@@ -139,8 +139,8 @@ public final class UploadService extends Service implements OnChangeListener
             uri = new URI(
                     "http",
                     null /* userInfo */,
-                    prefs.getHost(),
-                    prefs.getPort(),
+                    prefs.getSwipeUpHost(),
+                    prefs.getSwipeUpPort(),
                     "/members/" + personId,
                     null /* query */,
                     null /* fragment */);
