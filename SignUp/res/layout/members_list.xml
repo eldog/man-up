@@ -12,7 +12,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:hint="@string/personal_id"
+            android:hint="@string/person_id"
             android:inputType="number" />
         <Button
             android:id="@+id/add_button"

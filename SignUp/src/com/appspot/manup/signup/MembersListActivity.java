@@ -75,11 +75,10 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
 
         mMemberAdapter = new MemberAdapter(this);
 
-        final ListView uncapturedSignaturesList =
+        final ListView membersList =
                 (ListView) findViewById(R.id.members_with_uncaptured_signatures_list);
-
-        uncapturedSignaturesList.setAdapter(mMemberAdapter);
-        uncapturedSignaturesList.setOnItemClickListener(new OnItemClickListener()
+        membersList.setAdapter(mMemberAdapter);
+        membersList.setOnItemClickListener(new OnItemClickListener()
         {
             @Override
             public void onItemClick(final AdapterView<?> parent, final View view,
