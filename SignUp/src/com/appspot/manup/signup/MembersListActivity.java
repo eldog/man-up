@@ -155,7 +155,11 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
     @Override
     public void onBackPressed()
     {
-        // Prevent people of accidently exiting SignUp. Do nothing.
+        // Prevent users, not admins, of accidently exiting SignUp.
+        if (isInAdminMode())
+        {
+            super.onBackPressed();
+        } //
     } // onBackPressed()
 
     @Override
