@@ -33,6 +33,9 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
     private static final int MENU_FLUSH_MEMBERS = Menu.FIRST + 2;
     private static final int MENU_LOAD_TEST_DATA = Menu.FIRST + 3;
 
+    private static final int MENU_GROUP_USER = 0;
+    private static final int MENU_GROUP_ADMIN = 1;
+
     private final class MemberAdder extends AsyncTask<String, Void, Long>
     {
         @Override
@@ -159,12 +162,19 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
     public boolean onCreateOptionsMenu(final Menu menu)
     {
         super.onCreateOptionsMenu(menu);
-        menu.add(0, MENU_SETTINGS, 0, "Settings");
-        menu.add(0, MENU_UPLOAD_SIGNATURES, 0, "Upload signatures");
-        menu.add(0, MENU_FLUSH_MEMBERS, 0, "Delete members");
-        menu.add(0, MENU_LOAD_TEST_DATA, 0, "Load test data");
+        menu.add(MENU_GROUP_USER, MENU_SETTINGS, 0, "Settings");
+        menu.add(MENU_GROUP_ADMIN, MENU_UPLOAD_SIGNATURES, 0, "Upload signatures");
+        menu.add(MENU_GROUP_ADMIN, MENU_FLUSH_MEMBERS, 0, "Delete members");
+        menu.add(MENU_GROUP_ADMIN, MENU_LOAD_TEST_DATA, 0, "Load test data");
         return true;
     } // onCreateOptionsMenu(Menu)
+
+    @Override
+    public boolean onMenuOpened(final int featureId, final Menu menu)
+    {
+        menu.setGroupVisible(MENU_GROUP_ADMIN, isInAdminMode());
+        return true;
+    } // onMenuOpened(int, Menu)
 
     @Override
     public boolean onOptionsItemSelected(final MenuItem item)

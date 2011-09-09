@@ -14,8 +14,10 @@ public abstract class CheckPreferencesActivity extends Activity
         @Override
         protected Boolean doInBackground(final Void... noParams)
         {
-            return new Preferences(CheckPreferencesActivity.this).areRequiredPreferencesSet();
-        } // doInBackground
+            final Preferences prefs = new Preferences(CheckPreferencesActivity.this);
+            mIsInAdminMode = prefs.isInAdminMode();
+            return prefs.areRequiredPreferencesSet();
+        } // doInBackground(Void)
 
         @Override
         protected void onCancelled()
@@ -43,6 +45,8 @@ public abstract class CheckPreferencesActivity extends Activity
 
     private CheckPreferencesSet mCheckPreferencesSet = null;
 
+    private volatile boolean mIsInAdminMode = false;
+
     @Override
     protected void onResume()
     {
@@ -60,5 +64,10 @@ public abstract class CheckPreferencesActivity extends Activity
         } // if
         super.onPause();
     } // onPause
+
+    protected boolean isInAdminMode()
+    {
+        return mIsInAdminMode;
+    } // isInAdminMode()
 
 } // CheckPreferencesActivity
