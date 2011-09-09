@@ -143,6 +143,30 @@ public final class DataManager
         return System.currentTimeMillis() / 1000L;
     } // getUnixTime()
 
+    public static String getDisplayName(final Cursor cursor)
+    {
+        final String givenName = cursor.getString(cursor.getColumnIndexOrThrow(Member.GIVEN_NAME));
+        final String surname = cursor.getString(cursor.getColumnIndexOrThrow(Member.SURNAME));
+        final boolean hasGivenName = !TextUtils.isEmpty(givenName);
+        final boolean hasSurname = !TextUtils.isEmpty(surname);
+        if (hasGivenName && hasSurname)
+        {
+            return givenName + " " + surname;
+        } // if
+        else if (hasGivenName)
+        {
+            return givenName;
+        } // else if
+        else if (hasSurname)
+        {
+            return surname;
+        } // else if
+        else
+        {
+            return null;
+        } // else
+    } // getDisplayName(Cursor)
+
     public static boolean isValidPersonId(final String possiblePersonId)
     {
         return possiblePersonId.length() == Member.PERSON_ID_LENGTH

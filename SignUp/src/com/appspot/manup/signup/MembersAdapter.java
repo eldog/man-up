@@ -60,8 +60,6 @@ final class MemberAdapter extends SectionedListAdapter
             final Cursor c = cursors[0];
             mPersonIdCol = c.getColumnIndexOrThrow(Member.PERSON_ID);
             mExtraInfoStateCol = c.getColumnIndexOrThrow(Member.EXTRA_INFO_STATE);
-            mGivenNameCol = c.getColumnIndexOrThrow(Member.GIVEN_NAME);
-            mSurnameCol = c.getColumnIndexOrThrow(Member.SURNAME);
             mSignatureStateCol = c.getColumnIndexOrThrow(Member.SIGNATURE_STATE);
             changeCursors(cursors);
         } // onPostExecute(Cursor)
@@ -74,8 +72,6 @@ final class MemberAdapter extends SectionedListAdapter
     private MemberLoader mMemberLoader = null;
     private int mPersonIdCol = Integer.MIN_VALUE;
     private int mExtraInfoStateCol = Integer.MIN_VALUE;
-    private int mGivenNameCol = Integer.MIN_VALUE;
-    private int mSurnameCol = Integer.MIN_VALUE;
     private int mSignatureStateCol = Integer.MIN_VALUE;
 
     public MemberAdapter(final Context context)
@@ -119,44 +115,42 @@ final class MemberAdapter extends SectionedListAdapter
 
     } // newItem(Context, ViewGroup)
 
-    private void configField(final View parent, final int textViewId, final Cursor item,
-            final int columnIndex)
-    {
-        final String value = item.getString(columnIndex);
-        final TextView textView = (TextView) parent.findViewById(textViewId);
-        if (TextUtils.isEmpty(value))
-        {
-            textView.setVisibility(View.GONE);
-        } // if
-        else
-        {
-            textView.setText(value);
-            textView.setVisibility(View.VISIBLE);
-        } // else
-    } // configField(View, int, Cursor, columnIndex)
-
     @Override
     protected void bindItem(final Context context, final View itemView, final Cursor item,
             final int sectionIndex)
     {
-        configField(itemView, R.id.person_id, item, mPersonIdCol);
-        configField(itemView, R.id.given_name, item, mGivenNameCol);
-        configField(itemView, R.id.surname, item, mSurnameCol);
+        final TextView headerView = (TextView) itemView.findViewById(R.id.header);
+        final TextView subheaderView = (TextView) itemView.findViewById(R.id.subheader);
+        final String name = DataManager.getDisplayName(item);
+        final String personId = item.getString(mPersonIdCol);
+        if (!TextUtils.isEmpty(name))
+        {
+            headerView.setText(name);
+            subheaderView.setText(personId);
+            subheaderView.setVisibility(View.VISIBLE);
+        } // if
+        else
+        {
+            headerView.setText(item.getString(mPersonIdCol));
+            subheaderView.setVisibility(View.GONE);
+        } // else
+
         final ImageView signatureStateImage = (ImageView) itemView
                 .findViewById(R.id.signature_state);
         final String signatureState = item.getString(mSignatureStateCol);
 
         if (Member.SIGNATURE_STATE_CAPTURED.equals(signatureState))
         {
-            signatureStateImage.setImageResource(R.drawable.ic_menu_save);
+            signatureStateImage.setImageResource(R.drawable.saved);
         } // if
         else if (Member.SIGNATURE_STATE_UPLOADED.equals(signatureState))
         {
-            signatureStateImage.setImageResource(R.drawable.ic_menu_upload);
+            signatureStateImage.setImageResource(R.drawable.uploaded);
         } // else if
         else
         {
-            signatureStateImage.setImageDrawable(null /* no drawable */);
+            // State must be uncaptured.
+            signatureStateImage.setImageResource(R.drawable.uncaptured);
         } // else
 
         final ImageView extraInfoStateImage = (ImageView) itemView
@@ -165,15 +159,19 @@ final class MemberAdapter extends SectionedListAdapter
 
         if (Member.EXTRA_INFO_STATE_RETRIEVING.equals(extraInfoState))
         {
-            extraInfoStateImage.setImageResource(R.drawable.ic_popup_sync);
+            extraInfoStateImage.setImageResource(R.drawable.sync);
         } // if
         else if (Member.EXTRA_INFO_STATE_ERROR.equals(extraInfoState))
         {
-            extraInfoStateImage.setImageResource(R.drawable.ic_delete);
+            extraInfoStateImage.setImageResource(R.drawable.error);
+        } // else if
+        else if (Member.EXTRA_INFO_STATE_RETRIEVED.equals(extraInfoState))
+        {
+            extraInfoStateImage.setImageResource(R.drawable.extra_info_retrieved);
         } // else if
         else
         {
-            extraInfoStateImage.setImageDrawable(null /* no drawable */);
+            extraInfoStateImage.setImageResource(R.drawable.extra_info_none);
         } // else
     } // bindItem(Context, View, Cursor, int)
 

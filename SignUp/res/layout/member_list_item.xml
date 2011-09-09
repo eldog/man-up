@@ -2,48 +2,41 @@
 <RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:paddingLeft="2dip"
-    android:paddingRight="2dip">
+    android:layout_height="match_parent">
+
     <TextView
-        android:id="@+id/person_id"
+        android:id="@+id/header"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:paddingTop="2dip"
-        android:paddingBottom="3dip"
-        android:textSize="25sp" />
+        android:layout_toLeftOf="@+id/extra_info_state"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:padding="5dip"
+        android:textSize="30sp" />
+
     <TextView
-        android:id="@+id/given_name"
+        android:id="@+id/subheader"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:paddingTop="2dip"
-        android:paddingBottom="3dip"
-        android:textSize="18sp"
-        android:layout_below="@+id/person_id" />
-    <TextView
-        android:id="@+id/surname"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:paddingTop="2dip"
-        android:paddingBottom="3dip"
-        android:paddingLeft="3dip"
-        android:textSize="18sp"
-        android:layout_below="@+id/person_id"
-        android:layout_toRightOf="@+id/given_name" />
+        android:layout_below="@+id/header"
+        android:layout_alignLeft="@+id/header"
+        android:layout_alignRight="@+id/header"
+        android:padding="5dip"
+        android:textSize="20sp" />
+
     <ImageView
         android:id="@+id/extra_info_state"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:paddingTop="2dip"
-        android:paddingBottom="3dip"
-        android:layout_centerVertical="true"
-        android:layout_toLeftOf="@+id/signature_state" />
+        android:layout_toLeftOf="@+id/signature_state"
+        android:padding="5dip" />
+
     <ImageView
         android:id="@+id/signature_state"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:paddingTop="2dip"
-        android:paddingBottom="3dip"
-        android:layout_centerVertical="true"
-        android:layout_alignParentRight="true" />
+        android:layout_alignParentTop="true"
+        android:layout_alignParentRight="true"
+        android:padding="5dip" />
+
 </RelativeLayout>
