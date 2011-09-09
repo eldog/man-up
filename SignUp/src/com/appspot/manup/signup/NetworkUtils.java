@@ -9,40 +9,39 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 
-public class NetworkUtils
+public final class NetworkUtils
 {
     public static InetAddress getLocalIpAddress() throws SocketException
     {
-        // Using Enumeration instead of Iterator as NetworkInterface is some
-        // ancient relic and getNetworkInterfaces() returns an Enumeration
-        for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en
-                .hasMoreElements();)
+        for (final Enumeration<NetworkInterface> interfaces = NetworkInterface
+                .getNetworkInterfaces(); interfaces.hasMoreElements();)
         {
-            NetworkInterface intf = en.nextElement();
-            for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr
+            final NetworkInterface intface = interfaces.nextElement();
+            for (final Enumeration<InetAddress> addresses = intface.getInetAddresses(); addresses
                     .hasMoreElements();)
             {
-                InetAddress inetAddress = enumIpAddr.nextElement();
-                if (!inetAddress.isLoopbackAddress())
+                final InetAddress address = addresses.nextElement();
+                if (!address.isLoopbackAddress())
                 {
-                    return inetAddress;
+                    return address;
                 } // if
             } // for
         }// for
         return null;
-    } // getLocalIpAddress
+    } // getLocalIpAddress()
 
-    public static boolean isOnline(Context context)
+    public static boolean isOnline(final Context context)
     {
         final ConnectivityManager connectivityManager =
                 (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         final NetworkInfo info = connectivityManager.getActiveNetworkInfo();
         return info != null && info.isConnected();
-    } // isOnline
+    } // isOnline(Context)
 
     private NetworkUtils()
     {
         super();
         throw new AssertionError();
-    } // NetworkUtils
-}
+    } // constructor()
+
+} // class NetworkUtils
