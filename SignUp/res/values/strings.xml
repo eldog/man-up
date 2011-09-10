@@ -8,4 +8,5 @@
     <string name="person_id">Student ID</string>
     <string name="person_id_incorrect_length">Must be 7 digits long</string>
     <string name="person_id_already_exists">ID already exists</string>
+    <string name="unknown_name">(Unknown)</string>
 </resources>

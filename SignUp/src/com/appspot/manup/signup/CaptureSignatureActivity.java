@@ -8,10 +8,10 @@ import android.widget.Toast;
 
 import com.appspot.manup.signup.data.DataManager;
 import com.appspot.manup.signup.data.DataManager.OnChangeListener;
-import com.appspot.manup.signup.ui.CheckPreferencesActivity;
+import com.appspot.manup.signup.ui.BaseActivity;
 import com.appspot.manup.signup.ui.DoodleView;
 
-public final class CaptureSignatureActivity extends CheckPreferencesActivity implements
+public final class CaptureSignatureActivity extends BaseActivity implements
         OnChangeListener
 {
     @SuppressWarnings("unused")
@@ -26,7 +26,6 @@ public final class CaptureSignatureActivity extends CheckPreferencesActivity imp
     private static final int MENU_SETTINGS = Menu.FIRST + 2;
 
     private long mId = Long.MIN_VALUE;
-    private DataManager mDataManager = null;
     private DoodleView mSignatureView = null;
 
     public CaptureSignatureActivity()
@@ -42,20 +41,19 @@ public final class CaptureSignatureActivity extends CheckPreferencesActivity imp
         mSignatureView = (DoodleView) findViewById(R.id.signature);
         final Intent intent = getIntent();
         mId = intent.getLongExtra(EXTRA_ID, mId);
-        mDataManager = DataManager.getDataManager(this);
     } // onCreate
 
     @Override
     protected void onResume()
     {
         super.onResume();
-        mDataManager.registerListener(this);
+        DataManager.registerListener(this);
     } // onResume
 
     @Override
     protected void onPause()
     {
-        mDataManager.unregisterListener(this);
+        DataManager.unregisterListener(this);
         super.onPause();
     } // onPause
 

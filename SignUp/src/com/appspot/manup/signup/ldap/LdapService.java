@@ -1,25 +1,13 @@
 package com.appspot.manup.signup.ldap;
 
-import android.app.Service;
-import android.content.BroadcastReceiver;
-import android.content.Context;
+import android.app.IntentService;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.database.Cursor;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
-import android.os.Handler;
-import android.os.HandlerThread;
-import android.os.IBinder;
-import android.os.Looper;
-import android.os.Message;
-import android.os.Process;
 import android.util.Log;
 
 import com.appspot.manup.signup.Preferences;
 import com.appspot.manup.signup.data.DataManager;
 import com.appspot.manup.signup.data.DataManager.Member;
-import com.appspot.manup.signup.data.DataManager.OnChangeListener;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
@@ -27,7 +15,7 @@ import com.novell.ldap.LDAPConnection;
 import com.novell.ldap.LDAPException;
 import com.novell.ldap.LDAPSearchResults;
 
-public final class LdapService extends Service implements OnChangeListener
+public final class LdapService extends IntentService
 {
     private static final String TAG = LdapService.class.getSimpleName();
 
@@ -36,80 +24,13 @@ public final class LdapService extends Service implements OnChangeListener
     private static final int LDAP_PORT = 389;
     private static final int FORWARD_PORT = 23456;
 
-    private static final int CMD_START_PORT_FORWARDING = 1;
-    private static final int CMD_RETRIEVE_EXTRA_INFO = 0;
-
-    public static void controlService(final Context context, final Preferences prefs)
-    {
-        final Intent intent = new Intent(context, LdapService.class);
-        if (prefs.ldapLookupEnabled())
-        {
-            context.startService(intent);
-        } // if
-        else
-        {
-            context.stopService(intent);
-        } // else
-    } // controlService(Context, Preferences)
-
-    private final class LdapLookupHandler extends Handler
-    {
-        public LdapLookupHandler(final Looper looper)
-        {
-            super(looper);
-        } // constructor(Looper)
-
-        @Override
-        public void handleMessage(final Message msg)
-        {
-            switch (msg.what)
-            {
-                case CMD_START_PORT_FORWARDING:
-                    startPortForwarding();
-                    break;
-                case CMD_RETRIEVE_EXTRA_INFO:
-                    retrieveExtraInfo();
-                    break;
-                default:
-                    throw new AssertionError();
-            } // switch
-        } // handleMessage(Message)
-    } // class LdapLookupHandler
-
-    private final BroadcastReceiver mNetworkReciever = new BroadcastReceiver()
-    {
-        @Override
-        public void onReceive(final Context context, final Intent intent)
-        {
-            final NetworkInfo info =
-                    (NetworkInfo) intent.getParcelableExtra(ConnectivityManager.EXTRA_NETWORK_INFO);
-            final DataManager dataManager = DataManager.getDataManager(context);
-            if (info.isConnected())
-            {
-                dataManager.registerListener(LdapService.this);
-                mHandler.sendEmptyMessage(CMD_START_PORT_FORWARDING);
-                mHandler.sendEmptyMessage(CMD_RETRIEVE_EXTRA_INFO);
-            } // if
-            else
-            {
-                dataManager.unregisterListener(LdapService.this);
-            } // else
-        } // onReceive(Context, Intent)
-    };
-
     private final JSch mJsch = new JSch();
-    private final IntentFilter mIntentFilter;
-    private LdapLookupHandler mHandler = null;
     private volatile DataManager mDataManager = null;
     private volatile Session mSession = null;
 
-    {
-        mIntentFilter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
-    }
-
     public LdapService()
     {
-        super();
+        super(TAG);
     } // constructor()
 
     @Override
@@ -117,14 +38,6 @@ public final class LdapService extends Service implements OnChangeListener
     {
         super.onCreate();
         mDataManager = DataManager.getDataManager(this);
-        final HandlerThread thread = new HandlerThread(TAG, Process.THREAD_PRIORITY_BACKGROUND);
-        thread.start();
-        mHandler = new LdapLookupHandler(thread.getLooper());
-        mHandler.sendEmptyMessage(CMD_START_PORT_FORWARDING);
-        mHandler.sendEmptyMessage(CMD_RETRIEVE_EXTRA_INFO);
-        // CONNECTIVITY_ACTION is sticky, let the receiver register with the
-        // data manager.
-        registerReceiver(mNetworkReciever, mIntentFilter);
     } // onCreate()
 
     private boolean startPortForwarding()
@@ -159,7 +72,8 @@ public final class LdapService extends Service implements OnChangeListener
         return true;
     } // startPortForwarding()
 
-    private void retrieveExtraInfo()
+    @Override
+    protected void onHandleIntent(final Intent intent)
     {
         Cursor cursor = null;
         try
@@ -177,6 +91,7 @@ public final class LdapService extends Service implements OnChangeListener
             } // if
             final int idColumn = cursor.getColumnIndexOrThrow(Member._ID);
             final int personIdColumn = cursor.getColumnIndexOrThrow(Member.PERSON_ID);
+            startPortForwarding();
             do
             {
                 try
@@ -278,26 +193,11 @@ public final class LdapService extends Service implements OnChangeListener
     @Override
     public void onDestroy()
     {
-        mDataManager.unregisterListener(this);
-        mHandler.getLooper().quit();
         if (mSession != null)
         {
             mSession.disconnect();
         } // if
         super.onDestroy();
     } // onDestroy()
-
-    @Override
-    public void onChange(final DataManager dataManager)
-    {
-        mHandler.removeMessages(CMD_RETRIEVE_EXTRA_INFO);
-        mHandler.sendEmptyMessage(CMD_RETRIEVE_EXTRA_INFO);
-    } // onChange(DataManager)
-
-    @Override
-    public IBinder onBind(final Intent intent)
-    {
-        return null;
-    } // onBind(Intent)
 
 } // class LdapService

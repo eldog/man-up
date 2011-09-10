@@ -12,11 +12,12 @@ import android.widget.TextView;
 
 import com.appspot.manup.signup.data.DataManager;
 import com.appspot.manup.signup.data.DataManager.Member;
+import com.appspot.manup.signup.ui.MemberAdapter;
 import com.appspot.manup.signup.ui.SectionedListAdapter;
 
-final class MemberAdapter extends SectionedListAdapter
+final class AdminMemberAdapter extends SectionedListAdapter implements MemberAdapter
 {
-    public static final String TAG = MemberAdapter.class.getSimpleName();
+    public static final String TAG = AdminMemberAdapter.class.getSimpleName();
 
     private static final int SECTION_PENDING = 0;
     private static final int SECTION_TO_UPLOAD = 1;
@@ -51,7 +52,7 @@ final class MemberAdapter extends SectionedListAdapter
                     } // if
                 } // for
             } // if
-        } // onCancelled
+        } // onCancelled()
 
         @Override
         protected void onPostExecute(final Cursor[] cursors)
@@ -74,7 +75,7 @@ final class MemberAdapter extends SectionedListAdapter
     private int mExtraInfoStateCol = Integer.MIN_VALUE;
     private int mSignatureStateCol = Integer.MIN_VALUE;
 
-    public MemberAdapter(final Context context)
+    public AdminMemberAdapter(final Context context)
     {
         super(context, SECTION_COUNT);
         mDataManager = DataManager.getDataManager(context);
@@ -123,17 +124,17 @@ final class MemberAdapter extends SectionedListAdapter
         final TextView subheaderView = (TextView) itemView.findViewById(R.id.subheader);
         final String name = DataManager.getDisplayName(item);
         final String personId = item.getString(mPersonIdCol);
+
         if (!TextUtils.isEmpty(name))
         {
             headerView.setText(name);
-            subheaderView.setText(personId);
-            subheaderView.setVisibility(View.VISIBLE);
         } // if
         else
         {
-            headerView.setText(item.getString(mPersonIdCol));
-            subheaderView.setVisibility(View.GONE);
+            headerView.setText(R.string.unknown_name);
         } // else
+
+        subheaderView.setText(personId);
 
         final ImageView signatureStateImage = (ImageView) itemView
                 .findViewById(R.id.signature_state);
@@ -185,7 +186,7 @@ final class MemberAdapter extends SectionedListAdapter
     } // loadCursor()
 
     @Override
-    public void close()
+    public void closeCursor()
     {
         if (mMemberLoader != null)
         {

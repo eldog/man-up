@@ -19,6 +19,7 @@
             android:layout_toLeftOf="@+id/add_button"
             android:layout_alignParentLeft="true"
             android:layout_marginRight="0dp"
+            android:imeOptions="actionDone"
             android:hint="@string/person_id"
             android:inputType="number" />
         <Button

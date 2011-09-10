@@ -20,10 +20,10 @@ import android.widget.TextView.OnEditorActionListener;
 import com.appspot.manup.signup.data.DataManager;
 import com.appspot.manup.signup.data.DataManager.Member;
 import com.appspot.manup.signup.data.DataManager.OnChangeListener;
-import com.appspot.manup.signup.ldap.LdapService;
-import com.appspot.manup.signup.ui.CheckPreferencesActivity;
+import com.appspot.manup.signup.ui.BaseActivity;
+import com.appspot.manup.signup.ui.MemberAdapter;
 
-public final class MembersListActivity extends CheckPreferencesActivity implements OnChangeListener
+public final class MembersListActivity extends BaseActivity implements OnChangeListener
 {
     @SuppressWarnings("unused")
     private static final String TAG = MembersListActivity.class.getSimpleName();
@@ -82,6 +82,8 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
     private MemberAdapter mMemberAdapter = null;
     private volatile DataManager mDataManager = null;
 
+    private boolean mUsingAdminMemberAdapter = false;
+
     @Override
     protected void onCreate(final Bundle savedInstanceState)
     {
@@ -107,8 +109,26 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
                 } // else
             } // onEditorAction(TextView, int, KeyEvent)
         });
+    } // onCreate(Bundle)
 
-        mMemberAdapter = new MemberAdapter(this);
+    @Override
+    protected void onResumeWithPreferences(final Preferences prefs)
+    {
+        super.onResumeWithPreferences(prefs);
+
+        if (mMemberAdapter != null)
+        {
+            mMemberAdapter.closeCursor();
+        } // if
+
+        if (mUsingAdminMemberAdapter = prefs.isInAdminMode())
+        {
+            mMemberAdapter = new AdminMemberAdapter(this);
+        } // if
+        else
+        {
+            mMemberAdapter = new UserMemberAdapter(this);
+        } // else
 
         final ListView membersList =
                 (ListView) findViewById(R.id.members_with_uncaptured_signatures_list);
@@ -132,23 +152,21 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
                 } // if
             } // onItemClick(AdapterView, View, int, long)
         });
-    } // onCreate(Bundle)
+        loadData();
+    } // setListAdapter()
 
     @Override
     protected void onResume()
     {
         super.onResume();
-        mDataManager.registerListener(this);
-        startService(new Intent(this, UploadService.class));
-        startService(new Intent(this, LdapService.class));
-        loadData();
+        DataManager.registerListener(this);
     } // onResume()
 
     @Override
     protected void onPause()
     {
-        mDataManager.unregisterListener(this);
-        mMemberAdapter.close();
+        DataManager.unregisterListener(this);
+        mMemberAdapter.closeCursor();
         super.onPause();
     } // onPause()
 
@@ -156,10 +174,10 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
     public void onBackPressed()
     {
         // Prevent users, not admins, of accidently exiting SignUp.
-        if (isInAdminMode())
+        if (mUsingAdminMemberAdapter)
         {
             super.onBackPressed();
-        } //
+        } // if
     } // onBackPressed()
 
     @Override
@@ -176,7 +194,7 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
     @Override
     public boolean onMenuOpened(final int featureId, final Menu menu)
     {
-        menu.setGroupVisible(MENU_GROUP_ADMIN, isInAdminMode());
+        menu.setGroupVisible(MENU_GROUP_ADMIN, mUsingAdminMemberAdapter);
         return true;
     } // onMenuOpened(int, Menu)
 
@@ -225,7 +243,14 @@ public final class MembersListActivity extends CheckPreferencesActivity implemen
     @Override
     public void onChange(final DataManager dataManager)
     {
-        loadData();
+        runOnUiThread(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                loadData();
+            } // run()
+        });
     } // onChange(DataManager)
 
     private void loadData()

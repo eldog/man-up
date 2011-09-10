@@ -127,6 +127,7 @@ public final class DataManager
 
     } // class MemberDbOpenHelper
 
+    private static final Set<OnChangeListener> sListeners = new HashSet<OnChangeListener>();
     private static DataManager sSingleton = null;
 
     public static synchronized DataManager getDataManager(final Context context)
@@ -137,6 +138,22 @@ public final class DataManager
         } // if
         return sSingleton;
     } // getDataManager(Context)
+
+    public static void registerListener(final OnChangeListener listener)
+    {
+        synchronized (sListeners)
+        {
+            sListeners.add(listener);
+        } // synchronized
+    } // registerListener(OnChangeListener)
+
+    public static void unregisterListener(final OnChangeListener listener)
+    {
+        synchronized (sListeners)
+        {
+            sListeners.remove(listener);
+        } // synchronized
+    } // unregisterListener(OnChangeListener)
 
     public static long getUnixTime()
     {
@@ -174,7 +191,6 @@ public final class DataManager
     } // isValidPersonId(String)
 
     private final Object mLock = new Object();
-    private final Set<OnChangeListener> mListeners = new HashSet<OnChangeListener>();
     private final Context mContext;
     private SQLiteDatabase mDb = null;
 
@@ -196,27 +212,11 @@ public final class DataManager
         return mDb;
     } // getDb()
 
-    public void registerListener(final OnChangeListener listener)
-    {
-        synchronized (mListeners)
-        {
-            mListeners.add(listener);
-        } // synchronized
-    } // registerListener(OnChangeListener)
-
-    public void unregisterListener(final OnChangeListener listener)
-    {
-        synchronized (mListeners)
-        {
-            mListeners.remove(listener);
-        } // synchronized
-    } // unregisterListener(OnChangeListener)
-
     private void notifyListeners()
     {
-        synchronized (mListeners)
+        synchronized (sListeners)
         {
-            for (final OnChangeListener listener : mListeners)
+            for (final OnChangeListener listener : sListeners)
             {
                 listener.onChange(this);
             } // for
@@ -256,6 +256,18 @@ public final class DataManager
         } // if
         return id;
     } // addMember(String)
+
+    public Cursor getMembers()
+    {
+        return getDb().query(
+                Member.TABLE_NAME,
+                null /* all columns */,
+                null /* selections */,
+                null /* selection args */,
+                null /* group by */,
+                null /* having */,
+                Member.LATEST_PENDING_SIGNATURE_REQUEST + " DESC");
+    } // getMembers()
 
     /**
      * Get members without extra info. Also excludes members with invalid person
