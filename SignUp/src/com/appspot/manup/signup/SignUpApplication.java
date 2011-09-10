@@ -35,6 +35,7 @@ public final class SignUpApplication extends Application implements OnChangeList
 
     private volatile boolean mIsConnected = false;
     private volatile boolean mLdapLookupEnabled = false;
+    private volatile boolean mShouldUploadSignatures = false;
     private volatile boolean mListenForSwipeUp = false;
 
     public SignUpApplication()
@@ -90,6 +91,11 @@ public final class SignUpApplication extends Application implements OnChangeList
             mListenForSwipeUp = prefs.listenForSwipeUp();
             controlSwipeUpService();
         } // else if
+        else if (prefs.isShouldUploadSignaturesKey(key))
+        {
+            mShouldUploadSignatures = prefs.shouldUploadSignatures();
+            controlUploadService();
+        } // else if
     } // onSharedPreferenceChanged(SharedPreferences, String)
 
     private void controlAllServices()
@@ -123,7 +129,7 @@ public final class SignUpApplication extends Application implements OnChangeList
 
     private void controlUploadService()
     {
-        if (mIsConnected)
+        if (mShouldUploadSignatures && mIsConnected)
         {
             startService(new Intent(this, UploadService.class));
         } // if

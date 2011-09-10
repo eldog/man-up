@@ -5,6 +5,9 @@
     <CheckBoxPreference
         android:key="listen_for_swipeup"
         android:title="Listen for SwipeUp" />
+    <CheckBoxPreference
+        android:key="should_upload_signatures"
+        android:title="Upload signatures " />
     <EditTextPreference
         android:key="cs_host"
         android:title="CS Host"

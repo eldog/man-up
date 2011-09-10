@@ -19,6 +19,7 @@ public final class Preferences
     private static final String KEY_CS_USERNAME = "cs_username";
     private static final String KEY_LDAP_LOOKUP_ENABLED = "ldap_lookup_enabled";
     private static final String KEY_LISTEN_FOR_SWIPEUP = "listen_for_swipeup";
+    private static final String KEY_SHOULD_UPLOAD_SIGNATURES = "should_upload_signatures";
     private static final String KEY_SWIPEUP_HOST = "swipeup_host";
     private static final String KEY_SWIPEUP_PORT = "swipeup_port";
 
@@ -61,6 +62,11 @@ public final class Preferences
     {
         return mPrefs.getBoolean(KEY_LISTEN_FOR_SWIPEUP, false);
     } // listenForSwipeUp()
+
+    public boolean shouldUploadSignatures()
+    {
+        return mPrefs.getBoolean(KEY_SHOULD_UPLOAD_SIGNATURES, false);
+    } // shouldUploadSignatures()
 
     public String getSwipeUpHost()
     {
@@ -133,5 +139,10 @@ public final class Preferences
     {
         return KEY_LISTEN_FOR_SWIPEUP.equals(key);
     } // isListenForSwipeUpKey(String)
+
+    public boolean isShouldUploadSignaturesKey(final String key)
+    {
+        return KEY_SHOULD_UPLOAD_SIGNATURES.equals(key);
+    } // isShouldUploadSignaturesKey(String)
 
 } // class Preferences
