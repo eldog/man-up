@@ -16,6 +16,8 @@ import android.widget.TextView;
 
 final class UserMemberAdapter extends CursorAdapter implements MemberAdapter
 {
+    private static final int PERSON_IS_COL = 1;
+
     private final class MemberLoader extends CursorLoader
     {
         MemberLoader()
@@ -26,7 +28,15 @@ final class UserMemberAdapter extends CursorAdapter implements MemberAdapter
         @Override
         protected Cursor loadCursor()
         {
-            return DataManager.getDataManager(mContext).getMembers();
+            return DataManager.getDataManager(mContext).queryMembers(
+                    new String[] {
+                            Member._ID,
+                            Member.PERSON_ID,
+                            Member.GIVEN_NAME,
+                            Member.SURNAME },
+                    null /* selection */,
+                    null /* selection args */,
+                    Member.LATEST_PENDING_SIGNATURE_REQUEST + " DESC");
         } // loadCursor()
 
         @Override
@@ -42,7 +52,6 @@ final class UserMemberAdapter extends CursorAdapter implements MemberAdapter
     private final LayoutInflater mInflater;
 
     private MemberLoader mLoader = null;
-    private int mPersonIdCol = Integer.MIN_VALUE;
 
     public UserMemberAdapter(final Context context)
     {
@@ -73,18 +82,8 @@ final class UserMemberAdapter extends CursorAdapter implements MemberAdapter
             nameView.setEnabled(true);
         } // else
         ((TextView) memberView.findViewById(R.id.subheader)).setText(
-                member.getString(mPersonIdCol));
+                member.getString(PERSON_IS_COL));
     } // bindView(View, Context, Cursor)
-
-    @Override
-    public void changeCursor(final Cursor cursor)
-    {
-        super.changeCursor(cursor);
-        if (cursor != null)
-        {
-            mPersonIdCol = cursor.getColumnIndexOrThrow(Member.PERSON_ID);
-        } // if
-    } // changeCursor(Cursor)
 
     public void loadCursor()
     {

@@ -1,4 +1,4 @@
-package com.appspot.manup.signup.ldap;
+package com.appspot.manup.signup.extrainfo;
 
 import android.content.ContentValues;
 import android.text.TextUtils;
@@ -6,7 +6,7 @@ import android.text.TextUtils;
 import com.appspot.manup.signup.data.DataManager.Member;
 import com.novell.ldap.LDAPEntry;
 
-public final class MemberLdapEntry
+public final class MemberExtraInfo
 {
     private static final String LDAP_PERSON_ID = "umanPersonID";
     private static final String LDAP_GIVEN_NAME = "givenName";
@@ -17,22 +17,22 @@ public final class MemberLdapEntry
 
     private static final String VALUE_DELIMITER = ", ";
 
-    public static MemberLdapEntry fromLdapEntry(final LDAPEntry memberEntry)
+    static MemberExtraInfo fromLdapEntry(final LDAPEntry memberEntry)
     {
-        return new MemberLdapEntry(
+        return new MemberExtraInfo(
                 getStringValue(memberEntry, LDAP_PERSON_ID),
                 getStringValue(memberEntry, LDAP_GIVEN_NAME),
                 getStringValue(memberEntry, LDAP_SURNAME),
                 getStringValue(memberEntry, LDAP_EMAIL),
                 getStringValue(memberEntry, LDAP_DEPARTMENT),
                 getStringValue(memberEntry, LDAP_EMPLOYEE_TYPE));
-    } // fromLdapEntry
+    } // fromLdapEntry(LDAPEntrty)
 
     private static String getStringValue(final LDAPEntry memberEntry, final String attribute)
     {
         return TextUtils.join(VALUE_DELIMITER, memberEntry.getAttribute(attribute)
                 .getStringValueArray());
-    } // getStringValue
+    } // getStringValue(LDAPEntry, String)
 
     private final String mPersonId;
     private final String mGivenName;
@@ -41,7 +41,7 @@ public final class MemberLdapEntry
     private final String mDepartment;
     private final String mMemberType;
 
-    private MemberLdapEntry(final String personId, final String givenName, final String surname,
+    private MemberExtraInfo(final String personId, final String givenName, final String surname,
             final String email, final String department, final String memberType)
     {
         super();
@@ -68,7 +68,7 @@ public final class MemberLdapEntry
     @Override
     public String toString()
     {
-        return new StringBuilder(MemberLdapEntry.class.getSimpleName())
+        return new StringBuilder(MemberExtraInfo.class.getSimpleName())
         .append("\n{\n\tPerson ID: ")
         .append(mPersonId)
         .append("\n\tGiven Name: ")
@@ -115,4 +115,4 @@ public final class MemberLdapEntry
         return mMemberType;
     } // getMemberType()
 
-} // class MemberLdapEntry
+} // class MemberExtraInfo

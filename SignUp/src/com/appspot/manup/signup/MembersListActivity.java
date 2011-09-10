@@ -1,5 +1,9 @@
 package com.appspot.manup.signup;
 
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.AsyncTask;
@@ -8,6 +12,7 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
@@ -28,10 +33,13 @@ public final class MembersListActivity extends BaseActivity implements OnChangeL
     @SuppressWarnings("unused")
     private static final String TAG = MembersListActivity.class.getSimpleName();
 
+    private static final String EXTRA_FULLSCREEN = "fullscreen";
+
+    private static final int DIALOGUE_DELETE_ALL_MEMBERS_CONFIRMATION = 0;
+
     private static final int MENU_SETTINGS = Menu.FIRST;
-    private static final int MENU_UPLOAD_SIGNATURES = Menu.FIRST + 1;
-    private static final int MENU_FLUSH_MEMBERS = Menu.FIRST + 2;
-    private static final int MENU_LOAD_TEST_DATA = Menu.FIRST + 3;
+    private static final int MENU_DELETE_ALL_MEMBERS = Menu.FIRST + 1;
+    private static final int MENU_LOAD_TEST_DATA = Menu.FIRST + 2;
 
     private static final int MENU_GROUP_USER = 0;
     private static final int MENU_GROUP_ADMIN = 1;
@@ -41,7 +49,7 @@ public final class MembersListActivity extends BaseActivity implements OnChangeL
         @Override
         protected Long doInBackground(final String... personId)
         {
-            return mDataManager.addMember(personId[0]);
+            return mDataManager.requestSignature(personId[0]);
         } // doInBackground(Void)
 
         @Override
@@ -56,43 +64,63 @@ public final class MembersListActivity extends BaseActivity implements OnChangeL
             cleanUp();
             if (id != DataManager.OPERATION_FAILED)
             {
-                mPersonId.setText(null);
+                mPersonIdTextEdit.setText(null);
             } // if
             else
             {
-                /*
-                 * Assume that if the operations failed it was because the
-                 * person ID already exists.
-                 */
-                mPersonId.setError(getString(R.string.person_id_already_exists));
+                mPersonIdTextEdit.setError(getString(R.string.add_person_id_failed));
             } // else
         } // onPostExecute(Long)
 
         private void cleanUp()
         {
             mMemberAdder = null;
-            mAdd.setEnabled(true);
+            mAddButton.setEnabled(true);
         } // cleanUp()
 
     } // class MemberAdder
 
     private MemberAdder mMemberAdder = null;
-    private Button mAdd = null;
-    private EditText mPersonId = null;
-    private MemberAdapter mMemberAdapter = null;
+    private ListView mMembersList = null;
+    private Button mAddButton = null;
+    private EditText mPersonIdTextEdit = null;
+    private MemberAdapter mMembersAdapter = null;
     private volatile DataManager mDataManager = null;
 
-    private boolean mUsingAdminMemberAdapter = false;
+    private boolean mIsInAdminMode = false;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
+
+        if (getIntent().getBooleanExtra(EXTRA_FULLSCREEN, true))
+        {
+            getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                    WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        } // if
+        else
+        {
+            getWindow().setFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN,
+                    WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
+        } // else
+
         setContentView(R.layout.members_list);
         mDataManager = DataManager.getDataManager(this);
-        mAdd = (Button) findViewById(R.id.add_button);
-        mPersonId = (EditText) findViewById(R.id.person_id);
-        mPersonId.setOnEditorActionListener(new OnEditorActionListener()
+        mMembersList = (ListView) findViewById(R.id.members_list);
+        mMembersList.setEmptyView(findViewById(R.id.empy_list));
+        mMembersList.setOnItemClickListener(new OnItemClickListener()
+        {
+            @Override
+            public void onItemClick(final AdapterView<?> parent, final View view,
+                    final int position, final long id)
+            {
+                startCaptureSignatureActivity(position);
+            } // onItemClick(AdapterView, View, int, long)
+        });
+        mAddButton = (Button) findViewById(R.id.add_button);
+        mPersonIdTextEdit = (EditText) findViewById(R.id.person_id);
+        mPersonIdTextEdit.setOnEditorActionListener(new OnEditorActionListener()
         {
             @Override
             public boolean onEditorAction(final TextView v, final int actionId,
@@ -100,7 +128,7 @@ public final class MembersListActivity extends BaseActivity implements OnChangeL
             {
                 if (actionId == EditorInfo.IME_ACTION_DONE)
                 {
-                    onAddClick(null);
+                    addMember();
                     return true;
                 } // if
                 else
@@ -112,50 +140,6 @@ public final class MembersListActivity extends BaseActivity implements OnChangeL
     } // onCreate(Bundle)
 
     @Override
-    protected void onResumeWithPreferences(final Preferences prefs)
-    {
-        super.onResumeWithPreferences(prefs);
-
-        if (mMemberAdapter != null)
-        {
-            mMemberAdapter.closeCursor();
-        } // if
-
-        if (mUsingAdminMemberAdapter = prefs.isInAdminMode())
-        {
-            mMemberAdapter = new AdminMemberAdapter(this);
-        } // if
-        else
-        {
-            mMemberAdapter = new UserMemberAdapter(this);
-        } // else
-
-        final ListView membersList =
-                (ListView) findViewById(R.id.members_with_uncaptured_signatures_list);
-        membersList.setAdapter(mMemberAdapter);
-        membersList.setOnItemClickListener(new OnItemClickListener()
-        {
-            @Override
-            public void onItemClick(final AdapterView<?> parent, final View view,
-                    final int position, final long id)
-            {
-                final Object item = mMemberAdapter.getItem(position);
-                if (item instanceof Cursor)
-                {
-                    final Cursor c = (Cursor) item;
-                    final Intent intent = new Intent(MembersListActivity.this,
-                            CaptureSignatureActivity.class);
-                    intent.setAction(CaptureSignatureActivity.ACTION_CAPTURE);
-                    intent.putExtra(CaptureSignatureActivity.EXTRA_ID,
-                            c.getLong(c.getColumnIndexOrThrow(Member._ID)));
-                    startActivity(intent);
-                } // if
-            } // onItemClick(AdapterView, View, int, long)
-        });
-        loadData();
-    } // setListAdapter()
-
-    @Override
     protected void onResume()
     {
         super.onResume();
@@ -163,41 +147,133 @@ public final class MembersListActivity extends BaseActivity implements OnChangeL
     } // onResume()
 
     @Override
+    protected void onResumeWithPreferences(final Preferences prefs)
+    {
+        super.onResumeWithPreferences(prefs);
+        final boolean isInAdminMode = prefs.isInAdminMode();
+        if (isInAdminMode == mIsInAdminMode && mMemberAdder != null)
+        {
+            return;
+        } // if
+
+        // Restart activity to adjust full screen.
+        if (mMembersAdapter != null)
+        {
+            final Intent intent = getIntent();
+            intent.putExtra(EXTRA_FULLSCREEN, !isInAdminMode);
+            finish();
+            startActivity(intent);
+            return;
+        } // if
+
+        mIsInAdminMode = isInAdminMode;
+        if (isInAdminMode)
+        {
+
+            mMembersAdapter = new AdminMemberAdapter(this);
+        } // if
+        else
+        {
+            mMembersAdapter = new UserMemberAdapter(this);
+        } // else
+        mMembersList.setAdapter(mMembersAdapter);
+
+        loadData();
+    } // setListAdapter()
+
+    private void startCaptureSignatureActivity(final int position)
+    {
+        final Cursor item = (Cursor) mMembersAdapter.getItem(position);
+        final Intent intent = new Intent(MembersListActivity.this,
+                CaptureSignatureActivity.class);
+        intent.setAction(CaptureSignatureActivity.ACTION_CAPTURE);
+        intent.putExtra(CaptureSignatureActivity.EXTRA_ID,
+                item.getLong(item.getColumnIndexOrThrow(Member._ID)));
+        startActivity(intent);
+    } // startCaptureSignatureActivity(int)
+
+    @Override
     protected void onPause()
     {
         DataManager.unregisterListener(this);
-        mMemberAdapter.closeCursor();
+        if (mMembersAdapter != null)
+        {
+            mMembersAdapter.closeCursor();
+        } // if
         super.onPause();
     } // onPause()
+
+    private void addMember()
+    {
+        final String personId = mPersonIdTextEdit.getText().toString();
+        if (DataManager.isValidPersonId(personId))
+        {
+            mAddButton.setEnabled(false);
+            if (mMemberAdder != null)
+            {
+                mMemberAdder.cancel(true);
+            } // if
+            mMemberAdder = (MemberAdder) new MemberAdder().execute(personId);
+        } // if
+        else
+        {
+            mPersonIdTextEdit.setError(getString(R.string.person_id_incorrect_length));
+        } // else
+    } // addPerson()
 
     @Override
     public void onBackPressed()
     {
-        // Prevent users, not admins, of accidently exiting SignUp.
-        if (mUsingAdminMemberAdapter)
+        if (mIsInAdminMode)
         {
             super.onBackPressed();
         } // if
     } // onBackPressed()
 
     @Override
+    protected Dialog onCreateDialog(final int id, final Bundle args)
+    {
+        switch (id)
+        {
+            case DIALOGUE_DELETE_ALL_MEMBERS_CONFIRMATION:
+                return new AlertDialog.Builder(this)
+                        .setTitle(R.string.dialog_delete_all_members_title)
+                        .setMessage(R.string.dialog_delete_all_members_message)
+                        .setCancelable(true)
+                        .setIcon(android.R.drawable.stat_sys_warning)
+                        .setNegativeButton(R.string.dialog_delete_all_members_no,
+                                null /* listener */)
+                        .setPositiveButton(R.string.dialog_delete_all_members_yes,
+                                new OnClickListener()
+                                {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which)
+                                    {
+                                        mDataManager.deleteAllMembers();
+                                        loadData();
+                                    } // onClick(DialogInterface, int)
+                                })
+                        .create();
+            default:
+                throw new AssertionError();
+        } // switch
+    } // onCreateDialog(int, Bundle)
+
+    @Override
     public boolean onCreateOptionsMenu(final Menu menu)
     {
         super.onCreateOptionsMenu(menu);
-        menu.add(MENU_GROUP_USER, MENU_SETTINGS, 0, "Settings");
-        menu.add(MENU_GROUP_ADMIN, MENU_UPLOAD_SIGNATURES, 0, "Upload signatures");
-        menu.add(MENU_GROUP_ADMIN, MENU_FLUSH_MEMBERS, 0, "Delete members");
-        menu.add(MENU_GROUP_ADMIN, MENU_LOAD_TEST_DATA, 0, "Load test data");
+        menu.add(MENU_GROUP_USER, MENU_SETTINGS, Menu.NONE, R.string.menu_settings);
+        menu.add(MENU_GROUP_ADMIN, MENU_DELETE_ALL_MEMBERS, Menu.NONE,
+                R.string.menu_delete_all_members);
+        menu.add(MENU_GROUP_ADMIN, MENU_LOAD_TEST_DATA, Menu.NONE, R.string.menu_load_test_data);
         return true;
     } // onCreateOptionsMenu(Menu)
 
     @Override
     public boolean onMenuOpened(final int featureId, final Menu menu)
     {
-        if (menu != null)
-        {
-            menu.setGroupVisible(MENU_GROUP_ADMIN, mUsingAdminMemberAdapter);
-        } // if
+        menu.setGroupVisible(MENU_GROUP_ADMIN, mIsInAdminMode);
         return true;
     } // onMenuOpened(int, Menu)
 
@@ -209,12 +285,8 @@ public final class MembersListActivity extends BaseActivity implements OnChangeL
             case MENU_SETTINGS:
                 startActivity(new Intent(this, SignUpPreferenceActivity.class));
                 return true;
-            case MENU_UPLOAD_SIGNATURES:
-                startService(new Intent(this, UploadService.class));
-                return true;
-            case MENU_FLUSH_MEMBERS:
-                mDataManager.flushMembers();
-                loadData();
+            case MENU_DELETE_ALL_MEMBERS:
+                showDialog(DIALOGUE_DELETE_ALL_MEMBERS_CONFIRMATION, null /* args */);
                 return true;
             case MENU_LOAD_TEST_DATA:
                 mDataManager.loadTestData();
@@ -225,22 +297,9 @@ public final class MembersListActivity extends BaseActivity implements OnChangeL
         } // switch
     } // onOptionsItemSelected(MenuItem)
 
-    public void onAddClick(final View v)
+    public void onAddButtonClick(final View addButton)
     {
-        final String personId = mPersonId.getText().toString();
-        if (DataManager.isValidPersonId(personId))
-        {
-            mAdd.setEnabled(false);
-            if (mMemberAdder != null)
-            {
-                mMemberAdder.cancel(true);
-            } // if
-            mMemberAdder = (MemberAdder) new MemberAdder().execute(personId);
-        } // if
-        else
-        {
-            mPersonId.setError(getString(R.string.person_id_incorrect_length));
-        } // else
+        addMember();
     } // onAddClick(View)
 
     @Override
@@ -258,7 +317,7 @@ public final class MembersListActivity extends BaseActivity implements OnChangeL
 
     private void loadData()
     {
-        mMemberAdapter.loadCursor();
+        mMembersAdapter.loadCursor();
     } // loadData()
 
 } // class MembersListActivity

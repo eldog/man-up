@@ -7,7 +7,6 @@ import java.util.Set;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
-import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteConstraintException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
@@ -15,7 +14,7 @@ import android.provider.BaseColumns;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.appspot.manup.signup.ldap.MemberLdapEntry;
+import com.appspot.manup.signup.extrainfo.MemberExtraInfo;
 
 public final class DataManager
 {
@@ -72,7 +71,7 @@ public final class DataManager
     private static final class MemberDbOpenHelper extends SQLiteOpenHelper
     {
         private static final String DATABASE_NAME = "members.db";
-        private static final int DATABASE_VERSION = 13;
+        private static final int DATABASE_VERSION = 15;
 
         public MemberDbOpenHelper(final Context context)
         {
@@ -96,10 +95,19 @@ public final class DataManager
                 Member.LATEST_PENDING_SIGNATURE_REQUEST + " INTEGER," +
 
                 Member.PERSON_ID_VALIDATED + " TEXT NOT NULL "
-                    + "DEFAULT " + Member.PERSON_ID_VALIDATED_UNKNWON + "," +
+                    + "DEFAULT " + Member.PERSON_ID_VALIDATED_UNKNWON
+                    + " CHECK (" + Member.PERSON_ID_VALIDATED + " IN ( '"
+                        + Member.PERSON_ID_VALIDATED_UNKNWON + "','"
+                        + Member.PERSON_ID_VALIDATED_VALID + "','"
+                        + Member.PERSON_ID_VALIDATED_INVALID + "'))," +
 
                 Member.EXTRA_INFO_STATE + " TEXT NOT NULL "
-                    + "DEFAULT " + Member.EXTRA_INFO_STATE_NONE + "," +
+                    + "DEFAULT " + Member.EXTRA_INFO_STATE_NONE
+                    + " CHECK (" + Member.EXTRA_INFO_STATE + " IN ('"
+                        + Member.EXTRA_INFO_STATE_NONE + "','"
+                        + Member.EXTRA_INFO_STATE_RETRIEVING + "','"
+                        + Member.EXTRA_INFO_STATE_RETRIEVED + "','"
+                        + Member.EXTRA_INFO_STATE_ERROR + "'))," +
 
                 Member.GIVEN_NAME + " TEXT," +
                 Member.SURNAME + " TEXT," +
@@ -155,11 +163,6 @@ public final class DataManager
         } // synchronized
     } // unregisterListener(OnChangeListener)
 
-    public static long getUnixTime()
-    {
-        return System.currentTimeMillis() / 1000L;
-    } // getUnixTime()
-
     public static String getDisplayName(final Cursor cursor)
     {
         final String givenName = cursor.getString(cursor.getColumnIndexOrThrow(Member.GIVEN_NAME));
@@ -189,6 +192,11 @@ public final class DataManager
         return possiblePersonId.length() == Member.PERSON_ID_LENGTH
                 && TextUtils.isDigitsOnly(possiblePersonId);
     } // isValidPersonId(String)
+
+    private static long getUnixTime()
+    {
+        return System.currentTimeMillis() / 1000L;
+    } // getUnixTime()
 
     private final Object mLock = new Object();
     private final Context mContext;
@@ -223,91 +231,82 @@ public final class DataManager
         } // synchronized
     } // notifyListeners()
 
-    /**
-     * Add a new member. Adding a member also implies a request for a signature.
-     *
-     * @param personId
-     *            the person ID of the new member
-     * @return the internal ID of the newly added member, or
-     *         {@link #OPERATION_FAILED} if it was not possible to add the
-     *         member.
-     */
-    public long addMember(final String personId)
+    private String getMemberField(final String uniqueColumn, final String uniqueValue,
+            final String returnColumn)
     {
-        final ContentValues memberValues = new ContentValues(1);
-        memberValues.put(Member.PERSON_ID, personId);
-        memberValues.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, getUnixTime());
-        final long id;
+        Cursor cursor = null;
         try
         {
-            id = getDb().insert(
-                    Member.TABLE_NAME,
-                    Member.PERSON_ID /* null column hack */,
-                    memberValues);
+            cursor = queryMembers(
+                    new String[] { returnColumn },
+                    uniqueColumn + "=?",
+                    new String[] { uniqueValue },
+                    null /* order by */);
+            if (cursor != null && cursor.moveToFirst())
+            {
+                return cursor.getString(0);
+            } // if
+            return null;
         } // try
-        catch (final SQLiteConstraintException e)
+        finally
         {
-            Log.d(TAG, "addMember(" + personId + ") failed", e);
-            return OPERATION_FAILED;
-        } // catch
-        if (id != OPERATION_FAILED)
+            if (cursor != null)
+            {
+                cursor.close();
+            } // if
+        } // finally
+    } // getMemberField(String, String, String)
+
+    public Cursor queryMembers(final String[] columns, final String selection,
+            final String[] selectionArgs, final String orderBy)
+    {
+        return getDb().query(
+                Member.TABLE_NAME,
+                columns,
+                selection,
+                selectionArgs,
+                null /* group by */,
+                null /* having */,
+                orderBy);
+    } // queryMembers(String[], String, String[], String)
+
+    public long requestSignature(final String personId)
+    {
+        final SQLiteDatabase db = getDb();
+        final ContentValues requestValues = new ContentValues(2);
+        requestValues.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, getUnixTime());
+        long id = OPERATION_FAILED;
+        boolean requestMade = false;
+        db.beginTransaction();
+        try
+        {
+            id = getId(personId);
+            if (id != OPERATION_FAILED)
+            {
+                requestMade = updateMember(id, requestValues);
+            } // if
+            else
+            {
+                requestValues.put(Member.PERSON_ID, personId);
+                requestMade = insertMember(requestValues) != OPERATION_FAILED;
+            } // else
+            if (requestMade)
+            {
+                db.setTransactionSuccessful();
+            } // if
+        } // try
+        finally
+        {
+            db.endTransaction();
+        } // finally
+        if (requestMade)
         {
             notifyListeners();
         } // if
         return id;
-    } // addMember(String)
+    } // requestSignature(String)
 
-    public Cursor getMembers()
-    {
-        return getDb().query(
-                Member.TABLE_NAME,
-                null /* all columns */,
-                null /* selections */,
-                null /* selection args */,
-                null /* group by */,
-                null /* having */,
-                Member.LATEST_PENDING_SIGNATURE_REQUEST + " DESC");
-    } // getMembers()
-
-    /**
-     * Get members without extra info. Also excludes members with invalid person
-     * IDs as it will not be possible to obtain extra information for them.
-     *
-     * @return a cursor containing members without extra info, or null it was
-     *         not possible to retrieve those members.
-     */
-    public Cursor getMembersWithoutExtraInfo()
-    {
-        return getDb().query(
-                Member.TABLE_NAME,
-                null /* all columns */,
-                Member.EXTRA_INFO_STATE + "!=? AND " + Member.PERSON_ID_VALIDATED + "!=?",
-                new String[] {
-                        Member.EXTRA_INFO_STATE_RETRIEVED,
-                        Member.PERSON_ID_VALIDATED_INVALID },
-                null /* group by */,
-                null /* having */,
-                null /* order by */);
-    } // getMembersWithoutExtraInfo()
-
-    public boolean setExtraInfoStateToRetrieving(final long id)
-    {
-        return setExtraInfoState(id, Member.EXTRA_INFO_STATE_RETRIEVING);
-    } // setExtraInfoStateToRetrieving(long)
-
-    public boolean setExtraInfoStateToError(final long id)
-    {
-        return setExtraInfoState(id, Member.EXTRA_INFO_STATE_ERROR);
-    } // setExtraInfoState(long)
-
-    private boolean setExtraInfoState(final long id, final String newState)
-    {
-        final ContentValues memberInfoStateValues = new ContentValues(1);
-        memberInfoStateValues.put(Member.EXTRA_INFO_STATE, newState);
-        return updateMember(id, memberInfoStateValues);
-    } // setExtraInfoState(String)
-
-    public boolean addExtraInfo(final MemberLdapEntry memberEntry)
+    public boolean addExtraInfo(final MemberExtraInfo memberEntry)
     {
         final long id = getId(memberEntry.getPersonId());
         if (id == OPERATION_FAILED)
@@ -333,134 +332,37 @@ public final class DataManager
         return addedextraInfo;
     } // addExtraInfo(MemberLdapEntry)
 
-    public boolean requestSignature(final String personId)
-    {
-        final SQLiteDatabase db = getDb();
-        boolean requestMade = false;
-        db.beginTransaction();
-        try
-        {
-            long id = getId(personId);
-            if (id == OPERATION_FAILED)
-            {
-                requestMade = addMember(personId) != OPERATION_FAILED;
-            } // if
-            else
-            {
-                final ContentValues requestValues = new ContentValues(1);
-                requestValues.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, getUnixTime());
-                requestMade = updateMember(id, requestValues);
-            } // else
-            if (requestMade)
-            {
-                db.setTransactionSuccessful();
-            } // if
-        } // try
-        finally
-        {
-            db.endTransaction();
-        } // finally
-        if (requestMade)
-        {
-            notifyListeners();
-        } // if
-        return requestMade;
-    } // requestSignature(String)
-
-    public Cursor getSignatureRequests(final long sinceUnixTime)
-    {
-        return getDb().query(
-                Member.TABLE_NAME,
-                null /* all columns */,
-                Member.LATEST_PENDING_SIGNATURE_REQUEST + ">=?",
-                new String[] { Long.toString(sinceUnixTime) },
-                null /* group by */,
-                null /* having */,
-                Member.LATEST_PENDING_SIGNATURE_REQUEST + " DESC");
-    } // getSignatureRequests(long)
-
     public boolean memberHasSignature(final long id)
     {
         return Member.SIGNATURE_STATE_CAPTURED.equals(
                 getMemberField(Member._ID, Long.toString(id), Member.SIGNATURE_STATE));
     } // memberHasSignature(long)
 
-    public Cursor getMembersWithPendingRequests()
+    public boolean setExtraInfoStateToRetrieving(final long id)
     {
-        return getDb().query(
-                Member.TABLE_NAME,
-                null /* all columns */,
-                Member.LATEST_PENDING_SIGNATURE_REQUEST + " IS NOT NULL",
-                null /* selection args */,
-                null /* groupBy */,
-                null /* having */,
-                Member.LATEST_PENDING_SIGNATURE_REQUEST + " DESC");
-    } // getMembers()
+        return setExtraInfoState(id, Member.EXTRA_INFO_STATE_RETRIEVING);
+    } // setExtraInfoStateToRetrieving(long)
 
-    public Cursor getMembersWithSignaturesAndNoRequests()
+    public boolean setExtraInfoStateToError(final long id)
     {
-        return getDb().query(
-                Member.TABLE_NAME,
-                null /* columns */,
-                Member.SIGNATURE_STATE + "=? AND "
-                        + Member.LATEST_PENDING_SIGNATURE_REQUEST + " IS NULL",
-                new String[] { Member.SIGNATURE_STATE_CAPTURED },
-                null /* group by */,
-                null /* having */,
-                null /* order by */);
-    } // getMembersWithSignaturesAndNoRequests()
+        return setExtraInfoState(id, Member.EXTRA_INFO_STATE_ERROR);
+    } // setExtraInfoState(long)
 
-    public Cursor getMembersWithUploadedSignaturesAndNoRequests()
+    private boolean setExtraInfoState(final long id, final String newState)
     {
-        return getDb().query(
-                Member.TABLE_NAME,
-                null /* columns */,
-                Member.SIGNATURE_STATE + "=? AND "
-                        + Member.LATEST_PENDING_SIGNATURE_REQUEST + " IS NULL",
-                new String[] { Member.SIGNATURE_STATE_UPLOADED },
-                null /* group by */,
-                null /* having */,
-                null /* order by */);
-    } // getMembersWithSignaturesAndNoRequests()
+        final ContentValues memberInfoStateValues = new ContentValues(1);
+        memberInfoStateValues.put(Member.EXTRA_INFO_STATE, newState);
+        return updateMember(id, memberInfoStateValues);
+    } // setExtraInfoState(String)
 
-    public Cursor getMembersWithSignatures()
+    public boolean setSignatureStateCaptured(final long id)
     {
-        return getMembersWithSignaturesInState(Member.SIGNATURE_STATE_CAPTURED);
-    } // getMembersWithCapturedSignatures
-
-    private Cursor getMembersWithSignaturesInState(final String signatureState)
-    {
-        return getDb().query(
-                Member.TABLE_NAME,
-                null /* columns */,
-                Member.SIGNATURE_STATE + "=?",
-                new String[] { signatureState },
-                null /* group by */,
-                null /* having */,
-                null /* order by */);
-    } // getMembersWithSignaturesInState(String)
-
-    public boolean setSignatureCaptured(final long id)
-    {
-        final boolean updated = updateSignatureState(id, Member.SIGNATURE_STATE_CAPTURED);
-        if (updated)
-        {
-            notifyListeners();
-        } // if
-        return updated;
+        return updateSignatureState(id, Member.SIGNATURE_STATE_CAPTURED);
     } // setSignatureCaptured(long)
 
-    public boolean setSignatureUploaded(final long id)
+    public boolean setSignatureStateUploaded(final long id)
     {
-        final boolean stateChanged = updateSignatureState(id, Member.SIGNATURE_STATE_UPLOADED);
-        if (stateChanged)
-        {
-            if (deleteMemberSignature(id))
-            {
-                notifyListeners();
-            } // if
-        } // if
-        return stateChanged;
+        return updateSignatureState(id, Member.SIGNATURE_STATE_UPLOADED);
     } // setSignatureUploaded(long)
 
     private boolean updateSignatureState(final long id, final String newState)
@@ -471,7 +373,12 @@ public final class DataManager
         {
             newStateValue.put(Member.LATEST_PENDING_SIGNATURE_REQUEST, (String) null);
         } // if
-        return updateMember(id, newStateValue);
+        final boolean updated = updateMember(id, newStateValue);
+        if (updated)
+        {
+            notifyListeners();
+        } // if
+        return updated;
     } // updateSignatureState(long, String)
 
     public boolean setPersonIdInvalid(final long id)
@@ -481,10 +388,26 @@ public final class DataManager
         return updateMember(id, newPersonIdValidValue);
     } // setPersonIdInvalid(long)
 
-    public int flushMembers()
+    public void deleteAllMembers()
     {
-        return getDb().delete(Member.TABLE_NAME, null /* whereClause */, null /* whereArgs */);
-    } // flushMembers
+        getDb().delete(Member.TABLE_NAME, null /* whereClause */, null /* whereArgs */);
+    } // deleteAllMembers()
+
+    public long loadTestData()
+    {
+        deleteAllMembers();
+        final ContentValues[] memberValues = TestData.getMembers();
+        final SQLiteDatabase db = getDb();
+        for (final ContentValues cv : memberValues)
+        {
+            if (db.insert(Member.TABLE_NAME, null /* null column hack */, cv) == OPERATION_FAILED)
+            {
+                Log.e(TAG, "Failed to insert test data. " + cv);
+            } // if
+        } // for
+        return memberValues.length;
+    } // loadTestData()
+
 
     public String getPersonId(final long id)
     {
@@ -497,34 +420,21 @@ public final class DataManager
         return id != null ? Long.parseLong(id) : OPERATION_FAILED;
     } // getId(String)
 
-    private String getMemberField(final String uniqueColumn, final String uniqueValue,
-            final String returnColumn)
+    private long insertMember(final ContentValues memberValues)
     {
-        Cursor c = null;
         try
         {
-            c = getDb().query(
+            return getDb().insert(
                     Member.TABLE_NAME,
-                    new String[] { returnColumn },
-                    uniqueColumn + "=?",
-                    new String[] { uniqueValue },
-                    null /* group by */,
-                    null /* having */,
-                    null /* order by */);
-            if (c != null && c.moveToFirst())
-            {
-                return c.getString(0);
-            } // if
-            return null;
+                    Member._ID /* null column hack */,
+                    memberValues);
         } // try
-        finally
+        catch (final SQLiteConstraintException e)
         {
-            if (c != null)
-            {
-                c.close();
-            } // if
-        } // finally
-    } // getMemberField(String, String, String)
+            Log.d(TAG, "Failed to inser member with values: " + memberValues, e);
+            return OPERATION_FAILED;
+        } // catch
+    } // insertMember(ContentValues)
 
     private boolean updateMember(final long id, final ContentValues updatedMemberValues)
     {
@@ -540,17 +450,6 @@ public final class DataManager
         return updated;
     } // updateMember
 
-    private boolean deleteMemberSignature(final long id)
-    {
-        final File signature = getSignatureFile(id);
-        if (signature == null)
-        {
-            return false;
-        } // if
-
-        return (!signature.exists() || signature.delete());
-    } // deleteMemberSignature
-
     public File getSignatureFile(final long id)
     {
         final File externalDir = mContext.getExternalFilesDir(null /* type */);
@@ -561,19 +460,5 @@ public final class DataManager
         return new File(externalDir, Long.toString(id) + SIGNATURE_FILE_EXT);
     } // getSignatureFile
 
-    public long loadTestData()
-    {
-        flushMembers();
-        final ContentValues[] cvs = TestData.getMembers();
-        final SQLiteDatabase db = getDb();
-        for (final ContentValues cv : cvs)
-        {
-            if (db.insert(Member.TABLE_NAME, null /* null column hack */, cv) == OPERATION_FAILED)
-            {
-                Log.e(TAG, "Failed to insert test data. " + cv);
-            } // if
-        } // for
-        DatabaseUtils.dumpCursor(db.query(Member.TABLE_NAME, null, null, null, null, null, null));
-        return cvs.length;
-    } // loadTestData()
+
 } // class DataManager

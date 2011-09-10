@@ -39,24 +39,32 @@ public final class UploadService extends IntentService
     @Override
     protected void onHandleIntent(final Intent intent)
     {
-        Cursor c = null;
+        Cursor cursor = null;
         try
         {
-            c = DataManager.getDataManager(this).getMembersWithSignatures();
-            if (c == null)
+            cursor = DataManager.getDataManager(this).queryMembers(
+                    new String[] { Member._ID, Member.PERSON_ID },
+                    Member.SIGNATURE_STATE + "='" + Member.SIGNATURE_STATE_CAPTURED + "'",
+                    null /* selection args */,
+                    null /* order by */);
+
+            if (cursor == null)
             {
                 Log.w(TAG, "Failed to get captured signatures. Aborting.");
                 return;
             } // if
 
-            final int idColumn = c.getColumnIndexOrThrow(Member._ID);
-            final int personIdColumn = c.getColumnIndexOrThrow(Member.PERSON_ID);
+            if (cursor.getCount() == 0)
+            {
+                Log.v(TAG, "No signatures to upload.");
+                return;
+            } // if
 
-            while (c.moveToNext())
+            while (cursor.moveToNext())
             {
                 try
                 {
-                    uploadSignature(c.getLong(idColumn), c.getString(personIdColumn));
+                    uploadSignature(cursor.getLong(0), cursor.getString(1));
                 } // try
                 catch (final FileNotFoundException e)
                 {
@@ -72,9 +80,9 @@ public final class UploadService extends IntentService
         } // try
         finally
         {
-            if (c != null)
+            if (cursor != null)
             {
-                c.close();
+                cursor.close();
             } // if
         } // finally
     } // onHandleIntent(Intent)
@@ -152,7 +160,7 @@ public final class UploadService extends IntentService
                 } // finally
             } // if
         } // finally
-        if (!db.setSignatureUploaded(id))
+        if (!db.setSignatureStateUploaded(id))
         {
             throw new IOException("Failed to update signature state for " + id);
         } // if

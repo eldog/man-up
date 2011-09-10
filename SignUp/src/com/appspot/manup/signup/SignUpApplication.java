@@ -13,7 +13,7 @@ import android.net.NetworkInfo;
 
 import com.appspot.manup.signup.data.DataManager;
 import com.appspot.manup.signup.data.DataManager.OnChangeListener;
-import com.appspot.manup.signup.ldap.LdapService;
+import com.appspot.manup.signup.extrainfo.ExtraInfoService;
 import com.appspot.manup.signup.swipeupclient.SwipeUpClientService;
 
 public final class SignUpApplication extends Application implements OnChangeListener,
@@ -67,6 +67,7 @@ public final class SignUpApplication extends Application implements OnChangeList
         prefs.registerOnSharedPreferenceChangeListener(this);
         mLdapLookupEnabled = prefs.ldapLookupEnabled();
         mListenForSwipeUp = prefs.listenForSwipeUp();
+        mShouldUploadSignatures = prefs.shouldUploadSignatures();
         controlAllServices();
     } // loadPreferences()
 
@@ -108,7 +109,7 @@ public final class SignUpApplication extends Application implements OnChangeList
 
     private void controlLdapService()
     {
-        controlService(LdapService.class, mLdapLookupEnabled);
+        controlService(ExtraInfoService.class, mLdapLookupEnabled);
     } // controlLdapService()
 
     private void controlSwipeUpClientService()

@@ -56,8 +56,13 @@ public final class Preferences
 
     private String getString(final String key)
     {
-        return mPrefs.getString(key, null);
+        return getString(key, null);
     } // getString(String)
+
+    private String getString(final String key, final String defValue)
+    {
+        return mPrefs.getString(key, defValue);
+    } // getString(String, String)
 
     private int getIntFromString(final String key)
     {

@@ -2,7 +2,6 @@ package com.appspot.manup.signup;
 
 import android.content.Context;
 import android.database.Cursor;
-import android.os.AsyncTask;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,6 +11,7 @@ import android.widget.TextView;
 
 import com.appspot.manup.signup.data.DataManager;
 import com.appspot.manup.signup.data.DataManager.Member;
+import com.appspot.manup.signup.data.MultiCursorLoader;
 import com.appspot.manup.signup.ui.MemberAdapter;
 import com.appspot.manup.signup.ui.SectionedListAdapter;
 
@@ -24,46 +24,52 @@ final class AdminMemberAdapter extends SectionedListAdapter implements MemberAda
     private static final int SECTION_UPLOADED = 2;
     private static final int SECTION_COUNT = 3;
 
-    private final class MemberLoader extends AsyncTask<Void, Void, Cursor[]>
+    private static final String[] COLUMNS = { Member._ID, Member.PERSON_ID, Member.GIVEN_NAME,
+            Member.SURNAME, Member.EXTRA_INFO_STATE, Member.SIGNATURE_STATE };
+
+    private static final int COL_PERSON_ID = 1;
+    private static final int COL_EXTRA_INFO_STATE = 4;
+    private static final int COL_SIGNATURE_STATE = 5;
+
+    private final class MemberLoader extends MultiCursorLoader
     {
-        private volatile Cursor[] mCursors = null;
+        @Override
+        protected Cursor[] loadCursors()
+        {
+            return new Cursor[] {
+                    mDataManager.queryMembers(
+                            COLUMNS,
+                            Member.LATEST_PENDING_SIGNATURE_REQUEST + " IS NOT NULL",
+                            null /* selection args */,
+                            Member.LATEST_PENDING_SIGNATURE_REQUEST + " DESC"),
+
+                    mDataManager.queryMembers(
+                            COLUMNS,
+                            Member.SIGNATURE_STATE + "=? AND "
+                                    + Member.LATEST_PENDING_SIGNATURE_REQUEST + " IS NULL",
+                            new String[] { Member.SIGNATURE_STATE_CAPTURED },
+                            null /* order by */),
+
+                    mDataManager.queryMembers(
+                            COLUMNS,
+                            Member.SIGNATURE_STATE + "=? AND "
+                                    + Member.LATEST_PENDING_SIGNATURE_REQUEST + " IS NULL",
+                            new String[] { Member.SIGNATURE_STATE_UPLOADED },
+                            null /* order by */)
+            };
+        } // loadCursors()
 
         @Override
-        protected Cursor[] doInBackground(final Void... noParams)
+        protected void onCursorsLoaded(Cursor[] cursors)
         {
-            mCursors = new Cursor[] {
-                    mDataManager.getMembersWithPendingRequests(),
-                    mDataManager.getMembersWithSignaturesAndNoRequests(),
-                    mDataManager.getMembersWithUploadedSignaturesAndNoRequests() };
-            return mCursors;
-        } // doInBackground(Void)
-
-        @Override
-        protected void onCancelled()
-        {
-            mMemberLoader = null;
-            if (mCursors != null)
-            {
-                for (final Cursor cursor : mCursors)
-                {
-                    if (cursor != null)
-                    {
-                        cursor.close();
-                    } // if
-                } // for
-            } // if
-        } // onCancelled()
-
-        @Override
-        protected void onPostExecute(final Cursor[] cursors)
-        {
-            mMemberLoader = null;
-            final Cursor c = cursors[0];
-            mPersonIdCol = c.getColumnIndexOrThrow(Member.PERSON_ID);
-            mExtraInfoStateCol = c.getColumnIndexOrThrow(Member.EXTRA_INFO_STATE);
-            mSignatureStateCol = c.getColumnIndexOrThrow(Member.SIGNATURE_STATE);
             changeCursors(cursors);
-        } // onPostExecute(Cursor)
+        } // onCursorsLoaded(Cursor[])
+
+        @Override
+        protected void cleanUp()
+        {
+            mMemberLoader = null;
+        } // cleanUp()
 
     } // class MemberLoader
 
@@ -71,9 +77,6 @@ final class AdminMemberAdapter extends SectionedListAdapter implements MemberAda
     private final LayoutInflater mInflater;
 
     private MemberLoader mMemberLoader = null;
-    private int mPersonIdCol = Integer.MIN_VALUE;
-    private int mExtraInfoStateCol = Integer.MIN_VALUE;
-    private int mSignatureStateCol = Integer.MIN_VALUE;
 
     public AdminMemberAdapter(final Context context)
     {
@@ -123,7 +126,7 @@ final class AdminMemberAdapter extends SectionedListAdapter implements MemberAda
         final TextView headerView = (TextView) itemView.findViewById(R.id.header);
         final TextView subheaderView = (TextView) itemView.findViewById(R.id.subheader);
         final String name = DataManager.getDisplayName(item);
-        final String personId = item.getString(mPersonIdCol);
+        final String personId = item.getString(COL_PERSON_ID);
 
         if (!TextUtils.isEmpty(name))
         {
@@ -138,7 +141,7 @@ final class AdminMemberAdapter extends SectionedListAdapter implements MemberAda
 
         final ImageView signatureStateImage = (ImageView) itemView
                 .findViewById(R.id.signature_state);
-        final String signatureState = item.getString(mSignatureStateCol);
+        final String signatureState = item.getString(COL_SIGNATURE_STATE);
 
         if (Member.SIGNATURE_STATE_CAPTURED.equals(signatureState))
         {
@@ -156,7 +159,7 @@ final class AdminMemberAdapter extends SectionedListAdapter implements MemberAda
 
         final ImageView extraInfoStateImage = (ImageView) itemView
                 .findViewById(R.id.extra_info_state);
-        final String extraInfoState = item.getString(mExtraInfoStateCol);
+        final String extraInfoState = item.getString(COL_EXTRA_INFO_STATE);
 
         if (Member.EXTRA_INFO_STATE_RETRIEVING.equals(extraInfoState))
         {

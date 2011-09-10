@@ -143,7 +143,8 @@ class SwipeUpThread extends Thread
 
             Log.d(TAG, "Recieved person ID '" + personId + "' from SwipeUp.");
 
-            final boolean signatureRequested = mDataManager.requestSignature(personId);
+            final boolean signatureRequested =
+                    mDataManager.requestSignature(personId) != DataManager.OPERATION_FAILED;
 
             if (!signatureRequested)
             {

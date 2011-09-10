@@ -106,7 +106,7 @@ public class WriteSignatureService extends IntentService
             } // if
         } // finally
 
-        return db.setSignatureCaptured(id);
+        return db.setSignatureStateCaptured(id);
     } // write
 
 } // class WriteSignatureService

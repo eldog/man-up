@@ -1,4 +1,4 @@
-package com.appspot.manup.signup.ldap;
+package com.appspot.manup.signup.extrainfo;
 
 import android.content.Intent;
 import android.database.Cursor;
@@ -15,9 +15,9 @@ import com.novell.ldap.LDAPConnection;
 import com.novell.ldap.LDAPException;
 import com.novell.ldap.LDAPSearchResults;
 
-public final class LdapService extends PersistentIntentService
+public final class ExtraInfoService extends PersistentIntentService
 {
-    private static final String TAG = LdapService.class.getSimpleName();
+    private static final String TAG = ExtraInfoService.class.getSimpleName();
 
     private static final String FORWARD_HOST = "localhost";
     private static final String LDAP_HOST = "edir.manchester.ac.uk";
@@ -28,7 +28,7 @@ public final class LdapService extends PersistentIntentService
     private volatile DataManager mDataManager = null;
     private volatile Session mSession = null;
 
-    public LdapService()
+    public ExtraInfoService()
     {
         super(TAG);
     } // constructor()
@@ -83,7 +83,13 @@ public final class LdapService extends PersistentIntentService
         Cursor cursor = null;
         try
         {
-            cursor = mDataManager.getMembersWithoutExtraInfo();
+            cursor = mDataManager.queryMembers(
+                    null /* all columns */,
+                    Member.EXTRA_INFO_STATE + "!=? AND " + Member.PERSON_ID_VALIDATED + "!=?",
+                    new String[] {
+                            Member.EXTRA_INFO_STATE_RETRIEVED,
+                            Member.PERSON_ID_VALIDATED_INVALID },
+                    null /* order by */);
             if (cursor == null)
             {
                 Log.e(TAG, "Failed to get members without extra info.");
@@ -137,7 +143,7 @@ public final class LdapService extends PersistentIntentService
                     null /* attrs */,
                     false /* types only */);
 
-            final MemberLdapEntry memberEntry = extractLdapEntry(id, personId, results);
+            final MemberExtraInfo memberEntry = extractLdapEntry(id, personId, results);
 
             if (memberEntry == null || !mDataManager.addExtraInfo(memberEntry))
             {
@@ -159,10 +165,10 @@ public final class LdapService extends PersistentIntentService
         } // finally
     } // queryLdapServer
 
-    private MemberLdapEntry extractLdapEntry(final long id, final String personId,
+    private MemberExtraInfo extractLdapEntry(final long id, final String personId,
             final LDAPSearchResults results)
     {
-        MemberLdapEntry memberEntry = null;
+        MemberExtraInfo memberEntry = null;
 
         /*
          * Don't use results.getCount(). It doesn't appear to work and always
@@ -173,7 +179,7 @@ public final class LdapService extends PersistentIntentService
         {
             try
             {
-                memberEntry = MemberLdapEntry.fromLdapEntry(results.next());
+                memberEntry = MemberExtraInfo.fromLdapEntry(results.next());
             } // try
             catch (final LDAPException e)
             {
@@ -204,4 +210,4 @@ public final class LdapService extends PersistentIntentService
         super.onDestroy();
     } // onDestroy()
 
-} // class LdapService
+} // class ExtraInfoService
