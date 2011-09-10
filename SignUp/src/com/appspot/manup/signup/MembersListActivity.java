@@ -194,7 +194,10 @@ public final class MembersListActivity extends BaseActivity implements OnChangeL
     @Override
     public boolean onMenuOpened(final int featureId, final Menu menu)
     {
-        menu.setGroupVisible(MENU_GROUP_ADMIN, mUsingAdminMemberAdapter);
+        if (menu != null)
+        {
+            menu.setGroupVisible(MENU_GROUP_ADMIN, mUsingAdminMemberAdapter);
+        } // if
         return true;
     } // onMenuOpened(int, Menu)
 

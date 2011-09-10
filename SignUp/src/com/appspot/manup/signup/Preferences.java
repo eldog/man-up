@@ -19,9 +19,10 @@ public final class Preferences
     private static final String KEY_CS_USERNAME = "cs_username";
     private static final String KEY_LDAP_LOOKUP_ENABLED = "ldap_lookup_enabled";
     private static final String KEY_LISTEN_FOR_SWIPEUP = "listen_for_swipeup";
+    private static final String KEY_MAN_UP_HOST = "man_up_host";
+    private static final String KEY_MAN_UP_PORT = "man_up_port";
     private static final String KEY_SHOULD_UPLOAD_SIGNATURES = "should_upload_signatures";
     private static final String KEY_SWIPEUP_HOST = "swipeup_host";
-    private static final String KEY_SWIPEUP_PORT = "swipeup_port";
 
     private final SharedPreferences mPrefs;
 
@@ -48,29 +49,45 @@ public final class Preferences
         mPrefs.unregisterOnSharedPreferenceChangeListener(listener);
     } // unregisterOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener)
 
+    private boolean getBoolean(final String key)
+    {
+        return mPrefs.getBoolean(key, false);
+    } // getBoolean(String)
+
+    private String getString(final String key)
+    {
+        return mPrefs.getString(key, null);
+    } // getString(String)
+
+    private int getIntFromString(final String key)
+    {
+        final String value = getString(key);
+        return (value != null) ? Integer.valueOf(value) : -1;
+    } // getIntFromString(String)
+
     public boolean isInAdminMode()
     {
-        return mPrefs.getBoolean(KEY_ADMIN_MODE, false);
+        return getBoolean(KEY_ADMIN_MODE);
     } // isInAdminMode()
 
     public boolean ldapLookupEnabled()
     {
-        return mPrefs.getBoolean(KEY_LDAP_LOOKUP_ENABLED, false);
+        return getBoolean(KEY_LDAP_LOOKUP_ENABLED);
     } // ldapLookupEnabled()
 
     public boolean listenForSwipeUp()
     {
-        return mPrefs.getBoolean(KEY_LISTEN_FOR_SWIPEUP, false);
+        return getBoolean(KEY_LISTEN_FOR_SWIPEUP);
     } // listenForSwipeUp()
 
     public boolean shouldUploadSignatures()
     {
-        return mPrefs.getBoolean(KEY_SHOULD_UPLOAD_SIGNATURES, false);
+        return getBoolean(KEY_SHOULD_UPLOAD_SIGNATURES);
     } // shouldUploadSignatures()
 
     public String getSwipeUpHost()
     {
-        return mPrefs.getString(KEY_SWIPEUP_HOST, null);
+        return getString(KEY_SWIPEUP_HOST);
     } // getSwipeUpHost()
 
     public boolean hasSwipeUpHost()
@@ -78,20 +95,9 @@ public final class Preferences
         return isPreferenceSet(KEY_SWIPEUP_HOST);
     } // hasSwipeUpHost()
 
-    public int getSwipeUpPort()
-    {
-        final String portString = mPrefs.getString(KEY_SWIPEUP_PORT, null);
-        return portString != null ? Integer.valueOf(portString) : -1;
-    } // getSwipeUpPort()
-
-    public boolean hasSwipePort()
-    {
-        return isPreferenceSet(KEY_SWIPEUP_PORT);
-    } // hasSwipePort()
-
     public String getCsHost()
     {
-        return mPrefs.getString(KEY_CS_HOST, null);
+        return getString(KEY_CS_HOST);
     } // getCsHost()
 
     public boolean hasCsHost()
@@ -101,7 +107,7 @@ public final class Preferences
 
     public String getCsUsername()
     {
-        return mPrefs.getString(KEY_CS_USERNAME, null);
+        return getString(KEY_CS_USERNAME);
     } // getCsUsername()
 
     public boolean hasCsUsername()
@@ -111,13 +117,33 @@ public final class Preferences
 
     public String getCsPassword()
     {
-        return mPrefs.getString(KEY_CS_PASSWORD, null);
+        return getString(KEY_CS_PASSWORD);
     } // getCsPassword()
 
     public boolean hasCsPassword()
     {
         return isPreferenceSet(KEY_CS_PASSWORD);
     } // hasCsPassword()
+
+    public String getManUpHost()
+    {
+        return getString(KEY_MAN_UP_HOST);
+    } // getManUpHost()
+
+    public boolean hasManUpHost()
+    {
+        return isPreferenceSet(KEY_MAN_UP_HOST);
+    } // hasManUpHost()
+
+    public int getManUpPort()
+    {
+        return getIntFromString(KEY_MAN_UP_PORT);
+    } // getManUpPort()
+
+    public boolean hasManUpPort()
+    {
+        return isPreferenceSet(KEY_MAN_UP_PORT);
+    } // hasManUpPort()
 
     private boolean isPreferenceSet(final String preference)
     {
@@ -126,8 +152,8 @@ public final class Preferences
 
     public boolean areRequiredPreferencesSet()
     {
-        return hasSwipeUpHost() && hasSwipePort() && hasCsHost() && hasCsUsername()
-                && hasCsPassword();
+        return hasSwipeUpHost() && hasCsHost() && hasCsUsername() && hasCsPassword()
+                && hasManUpHost() && hasManUpPort();
     } // areRequiredPreferencesSet()
 
     public boolean isLdapLookEnabledKey(final String key)

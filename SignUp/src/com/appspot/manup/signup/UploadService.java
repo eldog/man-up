@@ -83,13 +83,13 @@ public final class UploadService extends IntentService
             throws FileNotFoundException, IOException
     {
         final Preferences prefs = new Preferences(this);
-        if (!prefs.hasSwipeUpHost())
+        if (!prefs.hasManUpHost())
         {
-            throw new IOException("Host not set");
+            throw new IOException("ManUP host not set");
         }
-        if (!prefs.hasSwipePort())
+        if (!prefs.hasManUpPort())
         {
-            throw new IOException("Port not set");
+            throw new IOException("ManUp port not set");
         }
         final URI uri;
         try
@@ -97,8 +97,8 @@ public final class UploadService extends IntentService
             uri = new URI(
                     "http",
                     null /* userInfo */,
-                    prefs.getSwipeUpHost(),
-                    prefs.getSwipeUpPort(),
+                    prefs.getManUpHost(),
+                    prefs.getManUpPort(),
                     "/members/" + personId,
                     null /* query */,
                     null /* fragment */);

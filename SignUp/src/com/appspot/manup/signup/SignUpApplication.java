@@ -1,6 +1,7 @@
 package com.appspot.manup.signup;
 
 import android.app.Application;
+import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -29,7 +30,7 @@ public final class SignUpApplication extends Application implements OnChangeList
             final NetworkInfo info = (NetworkInfo) intent.getParcelableExtra(
                     ConnectivityManager.EXTRA_NETWORK_INFO);
             mIsConnected = info.isConnected();
-            controlSwipeUpService();
+            controlSwipeUpClientService();
         } // onReceive(Context, Intent)
     };
 
@@ -89,7 +90,7 @@ public final class SignUpApplication extends Application implements OnChangeList
         else if (prefs.isListenForSwipeUpKey(key))
         {
             mListenForSwipeUp = prefs.listenForSwipeUp();
-            controlSwipeUpService();
+            controlSwipeUpClientService();
         } // else if
         else if (prefs.isShouldUploadSignaturesKey(key))
         {
@@ -101,23 +102,31 @@ public final class SignUpApplication extends Application implements OnChangeList
     private void controlAllServices()
     {
         controlLdapService();
-        controlSwipeUpService();
+        controlSwipeUpClientService();
         controlUploadService();
     } // controlAllServices()
 
     private void controlLdapService()
     {
-        if (mLdapLookupEnabled && mIsConnected)
-        {
-            startService(new Intent(this, LdapService.class));
-        } // if
+        controlService(LdapService.class, mLdapLookupEnabled);
     } // controlLdapService()
 
-    private void controlSwipeUpService()
+    private void controlSwipeUpClientService()
     {
-        final Intent intent = new Intent(this, SwipeUpClientService.class);
+        controlService(SwipeUpClientService.class, mListenForSwipeUp);
+    } // controlSwipeUpService()
 
-        if (mListenForSwipeUp && mIsConnected)
+    private void controlUploadService()
+    {
+        controlService(UploadService.class, mShouldUploadSignatures);
+    } // controlUploadService()
+
+    private <S extends Service> void controlService(final Class<S> service,
+            final boolean startService)
+    {
+        final Intent intent = new Intent(this, service);
+
+        if (startService && mIsConnected)
         {
             startService(intent);
         } // if
@@ -125,14 +134,6 @@ public final class SignUpApplication extends Application implements OnChangeList
         {
             stopService(intent);
         } // else
-    } // controlSwipeUpService()
-
-    private void controlUploadService()
-    {
-        if (mShouldUploadSignatures && mIsConnected)
-        {
-            startService(new Intent(this, UploadService.class));
-        } // if
-    } // controlUploadService()
+    } // controlService(Class, boolean)
 
 } // class SignUpApplication

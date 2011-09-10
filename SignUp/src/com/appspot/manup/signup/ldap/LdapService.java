@@ -1,10 +1,10 @@
 package com.appspot.manup.signup.ldap;
 
-import android.app.IntentService;
 import android.content.Intent;
 import android.database.Cursor;
 import android.util.Log;
 
+import com.appspot.manup.signup.PersistentIntentService;
 import com.appspot.manup.signup.Preferences;
 import com.appspot.manup.signup.data.DataManager;
 import com.appspot.manup.signup.data.DataManager.Member;
@@ -15,7 +15,7 @@ import com.novell.ldap.LDAPConnection;
 import com.novell.ldap.LDAPException;
 import com.novell.ldap.LDAPSearchResults;
 
-public final class LdapService extends IntentService
+public final class LdapService extends PersistentIntentService
 {
     private static final String TAG = LdapService.class.getSimpleName();
 
@@ -42,6 +42,7 @@ public final class LdapService extends IntentService
 
     private boolean startPortForwarding()
     {
+        Log.d(TAG, "Setting up port forwarding.");
         final Preferences prefs = new Preferences(this);
         if (mSession != null && mSession.isConnected())
         {
@@ -75,6 +76,10 @@ public final class LdapService extends IntentService
     @Override
     protected void onHandleIntent(final Intent intent)
     {
+        if (!startPortForwarding())
+        {
+            return;
+        }
         Cursor cursor = null;
         try
         {
@@ -91,7 +96,6 @@ public final class LdapService extends IntentService
             } // if
             final int idColumn = cursor.getColumnIndexOrThrow(Member._ID);
             final int personIdColumn = cursor.getColumnIndexOrThrow(Member.PERSON_ID);
-            startPortForwarding();
             do
             {
                 try
