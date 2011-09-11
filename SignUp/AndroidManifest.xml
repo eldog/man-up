@@ -16,14 +16,13 @@
         android:name=".SignUpApplication"
         android:icon="@drawable/icon"
         android:label="@string/app_name"
-        android:theme="@android:style/Theme.Light.NoTitleBar">
+        android:theme="@android:style/Theme.Light.NoTitleBar.Fullscreen">
 
         <activity
             android:name=".MembersListActivity"
             android:label="@string/app_name"
             android:screenOrientation="portrait"
-            android:windowSoftInputMode="stateUnchanged"
-            android:theme="@android:style/Theme.Light.NoTitleBar">
+            android:windowSoftInputMode="stateUnchanged">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -32,8 +31,7 @@
 
         <activity
             android:name=".CaptureSignatureActivity"
-            android:screenOrientation="landscape"
-            android:theme="@android:style/Theme.Light.NoTitleBar.Fullscreen" />
+            android:screenOrientation="landscape" />
 
         <activity android:name=".SignUpPreferenceActivity" />
 

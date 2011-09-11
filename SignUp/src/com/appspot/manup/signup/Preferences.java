@@ -75,7 +75,7 @@ public final class Preferences
         return getBoolean(KEY_ADMIN_MODE);
     } // isInAdminMode()
 
-    public boolean ldapLookupEnabled()
+    public boolean extraInfoLookupEnabled()
     {
         return getBoolean(KEY_LDAP_LOOKUP_ENABLED);
     } // ldapLookupEnabled()

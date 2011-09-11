@@ -6,6 +6,7 @@ import android.util.Log;
 
 import com.appspot.manup.signup.PersistentIntentService;
 import com.appspot.manup.signup.Preferences;
+import com.appspot.manup.signup.StateReporter;
 import com.appspot.manup.signup.data.DataManager;
 import com.appspot.manup.signup.data.DataManager.Member;
 import com.jcraft.jsch.JSch;
@@ -24,6 +25,16 @@ public final class ExtraInfoService extends PersistentIntentService
     private static final int LDAP_PORT = 389;
     private static final int FORWARD_PORT = 23456;
 
+    public static final int STATE_INITIALISING = 3;
+    public static final int STATE_PORT_FORWARDING = 4;
+
+    public static final Object ID = new Object();
+
+    static
+    {
+        StateReporter.updateState(ID, STATE_STOPPED);
+    }
+
     private final JSch mJsch = new JSch();
     private volatile DataManager mDataManager = null;
     private volatile Session mSession = null;
@@ -38,16 +49,19 @@ public final class ExtraInfoService extends PersistentIntentService
     {
         super.onCreate();
         mDataManager = DataManager.getDataManager(this);
+        setState(STATE_STARTED);
     } // onCreate()
 
     private boolean startPortForwarding()
     {
-        Log.d(TAG, "Setting up port forwarding.");
+        Log.v(TAG, "Setting up port forwarding.");
+        setState(STATE_INITIALISING);
         final Preferences prefs = new Preferences(this);
         if (mSession != null && mSession.isConnected())
         {
             return true;
         } // if
+
         try
         {
             /*
@@ -67,9 +81,11 @@ public final class ExtraInfoService extends PersistentIntentService
                 mSession.disconnect();
             } // if
             Log.e(TAG, "Failed to start port forwarding.");
+            setState(STATE_STARTED);
             return false;
         } // catch
         Log.v(TAG, "Port forwaridng started.");
+        setState(STATE_PORT_FORWARDING);
         return true;
     } // startPortForwarding()
 
@@ -208,6 +224,13 @@ public final class ExtraInfoService extends PersistentIntentService
             mSession.disconnect();
         } // if
         super.onDestroy();
+        setState(STATE_STOPPED);
     } // onDestroy()
+
+    @Override
+    public Object getId()
+    {
+        return ID;
+    } // getId()
 
 } // class ExtraInfoService

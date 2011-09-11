@@ -1,6 +1,5 @@
 package com.appspot.manup.signup;
 
-import android.app.Service;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -8,7 +7,7 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 
-public abstract class PersistentIntentService extends Service
+public abstract class PersistentIntentService extends StateReportingService
 {
     private static final String TAG = PersistentIntentService.class.getSimpleName();
 

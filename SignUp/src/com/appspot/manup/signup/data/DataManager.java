@@ -26,7 +26,7 @@ public final class DataManager
 
     public interface OnChangeListener
     {
-        void onChange(DataManager dataManager);
+        void onChange();
     } // interface OnChangeListener
 
     public static final class Member implements BaseColumns
@@ -71,7 +71,7 @@ public final class DataManager
     private static final class MemberDbOpenHelper extends SQLiteOpenHelper
     {
         private static final String DATABASE_NAME = "members.db";
-        private static final int DATABASE_VERSION = 15;
+        private static final int DATABASE_VERSION = 16;
 
         public MemberDbOpenHelper(final Context context)
         {
@@ -96,7 +96,7 @@ public final class DataManager
 
                 Member.PERSON_ID_VALIDATED + " TEXT NOT NULL "
                     + "DEFAULT " + Member.PERSON_ID_VALIDATED_UNKNWON
-                    + " CHECK (" + Member.PERSON_ID_VALIDATED + " IN ( '"
+                    + " CHECK (" + Member.PERSON_ID_VALIDATED + " IN ('"
                         + Member.PERSON_ID_VALIDATED_UNKNWON + "','"
                         + Member.PERSON_ID_VALIDATED_VALID + "','"
                         + Member.PERSON_ID_VALIDATED_INVALID + "'))," +
@@ -116,7 +116,11 @@ public final class DataManager
                 Member.DEPARTMENT + " TEXT," +
 
                 Member.SIGNATURE_STATE + " TEXT NOT NULL "
-                    + "DEFAULT " + Member.SIGNATURE_STATE_UNCAPTURED +
+                    + "DEFAULT " + Member.SIGNATURE_STATE_UNCAPTURED
+                    + " CHECK (" + Member.SIGNATURE_STATE + " IN ('"
+                        + Member.SIGNATURE_STATE_UNCAPTURED + "','"
+                        + Member.SIGNATURE_STATE_CAPTURED + "','"
+                        + Member.SIGNATURE_STATE_UPLOADED + "'))" +
             ")";
 
             //@formatter:on
@@ -226,7 +230,7 @@ public final class DataManager
         {
             for (final OnChangeListener listener : sListeners)
             {
-                listener.onChange(this);
+                listener.onChange();
             } // for
         } // synchronized
     } // notifyListeners()
@@ -288,8 +292,9 @@ public final class DataManager
             else
             {
                 requestValues.put(Member.PERSON_ID, personId);
-                requestMade = insertMember(requestValues) != OPERATION_FAILED;
+                id = insertMember(requestValues);
             } // else
+            requestMade = id != OPERATION_FAILED;
             if (requestMade)
             {
                 db.setTransactionSuccessful();
@@ -448,7 +453,7 @@ public final class DataManager
             notifyListeners();
         } // if
         return updated;
-    } // updateMember
+    } // updateMember(long, ContentValues)
 
     public File getSignatureFile(final long id)
     {
@@ -458,7 +463,6 @@ public final class DataManager
             return null;
         } // if
         return new File(externalDir, Long.toString(id) + SIGNATURE_FILE_EXT);
-    } // getSignatureFile
-
+    } // getSignatureFile(long)
 
 } // class DataManager

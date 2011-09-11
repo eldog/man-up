@@ -1,7 +1,10 @@
 package com.appspot.manup.signup;
 
+import java.util.Map;
+
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
@@ -12,8 +15,9 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.WindowManager;
+import android.view.View.OnFocusChangeListener;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Button;
@@ -25,6 +29,8 @@ import android.widget.TextView.OnEditorActionListener;
 import com.appspot.manup.signup.data.DataManager;
 import com.appspot.manup.signup.data.DataManager.Member;
 import com.appspot.manup.signup.data.DataManager.OnChangeListener;
+import com.appspot.manup.signup.extrainfo.ExtraInfoService;
+import com.appspot.manup.signup.swipeupclient.SwipeUpClientService;
 import com.appspot.manup.signup.ui.BaseActivity;
 import com.appspot.manup.signup.ui.MemberAdapter;
 
@@ -32,8 +38,6 @@ public final class MembersListActivity extends BaseActivity implements OnChangeL
 {
     @SuppressWarnings("unused")
     private static final String TAG = MembersListActivity.class.getSimpleName();
-
-    private static final String EXTRA_FULLSCREEN = "fullscreen";
 
     private static final int DIALOGUE_DELETE_ALL_MEMBERS_CONFIRMATION = 0;
 
@@ -80,10 +84,28 @@ public final class MembersListActivity extends BaseActivity implements OnChangeL
 
     } // class MemberAdder
 
+    private final AbstractStateListener mListener = new AbstractStateListener(ExtraInfoService.ID,
+            SwipeUpClientService.ID)
+    {
+        @Override
+        void onStateChange(final Map<Object, Integer> states)
+        {
+            runOnUiThread(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    updateServiceState(states);
+                } // run
+            });
+        } // onStateChange(Map)
+    };
+
     private MemberAdder mMemberAdder = null;
     private ListView mMembersList = null;
     private Button mAddButton = null;
     private EditText mPersonIdTextEdit = null;
+    private TextView mServiceState = null;
     private MemberAdapter mMembersAdapter = null;
     private volatile DataManager mDataManager = null;
 
@@ -93,18 +115,6 @@ public final class MembersListActivity extends BaseActivity implements OnChangeL
     protected void onCreate(final Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-
-        if (getIntent().getBooleanExtra(EXTRA_FULLSCREEN, true))
-        {
-            getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                    WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        } // if
-        else
-        {
-            getWindow().setFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN,
-                    WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
-        } // else
-
         setContentView(R.layout.members_list);
         mDataManager = DataManager.getDataManager(this);
         mMembersList = (ListView) findViewById(R.id.members_list);
@@ -137,6 +147,20 @@ public final class MembersListActivity extends BaseActivity implements OnChangeL
                 } // else
             } // onEditorAction(TextView, int, KeyEvent)
         });
+        mPersonIdTextEdit.setOnFocusChangeListener(new OnFocusChangeListener()
+        {
+            @Override
+            public void onFocusChange(final View personIdTextEdit, final boolean hasFocus)
+            {
+                if (!hasFocus)
+                {
+                    ((InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE))
+                            .hideSoftInputFromWindow(mPersonIdTextEdit.getWindowToken(),
+                                    0 /* flags */);
+                } // if
+            } // onFocusChange(View, boolean)
+        });
+        mServiceState = (TextView) findViewById(R.id.service_state);
     } // onCreate(Bundle)
 
     @Override
@@ -144,6 +168,7 @@ public final class MembersListActivity extends BaseActivity implements OnChangeL
     {
         super.onResume();
         DataManager.registerListener(this);
+        mListener.register();
     } // onResume()
 
     @Override
@@ -156,20 +181,9 @@ public final class MembersListActivity extends BaseActivity implements OnChangeL
             return;
         } // if
 
-        // Restart activity to adjust full screen.
-        if (mMembersAdapter != null)
-        {
-            final Intent intent = getIntent();
-            intent.putExtra(EXTRA_FULLSCREEN, !isInAdminMode);
-            finish();
-            startActivity(intent);
-            return;
-        } // if
-
         mIsInAdminMode = isInAdminMode;
         if (isInAdminMode)
         {
-
             mMembersAdapter = new AdminMemberAdapter(this);
         } // if
         else
@@ -177,6 +191,8 @@ public final class MembersListActivity extends BaseActivity implements OnChangeL
             mMembersAdapter = new UserMemberAdapter(this);
         } // else
         mMembersList.setAdapter(mMembersAdapter);
+
+        mServiceState.setVisibility(mIsInAdminMode ? View.VISIBLE : View.GONE);
 
         loadData();
     } // setListAdapter()
@@ -192,9 +208,25 @@ public final class MembersListActivity extends BaseActivity implements OnChangeL
         startActivity(intent);
     } // startCaptureSignatureActivity(int)
 
+    private void updateServiceState(final Map<Object, Integer> states)
+    {
+        final String[] stateStrings =
+                getResources().getStringArray(R.array.service_state);
+
+        mServiceState.setText(new StringBuilder()
+                .append(getString(R.string.extra_info))
+                .append(": ")
+                .append(stateStrings[states.get(ExtraInfoService.ID)])
+                .append(" | ")
+                .append(getString(R.string.swipe_up))
+                .append(": ")
+                .append(stateStrings[states.get(SwipeUpClientService.ID)]));
+    } // updateServiceState(int)
+
     @Override
     protected void onPause()
     {
+        mListener.unregister();
         DataManager.unregisterListener(this);
         if (mMembersAdapter != null)
         {
@@ -241,13 +273,13 @@ public final class MembersListActivity extends BaseActivity implements OnChangeL
                         .setMessage(R.string.dialog_delete_all_members_message)
                         .setCancelable(true)
                         .setIcon(android.R.drawable.stat_sys_warning)
-                        .setNegativeButton(R.string.dialog_delete_all_members_no,
-                                null /* listener */)
-                        .setPositiveButton(R.string.dialog_delete_all_members_yes,
+                        .setNegativeButton(R.string.no, null /* listener */)
+                        .setPositiveButton(R.string.yes,
                                 new OnClickListener()
                                 {
                                     @Override
-                                    public void onClick(DialogInterface dialog, int which)
+                                    public void onClick(final DialogInterface dialog,
+                                            final int which)
                                     {
                                         mDataManager.deleteAllMembers();
                                         loadData();
@@ -302,8 +334,13 @@ public final class MembersListActivity extends BaseActivity implements OnChangeL
         addMember();
     } // onAddClick(View)
 
+    private void loadData()
+    {
+        mMembersAdapter.loadCursor();
+    } // loadData()
+
     @Override
-    public void onChange(final DataManager dataManager)
+    public void onChange()
     {
         runOnUiThread(new Runnable()
         {
@@ -314,10 +351,5 @@ public final class MembersListActivity extends BaseActivity implements OnChangeL
             } // run()
         });
     } // onChange(DataManager)
-
-    private void loadData()
-    {
-        mMembersAdapter.loadCursor();
-    } // loadData()
 
 } // class MembersListActivity

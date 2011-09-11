@@ -30,12 +30,12 @@ public final class SignUpApplication extends Application implements OnChangeList
             final NetworkInfo info = (NetworkInfo) intent.getParcelableExtra(
                     ConnectivityManager.EXTRA_NETWORK_INFO);
             mIsConnected = info.isConnected();
-            controlSwipeUpClientService();
+            controlAllServices();
         } // onReceive(Context, Intent)
     };
 
     private volatile boolean mIsConnected = false;
-    private volatile boolean mLdapLookupEnabled = false;
+    private volatile boolean mExtraLookupEnabled = false;
     private volatile boolean mShouldUploadSignatures = false;
     private volatile boolean mListenForSwipeUp = false;
 
@@ -65,14 +65,14 @@ public final class SignUpApplication extends Application implements OnChangeList
     {
         final Preferences prefs = new Preferences(this);
         prefs.registerOnSharedPreferenceChangeListener(this);
-        mLdapLookupEnabled = prefs.ldapLookupEnabled();
+        mExtraLookupEnabled = prefs.extraInfoLookupEnabled();
         mListenForSwipeUp = prefs.listenForSwipeUp();
         mShouldUploadSignatures = prefs.shouldUploadSignatures();
         controlAllServices();
     } // loadPreferences()
 
     @Override
-    public void onChange(final DataManager dataManager)
+    public void onChange()
     {
         controlAllServices();
     } // onChange(DataManager)
@@ -85,8 +85,8 @@ public final class SignUpApplication extends Application implements OnChangeList
 
         if (prefs.isLdapLookEnabledKey(key))
         {
-            mLdapLookupEnabled = prefs.ldapLookupEnabled();
-            controlLdapService();
+            mExtraLookupEnabled = prefs.extraInfoLookupEnabled();
+            controlExtraInfoService();
         } // if
         else if (prefs.isListenForSwipeUpKey(key))
         {
@@ -102,15 +102,15 @@ public final class SignUpApplication extends Application implements OnChangeList
 
     private void controlAllServices()
     {
-        controlLdapService();
+        controlExtraInfoService();
         controlSwipeUpClientService();
         controlUploadService();
     } // controlAllServices()
 
-    private void controlLdapService()
+    private void controlExtraInfoService()
     {
-        controlService(ExtraInfoService.class, mLdapLookupEnabled);
-    } // controlLdapService()
+        controlService(ExtraInfoService.class, mExtraLookupEnabled);
+    } // controlExtraInfoService()
 
     private void controlSwipeUpClientService()
     {

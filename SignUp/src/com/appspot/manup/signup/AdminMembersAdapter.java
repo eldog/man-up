@@ -131,10 +131,12 @@ final class AdminMemberAdapter extends SectionedListAdapter implements MemberAda
         if (!TextUtils.isEmpty(name))
         {
             headerView.setText(name);
+            headerView.setEnabled(true);
         } // if
         else
         {
             headerView.setText(R.string.unknown_name);
+            headerView.setEnabled(false);
         } // else
 
         subheaderView.setText(personId);

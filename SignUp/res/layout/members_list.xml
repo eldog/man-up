@@ -1,17 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/members_layout"
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
     <RelativeLayout
+        android:id="@+id/add_panel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/gradient_backgorund"
-        android:paddingTop="10dp"
-        android:paddingLeft="8dp"
-        android:paddingBottom="5dp"
-        android:paddingRight="6dp">
+        android:background="@drawable/gradient_background"
+        android:padding="10dp">
         <EditText
             android:id="@+id/person_id"
             android:layout_width="wrap_content"
@@ -37,7 +36,9 @@
     <ListView
         android:id="@+id/members_list"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        android:layout_below="@+id/add_panel"
+        android:layout_above="@+id/service_state" />
     <TextView
         android:id="@+id/empy_list"
         android:layout_width="match_parent"
@@ -46,4 +47,12 @@
         android:enabled="false"
         android:text="@string/member_list_empty"
         android:visibility="gone" />
-</LinearLayout>
+    <TextView
+        android:id="@+id/service_state"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:background="@drawable/gradient_background"
+        android:padding="5dp"
+        android:textColor="@android:color/secondary_text_light" />
+</RelativeLayout>

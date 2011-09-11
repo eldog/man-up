@@ -97,9 +97,9 @@ public final class CaptureSignatureActivity extends BaseActivity implements
     } // onSubmit
 
     @Override
-    public void onChange(final DataManager dataManager)
+    public void onChange()
     {
-        if (dataManager.memberHasSignature(mId))
+        if (DataManager.getDataManager(this).memberHasSignature(mId))
         {
             finish();
         } // if
