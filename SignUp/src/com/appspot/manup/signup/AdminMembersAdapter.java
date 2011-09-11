@@ -48,14 +48,14 @@ final class AdminMemberAdapter extends SectionedListAdapter implements MemberAda
                             Member.SIGNATURE_STATE + "=? AND "
                                     + Member.LATEST_PENDING_SIGNATURE_REQUEST + " IS NULL",
                             new String[] { Member.SIGNATURE_STATE_CAPTURED },
-                            null /* order by */),
+                            Member.GIVEN_NAME),
 
                     mDataManager.queryMembers(
                             COLUMNS,
                             Member.SIGNATURE_STATE + "=? AND "
                                     + Member.LATEST_PENDING_SIGNATURE_REQUEST + " IS NULL",
                             new String[] { Member.SIGNATURE_STATE_UPLOADED },
-                            null /* order by */)
+                            Member.GIVEN_NAME)
             };
         } // loadCursors()
 

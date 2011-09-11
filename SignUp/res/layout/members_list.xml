@@ -54,5 +54,6 @@
         android:layout_alignParentBottom="true"
         android:background="@drawable/gradient_background"
         android:padding="5dp"
-        android:textColor="@android:color/secondary_text_light" />
+        android:textColor="@android:color/secondary_text_light"
+        android:visibility="gone"/>
 </RelativeLayout>

@@ -1,42 +1,29 @@
 package com.appspot.manup.signup.ui;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 
-public final class DoodleView extends View
+public class DoodleView extends View
 {
     @SuppressWarnings("unused")
     private static final String TAG = DoodleView.class.getSimpleName();
 
-    private static final float TOUCH_TOLERANCE = 4.0f;
-
-    private final Paint mBitmapPaint = new Paint(Paint.DITHER_FLAG);
-    private final Canvas mCanvas = new Canvas();
     private final Path mPath = new Path();
-    private final Paint mPathPaint;
-
+    private final List<PathPoint> mPathPoints = new ArrayList<PathPoint>();
     private boolean mIsClear = true;
     private float mLastX = Float.MIN_VALUE;
     private float mLastY = Float.MIN_VALUE;
-    private Bitmap mDoodle = null;
-
-    {
-        mPathPaint = new Paint();
-        mPathPaint.setAntiAlias(true);
-        mPathPaint.setDither(true);
-        mPathPaint.setColor(Color.BLACK);
-        mPathPaint.setStrokeCap(Paint.Cap.ROUND);
-        mPathPaint.setStrokeJoin(Paint.Join.ROUND);
-        mPathPaint.setStrokeWidth(10.0f);
-        mPathPaint.setStyle(Paint.Style.STROKE);
-    }
+    private float mTouchTolerance = 4.0f;
+    private Paint mPathPaint = null;
 
     public DoodleView(final Context context)
     {
@@ -54,21 +41,19 @@ public final class DoodleView extends View
     } // constructor(Context, AttributeSet, int)
 
     @Override
-    protected void onSizeChanged(final int w, final int h, final int oldw, final int oldh)
-    {
-        mCanvas.setBitmap(mDoodle = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888));
-    } // onSizeChanged(int, int, int, int)
-
-    @Override
     protected void onDraw(final Canvas canvas)
     {
-        canvas.drawBitmap(mDoodle, 0.0f /* left */, 0.0f /* top */, mBitmapPaint);
         canvas.drawPath(mPath, mPathPaint);
     } // onDraw(Canvas)
 
     @Override
     public boolean onTouchEvent(final MotionEvent event)
     {
+        if (!isEnabled())
+        {
+            return true;
+        } // if
+
         final float x = event.getX();
         final float y = event.getY();
 
@@ -79,10 +64,6 @@ public final class DoodleView extends View
                 break;
             case MotionEvent.ACTION_MOVE:
                 pathMove(x, y);
-                break;
-            case MotionEvent.ACTION_UP:
-                pathEnd();
-                break;
         } // switch
 
         invalidate();
@@ -92,6 +73,8 @@ public final class DoodleView extends View
     private void pathStart(final float x, final float y)
     {
         mPath.moveTo(x, y);
+        mPathPoints.add(new PathPoint(x, y, false));
+        mIsClear = false;
         mLastX = x;
         mLastY = y;
     } // pathStart(float, float)
@@ -100,9 +83,10 @@ public final class DoodleView extends View
     {
         if (isSignificantMove(x, y))
         {
-            mPath.quadTo(mLastX, mLastY, (x + mLastX) / 2.0f, (y + mLastY) / 2.0f);
+            quadTo(x, mLastX, y, mLastY);
             mLastX = x;
             mLastY = y;
+            mPathPoints.add(new PathPoint(x, y, true));
         } // if
     } // pathMove(float, float)
 
@@ -110,17 +94,13 @@ public final class DoodleView extends View
     {
         final float xMovement = Math.abs(x - mLastX);
         final float yMovement = Math.abs(y - mLastY);
-        return xMovement >= TOUCH_TOLERANCE || yMovement >= TOUCH_TOLERANCE;
+        return xMovement >= mTouchTolerance || yMovement >= mTouchTolerance;
     } // isSignificantMove(float, float)
 
-    private void pathEnd()
+    private void quadTo(final float x, final float lastX, final float y, final float lastY)
     {
-        // Save the finished path.
-        mCanvas.drawPath(mPath, mPathPaint);
-        // Prevent the end of this path being joined to that start of the next.
-        mPath.reset();
-        mIsClear = false;
-    } // pathEnd()
+        mPath.quadTo(lastX, lastY, (x + lastX) / 2.0f, (y + lastY) / 2.0f);
+    } // quadTo(flaot, float)
 
     public boolean isClear()
     {
@@ -129,14 +109,69 @@ public final class DoodleView extends View
 
     public void clear()
     {
-        mDoodle.eraseColor(Color.TRANSPARENT);
+        mPath.rewind();
+        mPathPoints.clear();
         mIsClear = true;
         invalidate();
     } // clear()
 
     public Bitmap getDoodle()
     {
-        return mDoodle;
+        final Bitmap doodle = Bitmap.createBitmap(getWidth(), getHeight(), Bitmap.Config.ARGB_8888);
+        final Canvas canvas = new Canvas(doodle);
+        canvas.drawPath(mPath, mPathPaint);
+        return doodle;
     } // getDoodle()
 
+    public void setPathPaint(final Paint pathPaint)
+    {
+        mPathPaint = pathPaint;
+    } // setPathPaint(Paint)
+
+    public PathPoint[] getPathPoints()
+    {
+        final PathPoint[] pathPoints = new PathPoint[mPathPoints.size()];
+        mPathPoints.toArray(pathPoints);
+        return pathPoints;
+    } // getPathPoints()
+
+    public void setPathPoints(PathPoint[] pathPoints)
+    {
+        mPathPoints.clear();
+        mPath.rewind();
+        final int pathPointCount = pathPoints.length;
+        float lastX = Float.MIN_VALUE;
+        float lastY = Float.MIN_VALUE;
+        for (int i = 0; i < pathPointCount; i++)
+        {
+            final PathPoint pathPoint = pathPoints[i];
+
+            mPathPoints.add(pathPoint);
+
+            final float x = pathPoint.x;
+            final float y = pathPoint.y;
+
+            if (pathPoint.joinToPreviousPoint)
+            {
+               quadTo(x, lastX, y, lastY);
+            } // if
+            else
+            {
+                mPath.moveTo(x, y);
+            } // else
+
+            lastX = x;
+            lastY = y;
+        } // for
+    } // setPathPoints(PathPoint[])
+
+    public float getTouchTolerance()
+    {
+        return mTouchTolerance;
+    } // getTouchTolerance()
+
+    public void setTouchTolerance(final float touchTolerance)
+    {
+        mTouchTolerance = touchTolerance;
+    } // setTouchTolerance(float)
 } // class DoodleView

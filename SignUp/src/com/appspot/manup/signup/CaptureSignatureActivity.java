@@ -9,7 +9,6 @@ import android.widget.Toast;
 import com.appspot.manup.signup.data.DataManager;
 import com.appspot.manup.signup.data.DataManager.OnChangeListener;
 import com.appspot.manup.signup.ui.BaseActivity;
-import com.appspot.manup.signup.ui.DoodleView;
 
 public final class CaptureSignatureActivity extends BaseActivity implements
         OnChangeListener
@@ -26,7 +25,7 @@ public final class CaptureSignatureActivity extends BaseActivity implements
     private static final int MENU_SETTINGS = Menu.FIRST + 2;
 
     private long mId = Long.MIN_VALUE;
-    private DoodleView mSignatureView = null;
+    private SignatureView mSignatureView = null;
 
     public CaptureSignatureActivity()
     {
@@ -38,7 +37,7 @@ public final class CaptureSignatureActivity extends BaseActivity implements
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.capture_signature);
-        mSignatureView = (DoodleView) findViewById(R.id.signature);
+        mSignatureView = (SignatureView) findViewById(R.id.signature);
         final Intent intent = getIntent();
         mId = intent.getLongExtra(EXTRA_ID, mId);
     } // onCreate
@@ -54,6 +53,7 @@ public final class CaptureSignatureActivity extends BaseActivity implements
     protected void onPause()
     {
         DataManager.unregisterListener(this);
+        mSignatureView.cancelAnimation();
         super.onPause();
     } // onPause
 
@@ -94,16 +94,33 @@ public final class CaptureSignatureActivity extends BaseActivity implements
             return;
         } // if
         WriteSignatureService.writeSignature(this, mId, mSignatureView.getDoodle());
+        mSignatureView.setEnabled(false);
     } // onSubmit
+
+    private volatile boolean b = true;
 
     @Override
     public void onChange()
     {
-        if (DataManager.getDataManager(this).memberHasSignature(mId))
+        if (b && DataManager.getDataManager(this).memberHasSignature(mId))
         {
-            finish();
+            b = false;
+            runOnUiThread(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    mSignatureView.animate(new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            finish();
+                        } // run()
+                    });
+                } // run()
+            });
         } // if
     } // onChange(DataManager)
-
 } // class CaptureSignatureActivity
 

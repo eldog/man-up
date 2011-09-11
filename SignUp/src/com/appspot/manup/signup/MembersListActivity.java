@@ -42,8 +42,10 @@ public final class MembersListActivity extends BaseActivity implements OnChangeL
     private static final int DIALOGUE_DELETE_ALL_MEMBERS_CONFIRMATION = 0;
 
     private static final int MENU_SETTINGS = Menu.FIRST;
-    private static final int MENU_DELETE_ALL_MEMBERS = Menu.FIRST + 1;
-    private static final int MENU_LOAD_TEST_DATA = Menu.FIRST + 2;
+    private static final int MENU_UPLOAD = Menu.FIRST + 1;
+    private static final int MENU_DELETE_ALL_MEMBERS = Menu.FIRST + 2;
+    private static final int MENU_LOAD_TEST_DATA = Menu.FIRST + 3;
+
 
     private static final int MENU_GROUP_USER = 0;
     private static final int MENU_GROUP_ADMIN = 1;
@@ -296,6 +298,7 @@ public final class MembersListActivity extends BaseActivity implements OnChangeL
     {
         super.onCreateOptionsMenu(menu);
         menu.add(MENU_GROUP_USER, MENU_SETTINGS, Menu.NONE, R.string.menu_settings);
+        menu.add(MENU_GROUP_ADMIN, MENU_UPLOAD, Menu.NONE, R.string.menu_upload);
         menu.add(MENU_GROUP_ADMIN, MENU_DELETE_ALL_MEMBERS, Menu.NONE,
                 R.string.menu_delete_all_members);
         menu.add(MENU_GROUP_ADMIN, MENU_LOAD_TEST_DATA, Menu.NONE, R.string.menu_load_test_data);
@@ -316,6 +319,9 @@ public final class MembersListActivity extends BaseActivity implements OnChangeL
         {
             case MENU_SETTINGS:
                 startActivity(new Intent(this, SignUpPreferenceActivity.class));
+                return true;
+            case MENU_UPLOAD:
+                startService(new Intent(this, UploadService.class));
                 return true;
             case MENU_DELETE_ALL_MEMBERS:
                 showDialog(DIALOGUE_DELETE_ALL_MEMBERS_CONFIRMATION, null /* args */);

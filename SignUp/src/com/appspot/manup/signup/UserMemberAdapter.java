@@ -1,10 +1,5 @@
 package com.appspot.manup.signup;
 
-import com.appspot.manup.signup.data.CursorLoader;
-import com.appspot.manup.signup.data.DataManager;
-import com.appspot.manup.signup.data.DataManager.Member;
-import com.appspot.manup.signup.ui.MemberAdapter;
-
 import android.content.Context;
 import android.database.Cursor;
 import android.text.TextUtils;
@@ -13,6 +8,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CursorAdapter;
 import android.widget.TextView;
+
+import com.appspot.manup.signup.data.CursorLoader;
+import com.appspot.manup.signup.data.DataManager;
+import com.appspot.manup.signup.data.DataManager.Member;
+import com.appspot.manup.signup.ui.MemberAdapter;
 
 final class UserMemberAdapter extends CursorAdapter implements MemberAdapter
 {
@@ -36,7 +36,8 @@ final class UserMemberAdapter extends CursorAdapter implements MemberAdapter
                             Member.SURNAME },
                     null /* selection */,
                     null /* selection args */,
-                    Member.LATEST_PENDING_SIGNATURE_REQUEST + " DESC");
+                    Member.LATEST_PENDING_SIGNATURE_REQUEST + " DESC,"
+                            + Member.GIVEN_NAME);
         } // loadCursor()
 
         @Override
