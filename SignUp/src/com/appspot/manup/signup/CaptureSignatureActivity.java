@@ -24,8 +24,8 @@ public final class CaptureSignatureActivity extends BaseActivity implements
     private static final int MENU_CLEAR = Menu.FIRST + 1;
     private static final int MENU_SETTINGS = Menu.FIRST + 2;
 
-    private long mId = Long.MIN_VALUE;
-    private SignatureView mSignatureView = null;
+    private volatile SignatureView mSignatureView = null;
+    private volatile long mId = Long.MIN_VALUE;
 
     public CaptureSignatureActivity()
     {
@@ -90,34 +90,44 @@ public final class CaptureSignatureActivity extends BaseActivity implements
     {
         if (mSignatureView.isClear())
         {
-            Toast.makeText(this, "Please sign.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.please_sign, Toast.LENGTH_SHORT).show();
             return;
         } // if
-        WriteSignatureService.writeSignature(this, mId, mSignatureView.getDoodle());
+        if (mId != Long.MIN_VALUE)
+        {
+            WriteSignatureService.writeSignature(this, mId, mSignatureView.getDoodle());
+        } // if
+        else
+        {
+            doAnimation();
+        } // else
         mSignatureView.setEnabled(false);
     } // onSubmit
 
-    private volatile boolean b = true;
+    private void doAnimation()
+    {
+        mSignatureView.animate(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                finish();
+            } // run()
+        });
+    } // doAnimation
 
     @Override
     public void onChange()
     {
-        if (b && DataManager.getDataManager(this).memberHasSignature(mId))
+        if (mId != Long.MIN_VALUE && !mSignatureView.isAnimating() &&
+                DataManager.getDataManager(this).memberHasSignature(mId))
         {
-            b = false;
             runOnUiThread(new Runnable()
             {
                 @Override
                 public void run()
                 {
-                    mSignatureView.animate(new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            finish();
-                        } // run()
-                    });
+                    doAnimation();
                 } // run()
             });
         } // if

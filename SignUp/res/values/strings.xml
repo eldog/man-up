@@ -22,6 +22,7 @@
     <string name="notification_title">Listening for SwipeUp</string>
     <string name="extra_info">Extra Info</string>
     <string name="swipe_up">SwipeUp</string>
+    <string name="please_sign">Please sign</string>
     <string-array name="service_state">
         <item>Unknown</item>
         <item>Stopped</item>

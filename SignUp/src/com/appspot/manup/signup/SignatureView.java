@@ -122,7 +122,6 @@ public final class SignatureView extends AnimatedDoodleView
             mPathStartsCount--;
         } // while
 
-
         final PathPoint[] smallerPath = new PathPoint[mEnd];
         System.arraycopy(mPath, 0, smallerPath, 0, mEnd);
         setPathPoints(smallerPath);
@@ -132,15 +131,18 @@ public final class SignatureView extends AnimatedDoodleView
     @Override
     protected void onDraw(final Canvas canvas)
     {
-        for (int i = 0; i < mPathStartsCount; i++)
+        if (mPaperHole != null)
         {
-            final PathPoint point = mPathStarts[i];
-            canvas.drawBitmap(
-                    mPaperHole,
-                    point.x - mPaperHoleXOffset,
-                    point.y - mPaperHoleYOffset,
-                    null /* paint */);
-        } // for
+            for (int i = 0; i < mPathStartsCount; i++)
+            {
+                final PathPoint point = mPathStarts[i];
+                canvas.drawBitmap(
+                        mPaperHole,
+                        point.x - mPaperHoleXOffset,
+                        point.y - mPaperHoleYOffset,
+                        null /* paint */);
+            } // for
+        }
         super.onDraw(canvas);
     } // onDraw
 

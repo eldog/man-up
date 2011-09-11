@@ -67,6 +67,7 @@ public abstract class AnimatedDoodleView extends DoodleView
         {
             mAnimation = null;
             mOnAnimationFinishCallback = null;
+            mIsAnimating = false;
         } // animationCleanUp()
 
     } // class Animation
@@ -75,6 +76,7 @@ public abstract class AnimatedDoodleView extends DoodleView
     private Runnable mOnAnimationFinishCallback = null;
     private volatile long mFrameGapMs = Long.MIN_VALUE;
 
+    private volatile boolean mIsAnimating = false;
     private volatile boolean mKeepAnimating = false;
 
     {
@@ -99,9 +101,15 @@ public abstract class AnimatedDoodleView extends DoodleView
     public void animate(final Runnable onAnimationFinishCallback)
     {
        cancelAnimation();
+       mIsAnimating = true;
        mOnAnimationFinishCallback = onAnimationFinishCallback;
        mAnimation = (Animation) new Animation().execute();
     } // animate(Runnable)
+
+    public boolean isAnimating()
+    {
+        return mIsAnimating;
+    } // isAnimating()
 
     public void cancelAnimation()
     {
@@ -109,6 +117,7 @@ public abstract class AnimatedDoodleView extends DoodleView
         {
             mAnimation.cancel(true);
         } // if
+        mIsAnimating = false;
     } // cancelAnimation()
 
     public void setFramesPerSecond(final int fps)
