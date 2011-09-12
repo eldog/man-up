@@ -457,12 +457,17 @@ public final class DataManager
 
     public File getSignatureFile(final long id)
     {
+        final String personId = getPersonId(id);
+        if (personId == null)
+        {
+            return null;
+        } // if
         final File externalDir = mContext.getExternalFilesDir(null /* type */);
         if (externalDir == null)
         {
             return null;
         } // if
-        return new File(externalDir, Long.toString(id) + SIGNATURE_FILE_EXT);
+        return new File(externalDir, personId + SIGNATURE_FILE_EXT);
     } // getSignatureFile(long)
 
 } // class DataManager
