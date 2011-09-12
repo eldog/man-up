@@ -24,20 +24,29 @@ public abstract class AnimatedDoodleView extends DoodleView
         {
             onPreAnimationBackground();
 
+            mKeepAnimating = true;
+
             do
             {
-                try
-                {
-                    Thread.sleep(mFrameGapMs);
-                } // try
-                catch (final InterruptedException e)
-                {
-                    break;
-                } // catch
-                publishProgress();
-            } while(mKeepAnimating && !Thread.interrupted());
+                long sleepAt = System.currentTimeMillis();
 
-                return null;
+                while (System.currentTimeMillis() - sleepAt < mFrameGapMs && mKeepAnimating)
+                {
+                    try
+                    {
+                        Thread.sleep(mFrameGapMs);
+                    } // try
+                    catch (final InterruptedException e)
+                    {
+                        Thread.yield();
+                    } // catch
+                } // while
+
+                publishProgress();
+
+            } while (mKeepAnimating);
+
+            return null;
         } // doInBackground(Void)
 
         @Override
@@ -59,7 +68,10 @@ public abstract class AnimatedDoodleView extends DoodleView
         {
 
             onPostAnimation();
-            mOnAnimationFinishCallback.run();
+            if (mOnAnimationFinishCallback != null)
+            {
+                mOnAnimationFinishCallback.run();
+            } // if
             animationCleanUp();
         } // onPostExecute(Void)
 
@@ -100,10 +112,10 @@ public abstract class AnimatedDoodleView extends DoodleView
 
     public void animate(final Runnable onAnimationFinishCallback)
     {
-       cancelAnimation();
-       mIsAnimating = true;
-       mOnAnimationFinishCallback = onAnimationFinishCallback;
-       mAnimation = (Animation) new Animation().execute();
+        cancelAnimation();
+        mIsAnimating = true;
+        mOnAnimationFinishCallback = onAnimationFinishCallback;
+        mAnimation = (Animation) new Animation().execute();
     } // animate(Runnable)
 
     public boolean isAnimating()
@@ -115,6 +127,7 @@ public abstract class AnimatedDoodleView extends DoodleView
     {
         if (mAnimation != null)
         {
+            mKeepAnimating = false;
             mAnimation.cancel(true);
         } // if
         mIsAnimating = false;

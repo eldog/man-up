@@ -131,18 +131,15 @@ public final class SignatureView extends AnimatedDoodleView
     @Override
     protected void onDraw(final Canvas canvas)
     {
-        if (mPaperHole != null)
+        if (mPaperHole != null && mPathStartsCount > 0)
         {
-            for (int i = 0; i < mPathStartsCount; i++)
-            {
-                final PathPoint point = mPathStarts[i];
-                canvas.drawBitmap(
-                        mPaperHole,
-                        point.x - mPaperHoleXOffset,
-                        point.y - mPaperHoleYOffset,
-                        null /* paint */);
-            } // for
-        }
+            final PathPoint point = mPathStarts[mPathStartsCount - 1];
+            canvas.drawBitmap(
+                    mPaperHole,
+                    point.x - mPaperHoleXOffset,
+                    point.y - mPaperHoleYOffset,
+                    null /* paint */);
+        } // if
         super.onDraw(canvas);
     } // onDraw
 

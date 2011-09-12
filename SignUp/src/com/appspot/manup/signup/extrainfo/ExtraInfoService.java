@@ -55,13 +55,12 @@ public final class ExtraInfoService extends PersistentIntentService
     private boolean startPortForwarding()
     {
         Log.v(TAG, "Setting up port forwarding.");
-        setState(STATE_INITIALISING);
         final Preferences prefs = new Preferences(this);
         if (mSession != null && mSession.isConnected())
         {
             return true;
         } // if
-
+        setState(STATE_INITIALISING);
         try
         {
             /*
