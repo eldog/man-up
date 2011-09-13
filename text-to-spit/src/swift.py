@@ -1,14 +1,37 @@
 from argparse import ArgumentParser
 from collections import namedtuple
+from xml.dom.minidom import getDOMImplementation
 import queue
 import subprocess
 import sys
 import threading
 
-from ssml import SsmlDocument
-
 SWIFT_NAME = 'swift'
 WHICH_PATH = '/bin/which'
+
+_imp = getDOMImplementation()
+
+class SsmlDocument:
+    def __init__(self):
+        self._doc = _imp.createDocument('http://www.w3.org/2001/10/synthesis',
+            'speak', None)
+        self.toxml = self._doc.toxml
+        self.toprettyxml = self._doc.toprettyxml
+        self._speak = self._doc.getElementsByTagName('speak')[0]
+        self._speak.setAttribute('version', '1.0')
+        self._speak.setAttribute('xml:lang', 'en-US')
+        self._speak.setAttribute('xmlns', 'http://www.w3.org/2001/10/synthesis')
+        self._speak.setAttribute('xsi:schemaLocation',
+            'http://www.w3.org/2001/10/synthesis '
+            'http://www.w3.org/TR/speech-synthesis/synthesis.xsd')
+        self._speak.setAttribute('xmlns:xsi',
+            'http://www.w3.org/2001/XMLSchema-instance')
+
+    def append_sentance(self, sentence):
+        element = self._doc.createElement('s')
+        self._speak.appendChild(element)
+        text = self._doc.createTextNode(sentence)
+        element.appendChild(text)
 
 SmsMessage = namedtuple('SmsMessage', ('number', 'message'))
 
@@ -27,29 +50,58 @@ class ExecutableFinder:
 
 class Swift:
     def __init__(self, swift_path, pulse_audio_dsp_path):
-        self._swift = swift_path
-        self._padsp = pulse_audio_dsp_path
+        self._swift = None
+        self._swift_path = swift_path
+        self._padsp_path = pulse_audio_dsp_path
 
-    def say(self, ssml):
-        subprocess.check_call(args=(self._padsp, self._swift, '-m', 'ssml',
-            ssml))
+    def __enter__(self):
+        if self._swift is None:
+            self._swift = subprocess.Popen(
+                args=(self._padsp_path, self._swift_path, '-f', '-'),
+                stdin=subprocess.PIPE)
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self._swift.terminate()
+        self._swift = None
+
+    def speak(self, ssml):
+        self._swift.stdin.write(ssml)
+        self._swift.stdin.write(b'\n\n')
+        self._swift.stdin.flush()
 
 
-class SwiftManager(threading.Thread):
+class StoppableThread(threading.Thread):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._stop_event = threading.Event()
+
+    def join(self):
+        self._stop_event.set()
+        super().join()
+
+
+class SmsHandler(StoppableThread):
     def __init__(self, swift_path, pulse_audio_dsp_path, incoming_sms_queue):
         super().__init__()
         self.daemon = True
+        self._swift_path = swift_path
+        self._padsp_path = pulse_audio_dsp_path
         self._queue = incoming_sms_queue
-        self._swift = Swift(swift_path, pulse_audio_dsp_path)
 
     def run(self):
-        while True:
-            message = self._queue.get()
-            ssml = SsmlDocument()
-            ssml.append_sentance(message.message)
-            print(ssml.toprettyxml())
-            self._swift.say(ssml.toxml())
-            self._queue.task_done()
+        with Swift(self._swift_path, self._padsp_path) as swift:
+            while not self._stop_event.is_set():
+
+                try:
+                    message = self._queue.get_nowait()
+                except queue.Empty:
+                    continue
+
+                ssml = SsmlDocument()
+                ssml.append_sentance(message.message)
+                swift.speak(ssml.toxml(encoding='us-ascii'))
+                self._queue.task_done()
 
 
 class DummySmsSupplier:
@@ -57,13 +109,11 @@ class DummySmsSupplier:
         self._queue = queue
 
     def mainloop(self):
-        try:
-            while True:
-                message = input('Enter message: ')
-                if message:
-                    self._queue.put(SmsMessage('+447555555555', message))
-        except (EOFError, KeyboardInterrupt):
-            return
+        while True:
+            message = input('Enter message: ')
+            if not message:
+                break
+            self._queue.put(SmsMessage('+447555555555', message))
 
 
 def main(argv=None):
@@ -83,7 +133,8 @@ def main(argv=None):
 
     padsp_path = finder.find('padsp')
     if not padsp_path:
-        print('Could not find the PulseAudio DSP (padsp) emulation executable', file=sys.stderr)
+        print('Could not find the PulseAudio DSP (padsp) emulation executable',
+            file=sys.stderr)
         return 1
 
     swift_path = finder.find(SWIFT_NAME)
@@ -93,14 +144,15 @@ def main(argv=None):
 
     incoming_sms = queue.Queue()
 
-    swift_manager = SwiftManager(swift_path, padsp_path, incoming_sms)
-    swift_manager.start();
+    sms_handler = SmsHandler(swift_path, padsp_path, incoming_sms)
+    sms_handler.start();
 
     if args.dummy_sms_supplier:
         sms_supplier = DummySmsSupplier(incoming_sms)
 
     sms_supplier.mainloop();
 
+    sms_handler.join()
     print('Exiting.')
 
 if __name__ == '__main__':
