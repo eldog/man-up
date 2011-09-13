@@ -5,6 +5,8 @@ import subprocess
 import sys
 import threading
 
+from ssml import SsmlDocument
+
 SWIFT_NAME = 'swift'
 WHICH_PATH = '/bin/which'
 
@@ -28,8 +30,9 @@ class Swift:
         self._swift = swift_path
         self._padsp = pulse_audio_dsp_path
 
-    def say(self, text):
-        subprocess.check_call(args=(self._padsp, self._swift, '-m', 'text', text))
+    def say(self, ssml):
+        subprocess.check_call(args=(self._padsp, self._swift, '-m', 'ssml',
+            ssml))
 
 
 class SwiftManager(threading.Thread):
@@ -37,13 +40,15 @@ class SwiftManager(threading.Thread):
         super().__init__()
         self.daemon = True
         self._queue = incoming_sms_queue
-
         self._swift = Swift(swift_path, pulse_audio_dsp_path)
 
     def run(self):
         while True:
             message = self._queue.get()
-            self._swift.say(message.message)
+            ssml = SsmlDocument()
+            ssml.append_sentance(message.message)
+            print(ssml.toprettyxml())
+            self._swift.say(ssml.toxml())
             self._queue.task_done()
 
 
