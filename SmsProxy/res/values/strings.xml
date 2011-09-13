@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SMS Proxy</string>
+
+    <string name="notificaiton_message">Select to view log or control proxy.</string><string name="start_server">Start server</string>
+    <string name="stop_server">Stop server</string>
+
+</resources>
