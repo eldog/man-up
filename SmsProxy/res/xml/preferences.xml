@@ -1,6 +1,9 @@
 <PreferenceScreen
-	xmlns:android="http://schemas.android.com/apk/res/android">
-	<EditTextPreference
-		android:key="api_uri"
-		android:title="API URI" />
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <EditTextPreference
+        android:key="api_uri"
+        android:title="API URI" />
+    <EditTextPreference
+        android:key="api_port"
+        android:title="API port" />
 </PreferenceScreen>

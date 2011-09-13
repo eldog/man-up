@@ -86,7 +86,7 @@ public final class SmsProxyService extends PersistentIntentService
         {
             try
             {
-                mApiUri = new URI(apiUri);
+                mApiUri = new URI("http", null, apiUri, 8080, null, null, null );
             } // try
             catch (final URISyntaxException e)
             {
@@ -244,7 +244,7 @@ public final class SmsProxyService extends PersistentIntentService
     private SmsMessageInfo[] execute(final HttpPost request) throws ClientProtocolException,
             IOException
     {
-        SmsProxyManager.sendMessage("Connacting server.");
+        SmsProxyManager.sendMessage("Contacting server.");
         return mHttpClient.execute(request, mSmsReplyResponseHandler);
     } // execute
 
