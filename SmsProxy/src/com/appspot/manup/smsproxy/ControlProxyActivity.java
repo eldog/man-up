@@ -1,10 +1,12 @@
-package uk.ac.manchester.cs.mlo.smsproxy;
+package com.appspot.manup.smsproxy;
 
 import java.util.LinkedList;
 import java.util.List;
 
-import uk.ac.manchester.cs.mlo.smsproxy.proxy.SmsProxyListener;
-import uk.ac.manchester.cs.mlo.smsproxy.proxy.SmsProxyManager;
+import com.appspot.manup.smsproxy.proxy.SmsProxyListener;
+import com.appspot.manup.smsproxy.proxy.SmsProxyManager;
+
+import com.appspot.manup.smsproxy.R;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;

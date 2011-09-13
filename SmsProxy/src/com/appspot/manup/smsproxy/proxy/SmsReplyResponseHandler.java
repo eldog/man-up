@@ -1,4 +1,4 @@
-package uk.ac.manchester.cs.mlo.smsproxy.proxy;
+package com.appspot.manup.smsproxy.proxy;
 
 import java.io.IOException;
 
@@ -7,7 +7,8 @@ import org.apache.http.client.ResponseHandler;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import uk.ac.manchester.cs.mlo.smsproxy.SmsMessageInfo;
+import com.appspot.manup.smsproxy.SmsMessageInfo;
+
 
 
 final class SmsReplyResponseHandler implements ResponseHandler<SmsMessageInfo[]>

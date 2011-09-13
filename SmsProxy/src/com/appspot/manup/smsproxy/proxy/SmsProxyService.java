@@ -1,4 +1,4 @@
-package uk.ac.manchester.cs.mlo.smsproxy.proxy;
+package com.appspot.manup.smsproxy.proxy;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -13,9 +13,10 @@ import org.apache.http.entity.mime.MultipartEntity;
 import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.client.DefaultHttpClient;
 
-import uk.ac.manchester.cs.mlo.smsproxy.ControlProxyActivity;
-import uk.ac.manchester.cs.mlo.smsproxy.R;
-import uk.ac.manchester.cs.mlo.smsproxy.SmsMessageInfo;
+import com.appspot.manup.smsproxy.ControlProxyActivity;
+import com.appspot.manup.smsproxy.SmsMessageInfo;
+
+import com.appspot.manup.smsproxy.R;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;

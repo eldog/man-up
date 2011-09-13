@@ -1,4 +1,4 @@
-package uk.ac.manchester.cs.mlo.smsproxy;
+package com.appspot.manup.smsproxy;
 
 import java.io.IOException;
 

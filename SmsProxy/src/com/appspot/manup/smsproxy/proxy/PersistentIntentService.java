@@ -1,4 +1,4 @@
-package uk.ac.manchester.cs.mlo.smsproxy.proxy;
+package com.appspot.manup.smsproxy.proxy;
 
 import android.app.Service;
 import android.content.Intent;

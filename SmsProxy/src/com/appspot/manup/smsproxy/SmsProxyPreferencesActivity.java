@@ -1,5 +1,6 @@
-package uk.ac.manchester.cs.mlo.smsproxy;
+package com.appspot.manup.smsproxy;
 
+import com.appspot.manup.smsproxy.R;
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
 
