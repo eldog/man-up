@@ -1,10 +1,23 @@
 from argparse import ArgumentParser
 from collections import namedtuple
-from xml.dom.minidom import getDOMImplementation
+import os
 import queue
 import subprocess
 import sys
 import threading
+from xml.dom.minidom import getDOMImplementation
+
+def abspath(path):
+    return os.path.abspath(
+        os.path.join(os.path.dirname(__file__), path))
+
+_LIB_DIR = '../lib/'
+_lib_path = abspath(_LIB_DIR)
+if _lib_path not in sys.path:
+    sys.path.append(_lib_path)
+del _LIB_DIR, _lib_path
+
+import cherrypy
 
 SWIFT_NAME = 'swift'
 WHICH_PATH = '/bin/which'
@@ -116,6 +129,18 @@ class DummySmsSupplier:
             self._queue.put(SmsMessage('+447555555555', message))
 
 
+class SmsReceiver:
+    def __init__(self, incoming_sms_queue):
+        self._queue = incoming_sms_queue
+
+    @cherrypy.expose
+    @cherrypy.tools.json_out()
+    def index(self, message=None, number=None):
+        print("Received message: %s from number %s" % (message, number))
+        self._queue.put(SmsMessage(number, message))
+        return [{'number' : number, 'message' : message}]
+
+
 def main(argv=None):
     if argv is None:
         argv = sys.argv
@@ -124,6 +149,9 @@ def main(argv=None):
     ap.add_argument('-d', '--dummy-sms-supplier',
         action='store_true',
         help='Use the dummy SMS supplier.')
+    ap.add_argument('-H', '--hostname',
+        required=True,
+        help='The ip or name of the server.')
     ap.add_argument('-w', '--which-path',
         default='/bin/which',
         help='The path of the which executable.')
@@ -148,9 +176,12 @@ def main(argv=None):
     sms_handler.start();
 
     if args.dummy_sms_supplier:
-        sms_supplier = DummySmsSupplier(incoming_sms)
+        mainloop = DummySmsSupplier(incoming_sms).mainloop
+    else:
+        cherrypy.config.update({'server.socket_host': args.hostname})
+        mainloop = lambda: cherrypy.quickstart(SmsReceiver(incoming_sms))
 
-    sms_supplier.mainloop();
+    mainloop();
 
     sms_handler.join()
     print('Exiting.')
