@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 
@@ -21,5 +22,15 @@ class TextToSpit(object):
         return [{'number' : number, 'message' : message}]
     index.exposed = True
 
-cherrypy.config.update({'server.socket_host': '192.168.1.68'})
-cherrypy.quickstart(TextToSpit())
+parser = argparse.ArgumentParser(description='A server for receiving SMS messages')
+parser.add_argument('--hostname')
+
+def main():
+
+    args = parser.parse_args()
+    hostname = args.hostname
+    cherrypy.config.update({'server.socket_host': hostname})
+    cherrypy.quickstart(TextToSpit())
+
+if __name__ == '__main__':
+    main()

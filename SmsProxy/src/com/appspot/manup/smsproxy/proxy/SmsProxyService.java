@@ -79,7 +79,7 @@ public final class SmsProxyService extends PersistentIntentService
         boolean error = false;
         final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         final String apiUri = prefs.getString(PREFS_API_URI, null);
-        final int apiPort = prefs.getInt(PREFS_API_PORT, 80);
+        final int apiPort = Integer.parseInt(prefs.getString(PREFS_API_PORT, "80"));
         if (apiUri == null)
         {
             error = true;
