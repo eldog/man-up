@@ -2,8 +2,12 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
     <EditTextPreference
         android:key="api_uri"
-        android:title="API URI" />
+        android:title="API URI"
+        android:inputType="textUri"
+        android:summary="The URI of the api to contact" />
     <EditTextPreference
         android:key="api_port"
-        android:title="API port" />
+        android:title="API port"
+        android:inputType="number"
+        android:summary="The port to contact the server on, if not set will default to port 80" />
 </PreferenceScreen>

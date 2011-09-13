@@ -40,6 +40,7 @@ public final class SmsProxyService extends PersistentIntentService
     private static final String FORM_MESSAGE = "message";
     private static final String FORM_NUMBER = "number";
     private static final String PREFS_API_URI = "api_uri";
+    private static final String PREFS_API_PORT = "api_port";
 
     private final SmsReplyResponseHandler mSmsReplyResponseHandler = new SmsReplyResponseHandler();
     private URI mApiUri = null;
@@ -78,6 +79,7 @@ public final class SmsProxyService extends PersistentIntentService
         boolean error = false;
         final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         final String apiUri = prefs.getString(PREFS_API_URI, null);
+        final int apiPort = prefs.getInt(PREFS_API_PORT, 80);
         if (apiUri == null)
         {
             error = true;
@@ -86,7 +88,7 @@ public final class SmsProxyService extends PersistentIntentService
         {
             try
             {
-                mApiUri = new URI("http", null, apiUri, 8080, null, null, null );
+                mApiUri = new URI("http", null, apiUri, apiPort, null, null, null );
             } // try
             catch (final URISyntaxException e)
             {
