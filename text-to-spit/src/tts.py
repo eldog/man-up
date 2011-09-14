@@ -1,9 +1,11 @@
 from argparse import ArgumentParser
 from array import array
 from collections import namedtuple
+from math import ceil
 from struct import pack
 from time import sleep
 import itertools
+import os
 import queue
 import re
 import subprocess
@@ -12,6 +14,9 @@ import sys
 import cherrypy
 
 from threadpool import StoppableThread, ThreadPool
+
+def relpath(path):
+    return os.path.join(os.path.dirname(__file__), path)
 
 # =============================================================================
 # = Text-to-Speech                                                            =
@@ -235,14 +240,29 @@ class SmsHandler(StoppableThread):
                 sox_args.append(word_path)
             pad += beats * self._spb
         pool.join_all()
-
         if word_count == 1:
-            return word_path
+            rap_path = word_path
         else:
-            mix_path = '/tmp/%s-mix.wav' % msg_id
-            sox_args.extend((mix_path, 'norm'))
+            rap_path = '/tmp/%s-rap.wav' % msg_id
+            sox_args.extend((rap_path, 'norm'))
             subprocess.check_call(sox_args)
-            return mix_path
+        info = subprocess.check_output(('/usr/bin/soxi', rap_path))
+        info = info.decode('us-ascii')
+        info = info.split('\n')[5]
+        info = info.split()[2]
+        info = info.split(':')
+        duration = int(info[0]) * 60 * 60 + int(info[1]) * 60 + float(info[2])
+        loop_count = int(ceil(duration / 4.36))
+        backing_path = '/tmp/%s-backing.wav' % msg_id
+        sox_args = ['/usr/bin/sox', '--combine', 'concatenate'] \
+            + [relpath('sample.wav')] * loop_count \
+            + [backing_path]
+        subprocess.check_call(sox_args)
+        mix_path = '/tmp/%s-mix.wav' % msg_id
+        sox_args = ['/usr/bin/sox', '-m', rap_path, '-v', '0.75', backing_path,
+            mix_path]
+        subprocess.check_call(sox_args)
+        return mix_path
 
 
     def clean_message(self, message):
