@@ -2,13 +2,16 @@ from argparse import ArgumentParser
 from array import array
 from collections import namedtuple
 from struct import pack
+from time import sleep
+import itertools
 import queue
 import re
 import subprocess
 import sys
-import threading
 
 import cherrypy
+
+from threadpool import StoppableThread, ThreadPool
 
 # =============================================================================
 # = Text-to-Speech                                                            =
@@ -152,73 +155,85 @@ def melody(notes):
 
 # =============================================================================
 
-SmsMessage = namedtuple('SmsMessage', ('number', 'message'))
-
-class StoppableThread(threading.Thread):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._stop_event = threading.Event()
-
-    def join(self):
-        self._stop_event.set()
-        super().join()
-
+SmsMessage = namedtuple('SmsMessage', ('msg_id', 'number', 'message'))
 
 class SmsHandler(StoppableThread):
-    def __init__(self, incoming_sms_queue, audio_queue, bpm=100):
+
+    melody = melody(
+        'e3 e3_1/2 g3_1/2 e3 d3            c3_2          b2 '
+        'e3 e3_1/2 g3_1/2 e3 d3_1/2 c3_1/2 d3_1/2 c3_1/2 b2 ')
+
+    def __init__(self, sms_queue, audio_queue, bpm=100):
         super().__init__()
         self.daemon = True
-        self._sms_queue = incoming_sms_queue
+        self._sms_queue = sms_queue
         self._audio_queue = audio_queue
-        self._bpm = bpm
+        self._spb = 60 / bpm
 
     def run(self):
+        self._real_words = set()
+        with open('/etc/dictionaries-common/words') as f:
+            for w in f:
+                w = w.strip()
+                if w.isalpha():
+                    self._real_words.add(w.lower())
+        print('Real words loaded')
+
         while not self._stop_event.is_set():
             try:
-                message = self._sms_queue.get_nowait().message
+                msg_id, _number, message = self._sms_queue.get_nowait()
             except queue.Empty:
+                sleep(0.1)
                 continue
-            self.render_rap(message)
-            self._audio_queue.put('/tmp/out.wav')
+            audio_path = self.render_rap(msg_id, message)
+            if audio_path:
+                self._audio_queue.put(audio_path)
             self._sms_queue.task_done()
 
-    def render_rap(self, message):
-        message = ''.join(c for c in message if c == ' ' or c.isalpha())
-
-
-        import itertools
-        spb = 60 / self._bpm
-        m = itertools.cycle(melody('e3 e3_1/2 g3_1/2 e3 d3 c3_2 b2 '
-            'e3 e3_1/2 g3_1/2 e3 d3_1/2 c3_1/2 d3_1/2 c3_1/2 b2'))
+    def render_rap(self, msg_id, message):
+        words = self.clean_message(message)
+        if not words:
+            return
+        word_count = len(words)
+        pool = ThreadPool(word_count if word_count < 10 else 10)
+        melody = itertools.cycle(self.melody)
         sox_args = ['/usr/bin/sox', '-m']
         pad = 0
-
-        import threadpool
-        pool = threadpool.ThreadPool(10)
-
-        def task(word, pitch, output):
-            tts('<prosody pitch="%sHz" range="x-low">%s</prosody>' % (p, word),
-                output, volumn=150)
-
-        for i, word in enumerate(message.split()):
-            output = '/tmp/%d.wav' % i
-            p, b = next(m)
-
-            pool.queue_task(task, (word, p, output))
-
-            if not i:
-                sox_args.append(output)
+        for i, word in enumerate(words):
+            word_path = '/tmp/%s-%s.wav' % (msg_id, i)
+            pitch, beats = next(melody)
+            pool.queue_task(tts, (self.render_ssml(word, pitch), word_path))
+            if i:
+                sox_args.append('|sox %s -p pad %s' % (word_path, pad))
             else:
-                sox_args.append('|sox %s -p pad %s' % (output, pad))
-
-            # update our padding
-            pad += b * spb
-
-        sox_args.append('/tmp/out.wav')
+                sox_args.append(word_path)
+            pad += beats * self._spb
         pool.join_all()
-        print(i)
-        if i >= 1:
-            subprocess.check_call(args=sox_args)
+
+        if word_count == 1:
+            return word_path
+        else:
+            mix_path = '/tmp/%s-mix.wav' % msg_id
+            sox_args.append(mix_path)
+            subprocess.check_call(sox_args)
+            return mix_path
+
+
+    def clean_message(self, message):
+        words = []
+        for word in message.split():
+            chars = [c for c in word if c.isalpha()]
+            if chars:
+                word = ''.join(chars).lower()
+                if word in self._real_words:
+                    words.append(word)
+                    if len(words) >= 20:
+                        break
+        return words
+
+    def render_ssml(self, word, pitch):
+        return '<s><prosody pitch="%sHz" range="x-low">%s</prosody></s>' \
+            % (pitch, word)
 
 
 class AudioPlayer(StoppableThread):
@@ -232,6 +247,7 @@ class AudioPlayer(StoppableThread):
             try:
                 audio_path = self._sms_queue.get_nowait()
             except queue.Empty:
+                sleep(0.1)
                 continue
 
             self.play_audio(audio_path)
@@ -241,16 +257,17 @@ class AudioPlayer(StoppableThread):
         subprocess.check_call(args=('/usr/bin/play', '-q', path))
 
 
-
 class SmsServer:
     def __init__(self, hostname, incoming_sms_queue):
         self._hostname = hostname
         self._sms_queue = incoming_sms_queue
+        self._msg_id = 0
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
     def index(self, message=None, number=None):
-        self._sms_queue.put(SmsMessage(number, message))
+        self._sms_queue.put(SmsMessage(self._msg_id, number, message))
+        self._msg_id += 1
         return [{'number' : number,
             'message' : 'Thanks. More at man-up.appspot.com'}]
 
@@ -264,6 +281,7 @@ class DummySmsServer:
         self._sms_queue = incoming_sms_queue
         self._msg = message
         self._loop = loop
+        self._msg_id = 0
 
     def mainloop(self):
         def recieve_message():
@@ -274,7 +292,9 @@ class DummySmsServer:
                 return input('Enter message: ')
 
         def queue_message(message):
-            self._sms_queue.put(SmsMessage('+447555555555', message))
+            self._sms_queue.put(SmsMessage(self._msg_id, '+447555555555',
+                message))
+            self._msg_id += 1
 
         def recieve_and_queue():
             message = recieve_message()

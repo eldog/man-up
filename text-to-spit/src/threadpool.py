@@ -1,18 +1,22 @@
+from collections import namedtuple
+from queue import Empty, Queue
+from threading import Condition, Event, Lock, Thread
 from time import sleep
-import threading
+
+Task = namedtuple('Task', ('cmd', 'args', 'kwargs', 'callback'))
 
 class ThreadPool:
     def __init__(self, pool_size):
         self._threads = []
-        self._resize_lock = threading.Condition(threading.Lock())
-        self._task_lock = threading.Condition(threading.Lock())
-        self._tasks = []
+        self._resize_lock = Condition(Lock())
+        self._task_lock = Condition(Lock())
+        self._tasks = Queue()
         self._is_joining = False
         self.set_pool_size(pool_size)
 
     def set_pool_size(self, pool_size):
         if self._is_joining:
-            return False
+            raise ValueError('Pool is joining, cannot change pool size.')
 
         self._resize_lock.acquire()
         try:
@@ -24,13 +28,13 @@ class ThreadPool:
     def _set_pool_size(self, pool_size):
         # Grow pool
         while pool_size > len(self._threads):
-            newThread = ThreadPoolThread(self)
-            self._threads.append(newThread)
-            newThread.start()
+            new_thread = PoolThread(self)
+            self._threads.append(new_thread)
+            new_thread.start()
 
         # Shrink pool
         while pool_size < len(self._threads):
-            self._threads[0].go_away()
+            self._threads[0].stop_soon()
             del self._threads[0]
 
     def get_thread_count(self):
@@ -40,121 +44,84 @@ class ThreadPool:
         finally:
             self._resize_lock.release()
 
-    def queue_task(self, task, args=None, task_callback=None):
+    def queue_task(self, cmd, args=None, kwargs=None, callback=None):
         if self._is_joining:
-            return False
-        if not callable(task):
-            return False
+            raise ValueError('Pool is joining, cannot queue task.')
+
+        if not args:
+            args = ()
+        if not kwargs:
+            kwargs = {}
 
         self._task_lock.acquire()
         try:
-            self._tasks.append((task, args, task_callback))
-            return True
+            self._tasks.put(Task(cmd, args, kwargs, callback))
         finally:
             self._task_lock.release()
+
+    def task_done(self):
+        self._tasks.task_done()
 
     def get_next_task(self):
         self._task_lock.acquire()
         try:
-            if self._tasks:
-                return self._tasks.pop(0)
-            else:
-                return None, None, None
+            return self._tasks.get_nowait()
         finally:
             self._task_lock.release()
 
     def join_all(self, wait_for_tasks=True, wait_for_threads=True):
-        # Mark the pool as joining to prevent any more task queueing
         self._is_joining = True
 
-        # Wait for tasks to finish
         if wait_for_tasks:
-            while self._tasks:
-                sleep(.1)
+            self._tasks.join()
 
-        # Tell all the threads to quit
+        if wait_for_threads:
+            threads = list(self._threads)
+
         self._resize_lock.acquire()
         try:
             self._set_pool_size(0)
-            self._is_joining = True
-
-            # Wait until all threads have exited
-            if wait_for_threads:
-                for t in self._threads:
-                    t.join()
-
         finally:
             self._resize_lock.release()
 
-        # Reset the pool for potential reuse
+        if wait_for_threads:
+            for thread in threads:
+                thread.join()
+
         self._is_joining = False
 
 
-class ThreadPoolThread(threading.Thread):
+class StoppableThread(Thread):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._stop_event = Event()
+
+    def join(self):
+        self.stop_soon()
+        super().join()
+
+    def stop_soon(self):
+        self._stop_event.set()
+
+
+class PoolThread(StoppableThread):
     thread_sleep_time = 0.1
 
     def __init__(self, pool):
         super().__init__()
         self._pool = pool
-        self._is_dying = False
 
     def run(self):
-        while not self._is_dying:
-            cmd, args, callback = self._pool.get_next_task()
-            if cmd is not None:
-                result = cmd(*args)
-                if callback is not None:
-                    callback(result)
-            else:
+        while not self._stop_event.is_set():
+
+            try:
+                task = self._pool.get_next_task()
+            except Empty:
                 sleep(self.thread_sleep_time)
+                continue
 
-    def go_away(self):
-        self._is_dying = True
+            result = task.cmd(*task.args, **task.kwargs)
+            if task.callback:
+                task.callback(result)
 
-
-if __name__ == '__main__':
-
-    from random import randrange
-
-    # Sample task 1: given a start and end value, shuffle integers,
-    # then sort them
-
-    def sortTask(data):
-        print ("SortTask starting for ", data)
-        numbers = list(range(data[0], data[1]))
-        for a in numbers:
-            rnd = randrange(0, len(numbers) - 1)
-            a, numbers[rnd] = numbers[rnd], a
-        print("SortTask sorting for ", data)
-        numbers.sort()
-        print ("SortTask done for ", data)
-        return ("Sorter ", data)
-
-    # Sample task 2: just sleep for a number of seconds.
-
-    def waitTask(data):
-        print ("WaitTask starting for ", data)
-        print ("WaitTask sleeping for %d seconds" % data)
-        sleep(data)
-        return ("Waiter", data)
-
-    # Both tasks use the same callback
-
-    def taskCallback(data):
-        print ("Callback called for", data)
-
-    # Create a pool with three worker threads
-
-    pool = ThreadPool(3)
-
-    # Insert tasks into the queue and let them run
-    pool.queue_task(sortTask, (1000, 100000), taskCallback)
-    pool.queue_task(waitTask, 5, taskCallback)
-    pool.queue_task(sortTask, (200, 200000), taskCallback)
-    pool.queue_task(waitTask, 2, taskCallback)
-    pool.queue_task(sortTask, (3, 30000), taskCallback)
-    pool.queue_task(waitTask, 7, taskCallback)
-
-    # When all tasks are finished, allow the threads to terminate
-    pool.join_all()
-## end of http://code.activestate.com/recipes/203871/ }}}
+            self._pool.task_done()
