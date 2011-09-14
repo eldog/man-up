@@ -198,20 +198,22 @@ class StoppableThread(threading.Thread):
 
 
 class SmsHandler(StoppableThread):
-    def __init__(self, incoming_sms_queue, bpm=100):
+    def __init__(self, incoming_sms_queue, audio_queue, bpm=100):
         super().__init__()
         self.daemon = True
-        self._queue = incoming_sms_queue
+        self._sms_queue = incoming_sms_queue
+        self._audio_queue = audio_queue
         self._bpm = bpm
 
     def run(self):
         while not self._stop_event.is_set():
             try:
-                message = self._queue.get_nowait().message
+                message = self._sms_queue.get_nowait().message
             except queue.Empty:
                 continue
             self.render_rap(message)
-            self._queue.task_done()
+            self._audio_queue.put('out.wav')
+            self._sms_queue.task_done()
 
     def render_rap(self, message):
         import itertools
@@ -238,16 +240,38 @@ class SmsHandler(StoppableThread):
         print(" ".join(sox_args))
         subprocess.check_call(args=sox_args)
 
+class AudioPlayer(StoppableThread):
+    play_path = None
+
+    def __init__(self, audio_queue):
+        super().__init__()
+        self.daemon = True
+        self._sms_queue = audio_queue
+
+    def run(self):
+        while not self._stop_event.is_set():
+            try:
+                audio_path = self._sms_queue.get_nowait()
+            except queue.Empty:
+                continue
+
+            self.play_audio(audio_path)
+            self._sms_queue.task_done()
+
+    def play_audio(self, path):
+        subprocess.check_call(args=(self.play_path, '-q', path))
+
+
 
 class SmsServer:
     def __init__(self, hostname, incoming_sms_queue):
         self._hostname = hostname
-        self._queue = incoming_sms_queue
+        self._sms_queue = incoming_sms_queue
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
     def index(self, message=None, number=None):
-        self._queue.put(SmsMessage(number, message))
+        self._sms_queue.put(SmsMessage(number, message))
         return [{'number' : number, 'message' : message}]
 
     def mainloop(self):
@@ -257,7 +281,7 @@ class SmsServer:
 
 class DummySmsServer:
     def __init__(self, _hostname, incoming_sms_queue, message='', loop=True):
-        self._queue = incoming_sms_queue
+        self._sms_queue = incoming_sms_queue
         self._msg = message
         self._loop = loop
 
@@ -270,7 +294,7 @@ class DummySmsServer:
                 return input('Enter message: ')
 
         def queue_message(message):
-            self._queue.put(SmsMessage('+447555555555', message))
+            self._sms_queue.put(SmsMessage('+447555555555', message))
 
         def recieve_and_queue():
             message = recieve_message()
@@ -284,7 +308,7 @@ class DummySmsServer:
                 pass
         elif self._msg:
             queue_message(self._msg)
-            self._queue.join()
+            self._sms_queue.join()
         else:
             recieve_and_queue()
 
@@ -324,13 +348,21 @@ def main(argv=None):
 
     Swift.padsp_path = finder.find('padsp')
     if not Swift.padsp_path:
-        print('Could not find the PulseAudio DSP (padsp) emulation executable',
+        print('Could not find the PulseAudio DSP (padsp) emulation executable.',
             file=sys.stderr)
         return 1
 
-    incoming_sms = queue.Queue()
+    AudioPlayer.play_path = finder.find('play')
+    if not AudioPlayer.play_path:
+        print('Could not find the play executable.', file=sys.stderr)
+        return 1
 
-    sms_handler = SmsHandler(incoming_sms, bpm=args.bpm)
+    incoming_sms = queue.Queue()
+    audio = queue.Queue()
+
+    audio_player = AudioPlayer(audio)
+    audio_player.start()
+    sms_handler = SmsHandler(incoming_sms, audio, bpm=args.bpm)
     sms_handler.start();
 
     if args.dummy_sms_server:
@@ -344,6 +376,8 @@ def main(argv=None):
     server(args.hostname, incoming_sms).mainloop();
 
     sms_handler.join()
+    audio_player.join()
+
     print('Exiting.')
 
 if __name__ == '__main__':
