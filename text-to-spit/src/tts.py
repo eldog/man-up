@@ -193,12 +193,18 @@ class SmsHandler(StoppableThread):
         sox_args = ['/usr/bin/sox', '-m']
         pad = 0
 
+        import threadpool
+        pool = threadpool.ThreadPool(10)
+
+        def task(word, pitch, output):
+            tts('<prosody pitch="%sHz" range="x-low">%s</prosody>' % (p, word),
+                output, volumn=150)
+
         for i, word in enumerate(message.split()):
             output = '/tmp/%d.wav' % i
             p, b = next(m)
 
-            tts('<prosody pitch="%sHz" range="x-low">%s</prosody>' % (p, word),
-                output, volumn=150)
+            pool.queue_task(task, (word, p, output))
 
             if not i:
                 sox_args.append(output)
@@ -209,6 +215,7 @@ class SmsHandler(StoppableThread):
             pad += b * spb
 
         sox_args.append('/tmp/out.wav')
+        pool.join_all()
         print(i)
         if i >= 1:
             subprocess.check_call(args=sox_args)
@@ -244,7 +251,8 @@ class SmsServer:
     @cherrypy.tools.json_out()
     def index(self, message=None, number=None):
         self._sms_queue.put(SmsMessage(number, message))
-        return [{'number' : number, 'message' : message}]
+        return [{'number' : number,
+            'message' : 'Thanks. More at man-up.appspot.com'}]
 
     def mainloop(self):
         cherrypy.config.update({'server.socket_host': self._hostname})
