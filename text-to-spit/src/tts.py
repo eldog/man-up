@@ -17,7 +17,11 @@ from threadpool import StoppableThread, ThreadPool
 # = Text-to-Speech                                                            =
 # =============================================================================
 
-def tts(text, output_path, volumn=100):
+def tts(text):
+    subprocess.check_call(('/usr/bin/padsp', '/usr/local/bin/swift',
+        '<s><prosody rate="slow">%s</prosody></s>' % text))
+
+def tts_file(text, output_path, volume=100):
     sample_rate = 16000
 
     samples = array('h', subprocess.check_output((
@@ -30,7 +34,7 @@ def tts(text, output_path, volumn=100):
             'audio/output-format=raw,'
             'audio/sampling-rate=%s,'
             'audio/volume=%s'
-                % (sample_rate, volumn),
+                % (sample_rate, volume),
         text)))
 
     start = -1
@@ -169,6 +173,9 @@ class SmsHandler(StoppableThread):
         self._sms_queue = sms_queue
         self._audio_queue = audio_queue
         self._spb = 60 / bpm
+        self._speech = []
+        self._rap_mode = False
+        self._rap_path = None
 
     def run(self):
         self._real_words = set()
@@ -177,21 +184,39 @@ class SmsHandler(StoppableThread):
                 w = w.strip()
                 if w.isalpha():
                     self._real_words.add(w.lower())
-        print('Real words loaded')
 
         while not self._stop_event.is_set():
             try:
-                msg_id, _number, message = self._sms_queue.get_nowait()
+                msg_id, number, message = self._sms_queue.get_nowait()
             except queue.Empty:
                 sleep(0.1)
                 continue
-            audio_path = self.render_rap(msg_id, message)
-            if audio_path:
-                self._audio_queue.put(audio_path)
+            if number == 'admin':
+                if message == 'compile':
+                    print('Entering rap mode, compiling rap.')
+                    self._rap_mode = True
+                    self._rap_path = self.render_rap(msg_id, self._speech)
+                    print('Rap compilied.')
+                elif message == 'rap' and self._rap_path:
+                    subprocess.check_call(args=('/usr/bin/play', '-q',
+                        self._rap_path))
+                elif message == 'speech':
+                    self._rap_mode = False
+            elif not self._rap_mode:
+                self.render_speech(message)
+
             self._sms_queue.task_done()
 
-    def render_rap(self, msg_id, message):
+    def render_speech(self, message):
+        if 'cake' in message:
+            message = 'To who ever tried to make me say a Portal reference ' \
+                'think of some thing better'
         words = self.clean_message(message)
+        if words:
+            self._speech.extend(words)
+            tts(' '.join(words[:20]))
+
+    def render_rap(self, msg_id, words):
         if not words:
             return
         word_count = len(words)
@@ -202,7 +227,8 @@ class SmsHandler(StoppableThread):
         for i, word in enumerate(words):
             word_path = '/tmp/%s-%s.wav' % (msg_id, i)
             pitch, beats = next(melody)
-            pool.queue_task(tts, (self.render_ssml(word, pitch), word_path))
+            pool.queue_task(tts_file, (self.render_ssml(word, pitch),
+                word_path))
             if i:
                 sox_args.append('|sox %s -p pad %s' % (word_path, pad))
             else:
@@ -214,7 +240,7 @@ class SmsHandler(StoppableThread):
             return word_path
         else:
             mix_path = '/tmp/%s-mix.wav' % msg_id
-            sox_args.append(mix_path)
+            sox_args.extend((mix_path, 'norm'))
             subprocess.check_call(sox_args)
             return mix_path
 
@@ -227,8 +253,6 @@ class SmsHandler(StoppableThread):
                 word = ''.join(chars).lower()
                 if word in self._real_words:
                     words.append(word)
-                    if len(words) >= 20:
-                        break
         return words
 
     def render_ssml(self, word, pitch):
