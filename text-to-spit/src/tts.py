@@ -1,5 +1,7 @@
 from argparse import ArgumentParser
+from array import array
 from collections import namedtuple
+from struct import pack
 import queue
 import re
 import subprocess
@@ -9,7 +11,52 @@ import threading
 import cherrypy
 
 # =============================================================================
-# = Notes                                                                     =
+# = Text-to-Speech                                                            =
+# =============================================================================
+
+def tts(text, output_path, volumn=100):
+    sample_rate = 16000
+
+    samples = array('h', subprocess.check_output((
+        '/usr/local/bin/swift',
+        '-o', '-',
+        '-p',
+            'audio/channels=1,'
+            'audio/deadair=0,'
+            'audio/encoding=pcm16,'
+            'audio/output-format=raw,'
+            'audio/sampling-rate=%s,'
+            'audio/volume=%s'
+                % (sample_rate, volumn),
+        text)))
+
+    start = -1
+    for i, sample in enumerate(samples):
+        if sample:
+            start = i - 1
+            break
+
+    samples = samples[start:]
+
+    with open(output_path, 'wb') as f:
+        f.write(b'RIFF') # Chunk ID
+        f.write(pack('<I', 72 + len(samples))) # Bytes to follow
+        f.write(b'WAVEfmt ') # Sub chunk ID
+        f.write(pack('<I', 16)) # Byte to follow in sub chunk
+        f.write(pack('<H', 1)) # Audio format: PCM
+        f.write(pack('<H', 1)) # Channels: Mono
+        f.write(pack('<I', sample_rate)) # Sample rate (Hz)
+        f.write(pack('<I', 128000)) # Byte rate: 1.28 MB/s
+        f.write(pack('<H', 2)) # Block align
+        f.write(pack('<H', 16)) # Bits per sample
+        f.write(b'data') # Subchunk ID
+        f.write(pack('<I', len(samples))) # Subchunk size
+        samples.tofile(f)
+
+# =============================================================================
+
+# =============================================================================
+# = Rap Creation                                                              =
 # =============================================================================
 
 C0 = 16.35
@@ -71,8 +118,6 @@ G4 = 392.00
 Ab4 = 415.30
 A4 = 440.00
 
-# =============================================================================
-
 DEFAULT = 'default'
 
 X_SLOW = 'x-slow'
@@ -86,97 +131,16 @@ LOW = 'low'
 HIGH = 'high'
 X_HIGH = 'x-high'
 
-SWIFT_NAME = 'swift'
-WHICH_PATH = '/bin/which'
-
-SmsMessage = namedtuple('SmsMessage', ('number', 'message'))
-
-class ExecutableFinder:
-    def __init__(self, which_path):
-        self._path = which_path
-
-    def find(self, executable_name):
-        try:
-            out = subprocess.check_output(
-                args=(self._path, executable_name))
-        except subprocess.CalledProcessError:
-            return
-        return out.strip().decode('ascii')
-
-
-class SwiftEvent:
-    def __init__(self, number, type, start, end, position, value):
-        self.number = number
-        self.type = type
-        self.start = start
-        self.end = end
-        self.position = position
-        self.value = value
-
-    @classmethod
-    def from_out_line(cls, line):
-        fs = [f.strip() for f in line.split('\t')]
-        return cls(int(fs[0]), fs[1], float(fs[2]), float(fs[3]),
-            map(int, fs[4].split('-')), fs[5])
-
-    @property
-    def duration(self):
-        return self.end - self.start
-
-class Swift:
-    swift_path = None
-    padsp_path = None
-
-    def __init__(self, output=None):
-        self._swift = None
-        self._output = output
-
-    def __enter__(self):
-        if self._swift is None:
-            args = [self.padsp_path, self.swift_path, '-f', '-', '--events']
-            if self._output:
-                args.append('-o')
-                args.append(self._output)
-            self._swift = subprocess.Popen(args=args,
-                stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-        return self
-
-    def __exit__(self, type, value, traceback):
-        self._swift.terminate()
-        self._swift = None
-
-    def speak(self, ssml, blocking=True):
-        if isinstance(ssml, str):
-            ssml = ssml.encode('us-ascii')
-        self._swift.stdin.write(ssml)
-        self._swift.stdin.write(b'\n\n')
-        self._swift.stdin.flush()
-
-        events = []
-        while blocking:
-            event = self._swift.stdout.readlines(1)
-            if event:
-                try:
-                    event = SwiftEvent.from_out_line(
-                        event[0].decode('us-ascii'))
-                except ValueError:
-                    continue
-                events.append(event)
-                if event.type == 'end':
-                    break
-        return events
-
-
-re_note = re.compile('\A([abcdefg]b?[01234])(?:_(\d+)(?:/(\d+))?)?\Z',
+note_matcher = re.compile('\A([abcdefg]b?[01234])(?:_(\d+)(?:/(\d+))?)?\Z',
     re.IGNORECASE).match
 
 def melody(notes):
     g = globals()
     ns = []
     for note in notes.split():
-        match = re_note(note)
+        match = note_matcher(note)
         if not match:
-            raise ValueError('invalid note %s' % note)
+            raise ValueError('Invalid note %r.' % note)
         pitch = match.group(1)
         pitch = g[pitch[0].upper() + pitch[1:]]
         n = match.group(2)
@@ -186,6 +150,9 @@ def melody(notes):
         ns.append((pitch, n / d))
     return ns
 
+# =============================================================================
+
+SmsMessage = namedtuple('SmsMessage', ('number', 'message'))
 
 class StoppableThread(threading.Thread):
     def __init__(self, *args, **kwargs):
@@ -212,37 +179,42 @@ class SmsHandler(StoppableThread):
             except queue.Empty:
                 continue
             self.render_rap(message)
-            self._audio_queue.put('out.wav')
+            self._audio_queue.put('/tmp/out.wav')
             self._sms_queue.task_done()
 
     def render_rap(self, message):
+        message = ''.join(c for c in message if c == ' ' or c.isalpha())
+
+
         import itertools
         spb = 60 / self._bpm
-        m = itertools.cycle(melody('e3 e3_1/2 g3_1/2 e3 d3 c3_2 b2'))
+        m = itertools.cycle(melody('e3 e3_1/2 g3_1/2 e3 d3 c3_2 b2 '
+            'e3 e3_1/2 g3_1/2 e3 d3_1/2 c3_1/2 d3_1/2 c3_1/2 b2'))
         sox_args = ['/usr/bin/sox', '-m']
         pad = 0
+
         for i, word in enumerate(message.split()):
-            output = '%d.wav' % i
+            output = '/tmp/%d.wav' % i
             p, b = next(m)
-            with Swift(output=output) as swift:
-                swift.speak('<prosody pitch="%fHz" range="x-low">%s</prosody>'
-                    % (p, word))
-            # reconvert with ffmpeg swift doesn't make correct wav files
-            out2 = "new%s" % output
-            subprocess.check_call(args=('/usr/bin/ffmpeg', '-y', '-i', output, out2))
+
+            tts('<prosody pitch="%sHz" range="x-low">%s</prosody>' % (p, word),
+                output, volumn=150)
+
             if not i:
-                sox_args.append(out2)
+                sox_args.append(output)
             else:
-                sox_args.append('|sox %s -p pad %s' % (out2, pad))
+                sox_args.append('|sox %s -p pad %s' % (output, pad))
+
             # update our padding
             pad += b * spb
-        sox_args.append('out.wav')
-        print(" ".join(sox_args))
-        subprocess.check_call(args=sox_args)
+
+        sox_args.append('/tmp/out.wav')
+        print(i)
+        if i >= 1:
+            subprocess.check_call(args=sox_args)
+
 
 class AudioPlayer(StoppableThread):
-    play_path = None
-
     def __init__(self, audio_queue):
         super().__init__()
         self.daemon = True
@@ -259,7 +231,7 @@ class AudioPlayer(StoppableThread):
             self._sms_queue.task_done()
 
     def play_audio(self, path):
-        subprocess.check_call(args=(self.play_path, '-q', path))
+        subprocess.check_call(args=('/usr/bin/play', '-q', path))
 
 
 
@@ -318,7 +290,6 @@ def main(argv=None):
         argv = sys.argv
 
     ap = ArgumentParser()
-
     ap.add_argument('-b', '--bpm', type=int,
         default=100,
         help='The BPM of the rap.')
@@ -334,28 +305,7 @@ def main(argv=None):
     ap.add_argument('-H', '--hostname',
         required=True,
         help='The host name of the SMS server.')
-    ap.add_argument('-w', '--which-path',
-        default='/bin/which',
-        help='The path of the which executable.')
     args = ap.parse_args(args=argv[1:])
-
-    finder = ExecutableFinder(args.which_path)
-
-    Swift.swift_path = finder.find(SWIFT_NAME)
-    if not Swift.swift_path:
-        print('Could not find the swift executable.', file=sys.stderr)
-        return 1
-
-    Swift.padsp_path = finder.find('padsp')
-    if not Swift.padsp_path:
-        print('Could not find the PulseAudio DSP (padsp) emulation executable.',
-            file=sys.stderr)
-        return 1
-
-    AudioPlayer.play_path = finder.find('play')
-    if not AudioPlayer.play_path:
-        print('Could not find the play executable.', file=sys.stderr)
-        return 1
 
     incoming_sms = queue.Queue()
     audio = queue.Queue()
