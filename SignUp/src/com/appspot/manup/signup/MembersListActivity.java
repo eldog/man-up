@@ -1,5 +1,7 @@
 package com.appspot.manup.signup;
 
+import java.net.InetAddress;
+import java.net.SocketException;
 import java.util.Map;
 
 import android.app.AlertDialog;
@@ -22,6 +24,7 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
@@ -45,7 +48,6 @@ public final class MembersListActivity extends BaseActivity implements OnChangeL
     private static final int MENU_UPLOAD = Menu.FIRST + 1;
     private static final int MENU_DELETE_ALL_MEMBERS = Menu.FIRST + 2;
     private static final int MENU_LOAD_TEST_DATA = Menu.FIRST + 3;
-
 
     private static final int MENU_GROUP_USER = 0;
     private static final int MENU_GROUP_ADMIN = 1;
@@ -108,6 +110,8 @@ public final class MembersListActivity extends BaseActivity implements OnChangeL
     private Button mAddButton = null;
     private EditText mPersonIdTextEdit = null;
     private TextView mServiceState = null;
+    private TextView mIpAddress = null;
+    private LinearLayout mAdminInfo = null;
     private MemberAdapter mMembersAdapter = null;
     private volatile DataManager mDataManager = null;
 
@@ -162,7 +166,9 @@ public final class MembersListActivity extends BaseActivity implements OnChangeL
                 } // if
             } // onFocusChange(View, boolean)
         });
+        mAdminInfo = (LinearLayout) findViewById(R.id.admin_info);
         mServiceState = (TextView) findViewById(R.id.service_state);
+        mIpAddress = (TextView) findViewById(R.id.ip_address);
     } // onCreate(Bundle)
 
     @Override
@@ -194,7 +200,27 @@ public final class MembersListActivity extends BaseActivity implements OnChangeL
         } // else
         mMembersList.setAdapter(mMembersAdapter);
 
-        mServiceState.setVisibility(mIsInAdminMode ? View.VISIBLE : View.GONE);
+        mAdminInfo.setVisibility(mIsInAdminMode ? View.VISIBLE : View.GONE);
+
+        String ip;
+        try
+        {
+            final InetAddress ipAddress = NetworkUtils.getLocalIpAddress();
+            if (ipAddress != null)
+            {
+                ip = "IP: " + ipAddress.getHostAddress();
+            } // if
+            else
+            {
+                ip = "IP: None";
+            }
+        }
+        catch (SocketException e)
+        {
+            ip = "IP: None";
+        }
+
+        mIpAddress.setText(ip);
 
         loadData();
     } // setListAdapter()

@@ -47,13 +47,25 @@
         android:enabled="false"
         android:text="@string/member_list_empty"
         android:visibility="gone" />
-    <TextView
-        android:id="@+id/service_state"
+    <LinearLayout
+        android:id="@+id/admin_info"
+        android:orientation="horizontal"
+        android:background="@drawable/gradient_background"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:background="@drawable/gradient_background"
         android:padding="5dp"
-        android:textColor="@android:color/secondary_text_light"
-        android:visibility="gone"/>
+        android:visibility="gone">
+        <TextView
+            android:id="@+id/service_state"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@android:color/secondary_text_light" />
+        <TextView
+            android:id="@+id/ip_address"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@android:color/secondary_text_light"
+            android:paddingLeft="5dp" />
+    </LinearLayout>
 </RelativeLayout>

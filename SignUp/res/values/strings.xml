@@ -28,6 +28,7 @@
         <item>Stopped</item>
         <item>Started</item>
         <item>Initialising</item>
+        <item>Failed</item>
         <item>Port forwarding</item>
     </string-array>
 </resources>

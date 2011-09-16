@@ -9,12 +9,9 @@ import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import com.appspot.manup.signup.data.DataManager;
-import com.appspot.manup.signup.data.DataManager.OnChangeListener;
 import com.appspot.manup.signup.ui.BaseActivity;
 
-public final class CaptureSignatureActivity extends BaseActivity implements
-        OnChangeListener
+public final class CaptureSignatureActivity extends BaseActivity
 {
     @SuppressWarnings("unused")
     private static final String TAG = CaptureSignatureActivity.class.getSimpleName();
@@ -53,16 +50,8 @@ public final class CaptureSignatureActivity extends BaseActivity implements
     } // onCreate
 
     @Override
-    protected void onResume()
-    {
-        super.onResume();
-        DataManager.registerListener(this);
-    } // onResume
-
-    @Override
     protected void onPause()
     {
-        DataManager.unregisterListener(this);
         mSignatureView.cancelAnimation();
         super.onPause();
     } // onPause
@@ -74,34 +63,17 @@ public final class CaptureSignatureActivity extends BaseActivity implements
             Toast.makeText(this, R.string.please_sign, Toast.LENGTH_SHORT).show();
             return;
         } // if
+
         if (mId != Long.MIN_VALUE)
         {
             WriteSignatureService.writeSignature(this, mId, mSignatureView.getDoodle());
         } // if
-        else
-        {
-            doAnimation();
-        } // else
+
         mSignatureView.setEnabled(false);
-    } // onSubmit
 
-    private void doAnimation()
-    {
-        mSignatureView.animate(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                doFinishAnimation();
-            } // run()
-        });
-    } // doAnimation
-
-    private void doFinishAnimation()
-    {
-        mSubmit.getAnimation().cancel();
-
+        mSubmit.clearAnimation();
         final Animation flyOut = AnimationUtils.loadAnimation(this, R.anim.fly_out);
+        mSubmit.setAnimation(flyOut);
         flyOut.setAnimationListener(new AnimationListener()
         {
 
@@ -163,28 +135,9 @@ public final class CaptureSignatureActivity extends BaseActivity implements
                 flyIn2.start();
             }
         });
-        mSubmit.setAnimation(flyOut);
         flyOut.start();
-    }
+        mSignatureView.animate(null);
+    } // onSubmit
 
-    private boolean mRequested = false;
-
-    @Override
-    public synchronized void onChange()
-    {
-        if (!mRequested && mId != Long.MIN_VALUE && !mSignatureView.isAnimating() &&
-                DataManager.getDataManager(this).memberHasSignature(mId))
-        {
-            mRequested = true;
-            runOnUiThread(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    doAnimation();
-                } // run()
-            });
-        } // if
-    } // onChange(DataManager)
 } // class CaptureSignatureActivity
 

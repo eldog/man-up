@@ -26,7 +26,8 @@ public final class ExtraInfoService extends PersistentIntentService
     private static final int FORWARD_PORT = 23456;
 
     public static final int STATE_INITIALISING = 3;
-    public static final int STATE_PORT_FORWARDING = 4;
+    public static final int STATE_FAILED = 4;
+    public static final int STATE_PORT_FORWARDING = 5;
 
     public static final Object ID = new Object();
 
@@ -80,7 +81,7 @@ public final class ExtraInfoService extends PersistentIntentService
                 mSession.disconnect();
             } // if
             Log.e(TAG, "Failed to start port forwarding.");
-            setState(STATE_STARTED);
+            setState(STATE_FAILED);
             return false;
         } // catch
         Log.v(TAG, "Port forwaridng started.");

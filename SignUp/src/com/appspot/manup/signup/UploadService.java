@@ -132,7 +132,14 @@ public final class UploadService extends IntentService
             entity.addPart(new FormBodyPart("signature", new FileBody(imageFile, IMAGE_MIME)));
             final HttpPost post = new HttpPost(uri);
             post.setEntity(entity);
-            response = mClient.execute(post);
+            try
+            {
+                response = mClient.execute(post);
+            } // try
+            catch (final IllegalStateException e)
+            {
+                throw new IOException("Connection timed out " +  e.getMessage());
+            } // catch
             final int statusCode = response.getStatusLine().getStatusCode();
             if (statusCode != HttpStatus.SC_OK)
             {
@@ -165,5 +172,4 @@ public final class UploadService extends IntentService
             throw new IOException("Failed to update signature state for " + id);
         } // if
     } // uploadSignature
-
 } // SignatureUploadService
