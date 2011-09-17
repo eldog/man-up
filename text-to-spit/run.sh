@@ -4,11 +4,11 @@
 
 python3 tts.py \
     -b 132 \
-    -B backing.wav \
+    -B backing-no-lead.wav \
     -H `hostname -I` \
     -p 8080 \
     -t 30 \
-    -T 0.2 \
+    -T 0.4 \
     -r 'Thanks for the text.' \
     -m 'r_23
                                                         B3_1/2  A3_1/2   

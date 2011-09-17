@@ -40,14 +40,17 @@ class Swift:
         subprocess.check_call((self._padsp_path, self._swift_path, ssml))
 
     def tts_file(self, ssml, output_path, volume=100):
-        sample_rate = 16000
+        bits_per_sample = 16
+        bytes_per_sample = bits_per_sample // 8
+        num_channels = 1
+        sample_rate = 44100
 
         samples = array('h', subprocess.check_output((
             self._swift_path,
             '-o', '-',
             '-p',
                 'audio/channels=1,'
-                'audio/deadair=0,'
+                'audio/deadair=1000,'
                 'audio/encoding=pcm16,'
                 'audio/output-format=raw,'
                 'audio/sampling-rate=%s,'
@@ -55,35 +58,56 @@ class Swift:
                     % (sample_rate, volume),
             ssml)))
 
-        zero_cross = 0
+        num_samples = len(samples)
+        subchunk_2_size = num_samples * num_channels * bytes_per_sample
+
+        start_sample = 0
         previous_sample = 0
         threshold = (2 ** 16 / 2) * self._threshold
         for i, sample in enumerate(samples):
             if previous_sample < 0 and sample >= 0 \
             or previous_sample >= 0 and sample < 0:
-                zero_cross = i
+                start_sample = i
             if abs(sample) > threshold:
                 break
             previous_sample = sample
 
-        if samples:
-            samples = samples[zero_cross:]
-            samples[0] = 0
+        offset = -start_sample / sample_rate
 
         with open(output_path, 'wb') as f:
             f.write(b'RIFF') # Chunk ID
-            f.write(pack('<I', 72 + len(samples))) # Bytes to follow
+
+            # Bytes to follow
+            f.write(pack('<I', 36 + subchunk_2_size))
+
             f.write(b'WAVEfmt ') # Sub chunk ID
+
             f.write(pack('<I', 16)) # Byte to follow in sub chunk
+
             f.write(pack('<H', 1)) # Audio format: PCM
-            f.write(pack('<H', 1)) # Channels: Mono
+
+            f.write(pack('<H', num_channels)) # Channels: Mono
+
             f.write(pack('<I', sample_rate)) # Sample rate (Hz)
-            f.write(pack('<I', 128000)) # Byte rate: 1.28 MB/s
-            f.write(pack('<H', 2)) # Block align
-            f.write(pack('<H', 16)) # Bits per sample
+
+            f.write(pack('<I',
+                sample_rate * num_channels * bytes_per_sample))
+
+            f.write(pack('<H',
+                num_channels * bytes_per_sample))
+
+            f.write(pack('<H', bits_per_sample)) # Bits per sample
+
             f.write(b'data') # Subchunk ID
-            f.write(pack('<I', len(samples))) # Subchunk size
+
+            # Subchunk 2 size
+            f.write(pack('<I', subchunk_2_size))
+
+            # Data
             samples.tofile(f)
+
+        return offset
+
 
 # =============================================================================
 
@@ -302,6 +326,7 @@ class SmsHandler(StoppableThread):
             return
 
         delay = 0
+        offsets = {}
         word_index = 0
         word_count = len(words)
         word_delays = []
@@ -314,12 +339,15 @@ class SmsHandler(StoppableThread):
 
             if pitch != REST:
                 word = words[word_index]
-                word_index += 1
                 word_delays.append(delay)
                 word_path = '/tmp/%s-%s.wav' % (msg_id, word_index)
                 word_paths.append(word_path)
-                ssml = '<s><prosody pitch="%sHz" range="x-low">%s</prosody></s>' % (pitch, word)
-                pool.queue_task(self._swift.tts_file, (ssml, word_path))
+                ssml = '<s><prosody pitch="%sHz" range="x-low">%s</prosody></s>' \
+                    % (pitch, word)
+                def task(word_id, ssml, word_path):
+                    offsets[word_id] = self._swift.tts_file(ssml, word_path)
+                pool.queue_task(task, (word_index, ssml, word_path))
+                word_index += 1
 
             delay += duration
 
@@ -327,6 +355,7 @@ class SmsHandler(StoppableThread):
                 # Break here, rather than inside the if statement above, so that
                 # that delay is updated and equals the duration of the rap.
                 break
+
 
         rap_duration = delay
 
@@ -352,12 +381,12 @@ class SmsHandler(StoppableThread):
         sox_args = [self.sox_path, '--combine', 'concatenate'] \
             + [self._backing_sample] * loops + [backing_path]
         subprocess.check_call(sox_args)
-
+        print(offsets)
         # Mix the rap and the backing track
         mix_path = '/tmp/%s-mix.wav' % msg_id
         sox_args = [self.sox_path, '-M'] + word_paths \
             + [backing_path, mix_path, 'delay'] \
-            + [str(delay) for delay in word_delays] \
+            + [str(delay + offsets[i]) for i, delay in enumerate(word_delays)] \
             + ['remix',
                 ','.join(str(channel) for channel in range(1, word_count + 2)),
                 'norm']
