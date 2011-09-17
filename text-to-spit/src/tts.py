@@ -1,10 +1,10 @@
 from argparse import ArgumentParser
 from array import array
 from collections import namedtuple
+from itertools import cycle
 from math import ceil
 from struct import pack
 from time import sleep
-import itertools
 import os
 import queue
 import re
@@ -18,52 +18,72 @@ from threadpool import StoppableThread, ThreadPool
 def relpath(path):
     return os.path.join(os.path.dirname(__file__), path)
 
+class ExecutableFinder:
+    def __init__(self, which_path):
+        self._which_path = which_path
+
+    def find(self, executable_name):
+        args = (self._which_path, executable_name)
+        return subprocess.check_output(args)[:-1].decode('us-ascii')
+
 # =============================================================================
 # = Text-to-Speech                                                            =
 # =============================================================================
 
-def tts(text):
-    subprocess.check_call(('/usr/bin/padsp', '/usr/local/bin/swift',
-        '<s><prosody rate="slow">%s</prosody></s>' % text))
+class Swift:
+    def __init__(self, swift_path, padsp_path, threshold=0.2):
+        self._swift_path = swift_path
+        self._padsp_path = padsp_path
+        self._threshold = threshold
 
-def tts_file(text, output_path, volume=100):
-    sample_rate = 16000
+    def tts(self, ssml):
+        subprocess.check_call((self._padsp_path, self._swift_path, ssml))
 
-    samples = array('h', subprocess.check_output((
-        '/usr/local/bin/swift',
-        '-o', '-',
-        '-p',
-            'audio/channels=1,'
-            'audio/deadair=0,'
-            'audio/encoding=pcm16,'
-            'audio/output-format=raw,'
-            'audio/sampling-rate=%s,'
-            'audio/volume=%s'
-                % (sample_rate, volume),
-        text)))
+    def tts_file(self, ssml, output_path, volume=100):
+        sample_rate = 16000
 
-    start = -1
-    for i, sample in enumerate(samples):
-        if sample:
-            start = i - 1
-            break
+        samples = array('h', subprocess.check_output((
+            self._swift_path,
+            '-o', '-',
+            '-p',
+                'audio/channels=1,'
+                'audio/deadair=0,'
+                'audio/encoding=pcm16,'
+                'audio/output-format=raw,'
+                'audio/sampling-rate=%s,'
+                'audio/volume=%s'
+                    % (sample_rate, volume),
+            ssml)))
 
-    samples = samples[start:]
+        zero_cross = 0
+        previous_sample = 0
+        threshold = (2 ** 16 / 2) * self._threshold
+        for i, sample in enumerate(samples):
+            if previous_sample < 0 and sample >= 0 \
+            or previous_sample >= 0 and sample < 0:
+                zero_cross = i
+            if abs(sample) > threshold:
+                break
+            previous_sample = sample
 
-    with open(output_path, 'wb') as f:
-        f.write(b'RIFF') # Chunk ID
-        f.write(pack('<I', 72 + len(samples))) # Bytes to follow
-        f.write(b'WAVEfmt ') # Sub chunk ID
-        f.write(pack('<I', 16)) # Byte to follow in sub chunk
-        f.write(pack('<H', 1)) # Audio format: PCM
-        f.write(pack('<H', 1)) # Channels: Mono
-        f.write(pack('<I', sample_rate)) # Sample rate (Hz)
-        f.write(pack('<I', 128000)) # Byte rate: 1.28 MB/s
-        f.write(pack('<H', 2)) # Block align
-        f.write(pack('<H', 16)) # Bits per sample
-        f.write(b'data') # Subchunk ID
-        f.write(pack('<I', len(samples))) # Subchunk size
-        samples.tofile(f)
+        if samples:
+            samples = samples[zero_cross:]
+            samples[0] = 0
+
+        with open(output_path, 'wb') as f:
+            f.write(b'RIFF') # Chunk ID
+            f.write(pack('<I', 72 + len(samples))) # Bytes to follow
+            f.write(b'WAVEfmt ') # Sub chunk ID
+            f.write(pack('<I', 16)) # Byte to follow in sub chunk
+            f.write(pack('<H', 1)) # Audio format: PCM
+            f.write(pack('<H', 1)) # Channels: Mono
+            f.write(pack('<I', sample_rate)) # Sample rate (Hz)
+            f.write(pack('<I', 128000)) # Byte rate: 1.28 MB/s
+            f.write(pack('<H', 2)) # Block align
+            f.write(pack('<H', 16)) # Bits per sample
+            f.write(b'data') # Subchunk ID
+            f.write(pack('<I', len(samples))) # Subchunk size
+            samples.tofile(f)
 
 # =============================================================================
 
@@ -129,6 +149,49 @@ Gb4 = 369.99
 G4 = 392.00
 Ab4 = 415.30
 A4 = 440.00
+Bb4 = 466.16
+B4 = 493.88
+C5 = 523.25
+Db5 = 554.37
+D5 = 587.33
+Eb5 = 622.25
+E5 = 659.25
+F5 = 698.46
+Gb5 = 739.99
+G5 = 783.99
+Ab5 = 830.61
+A5 = 880.00
+Bb5 = 932.33
+B5 = 987.77
+C6 = 1046.50
+Db6 = 1108.73
+D6 = 1174.66
+Eb6 = 1244.51
+E6 = 1318.51
+F6 = 1396.91
+Gb6 = 1479.98
+G6 = 1567.98
+Ab6 = 1661.22
+A6 = 1760.00
+Bb6 = 1864.66
+B6 = 1975.53
+C7 = 2093.00
+Db7 = 2217.46
+D7 = 2349.32
+Eb7 = 2489.02
+E7 = 2637.02
+F7 = 2793.83
+Gb7 = 2959.96
+G7 = 3135.96
+Ab7 = 3322.44
+A7 = 3520.00
+Bb7 = 3729.31
+B7 = 3951.07
+C8 = 4186.01
+Db8 = 4434.92
+D8 = 4698.64
+Eb8 = 4978.03
+REST = 0.0
 
 DEFAULT = 'default'
 
@@ -143,10 +206,11 @@ LOW = 'low'
 HIGH = 'high'
 X_HIGH = 'x-high'
 
-note_matcher = re.compile('\A([abcdefg]b?[01234])(?:_(\d+)(?:/(\d+))?)?\Z',
+note_matcher = re.compile(
+    '\A([abcdefg]b?[012345678]|r)(?:_(\d+)(?:/(\d+))?)?\Z',
     re.IGNORECASE).match
 
-def melody(notes):
+def parse_melody(notes):
     g = globals()
     ns = []
     for note in notes.split():
@@ -154,7 +218,10 @@ def melody(notes):
         if not match:
             raise ValueError('Invalid note %r.' % note)
         pitch = match.group(1)
-        pitch = g[pitch[0].upper() + pitch[1:]]
+        if pitch == 'r':
+            pitch = REST
+        else:
+            pitch = g[pitch[0].upper() + pitch[1:]]
         n = match.group(2)
         n = int(n) if n else 1
         d = match.group(3)
@@ -168,23 +235,29 @@ SmsMessage = namedtuple('SmsMessage', ('msg_id', 'number', 'message'))
 
 class SmsHandler(StoppableThread):
 
-    melody = melody(
-        'e3 e3_1/2 g3_1/2 e3 d3            c3_2          b2 '
-        'e3 e3_1/2 g3_1/2 e3 d3_1/2 c3_1/2 d3_1/2 c3_1/2 b2 ')
+    dictionary_path = None
+    ffmpeg_path = None
+    play_path = None
+    sox_path = None
+    soxi_path = None
 
-    def __init__(self, sms_queue, audio_queue, bpm=100):
+    def __init__(self, sms_queue, swift, backing_sample, melody='e3', bpm=100,
+        thread_pool=10):
         super().__init__()
         self.daemon = True
         self._sms_queue = sms_queue
-        self._audio_queue = audio_queue
+        self._melody = parse_melody(melody)
         self._spb = 60 / bpm
+        self._thread_pool = thread_pool
         self._speech = []
         self._rap_mode = False
         self._rap_path = None
+        self._swift = swift
+        self._backing_sample = backing_sample
 
     def run(self):
         self._real_words = set()
-        with open('/etc/dictionaries-common/words') as f:
+        with open(self.dictionary_path) as f:
             for w in f:
                 w = w.strip()
                 if w.isalpha():
@@ -203,12 +276,13 @@ class SmsHandler(StoppableThread):
                     self._rap_path = self.render_rap(msg_id, self._speech)
                     print('Rap compilied.')
                 elif message == 'rap' and self._rap_path:
-                    subprocess.check_call(args=('/usr/bin/play', '-q',
+                    subprocess.check_call((self.play_path, '-q',
                         self._rap_path))
                 elif message == 'speech':
                     self._rap_mode = False
             elif not self._rap_mode:
                 self.render_speech(message)
+                pass
 
             self._sms_queue.task_done()
 
@@ -219,51 +293,78 @@ class SmsHandler(StoppableThread):
         words = self.clean_message(message)
         if words:
             self._speech.extend(words)
-            tts(' '.join(words[:20]))
+#            self._swift.tts('<s><prosody rate="slow">%s</prosody></s>'
+#                % ' '.join(words[:20]))
 
     def render_rap(self, msg_id, words):
         if not words:
+            # No words to render!
             return
+
+        delay = 0
+        word_index = 0
         word_count = len(words)
-        pool = ThreadPool(word_count if word_count < 10 else 10)
-        melody = itertools.cycle(self.melody)
-        sox_args = ['/usr/bin/sox', '-m']
-        pad = 0
-        for i, word in enumerate(words):
-            word_path = '/tmp/%s-%s.wav' % (msg_id, i)
-            pitch, beats = next(melody)
-            pool.queue_task(tts_file, (self.render_ssml(word, pitch),
-                word_path))
-            if i:
-                sox_args.append('|sox %s -p pad %s' % (word_path, pad))
-            else:
-                sox_args.append(word_path)
-            pad += beats * self._spb
+        word_delays = []
+        word_paths = []
+
+        pool = ThreadPool(min(word_count, self._thread_pool))
+
+        for pitch, beats in cycle(self._melody):
+            duration = beats * self._spb
+
+            if pitch != REST:
+                word = words[word_index]
+                word_index += 1
+                word_delays.append(delay)
+                word_path = '/tmp/%s-%s.wav' % (msg_id, word_index)
+                word_paths.append(word_path)
+                ssml = '<s><prosody pitch="%sHz" range="x-low">%s</prosody></s>' % (pitch, word)
+                pool.queue_task(self._swift.tts_file, (ssml, word_path))
+
+            delay += duration
+
+            if word_index == word_count:
+                # Break here, rather than inside the if statement above, so that
+                # that delay is updated and equals the duration of the rap.
+                break
+
+        rap_duration = delay
+
         pool.join_all()
-        if word_count == 1:
-            rap_path = word_path
-        else:
-            rap_path = '/tmp/%s-rap.wav' % msg_id
-            sox_args.extend((rap_path, 'norm'))
-            subprocess.check_call(sox_args)
-        info = subprocess.check_output(('/usr/bin/soxi', rap_path))
+
+        if not word_index:
+            # Didn't render any words!
+            return
+
+        # Find the minimum number of times the backing track needs to be looped
+        # so that it's length exceeds that of the rap.
+        info = subprocess.check_output((self.soxi_path, self._backing_sample))
         info = info.decode('us-ascii')
         info = info.split('\n')[5]
         info = info.split()[2]
         info = info.split(':')
-        duration = int(info[0]) * 60 * 60 + int(info[1]) * 60 + float(info[2])
-        loop_count = int(ceil(duration / 4.36))
-        backing_path = '/tmp/%s-backing.wav' % msg_id
-        sox_args = ['/usr/bin/sox', '--combine', 'concatenate'] \
-            + [relpath('sample.wav')] * loop_count \
-            + [backing_path]
-        subprocess.check_call(sox_args)
-        mix_path = '/tmp/%s-mix.wav' % msg_id
-        sox_args = ['/usr/bin/sox', '-m', rap_path, '-v', '0.75', backing_path,
-            mix_path]
-        subprocess.check_call(sox_args)
-        return mix_path
+        backing_duration = int(info[0]) * 60 * 60 + int(info[1]) * 60 \
+            + float(info[2])
+        loops = int(ceil(rap_duration / backing_duration))
 
+        # Create the backing track.
+        backing_path = '/tmp/%s-backing.wav' % msg_id
+        sox_args = [self.sox_path, '--combine', 'concatenate'] \
+            + [self._backing_sample] * loops + [backing_path]
+        subprocess.check_call(sox_args)
+
+        # Mix the rap and the backing track
+        mix_path = '/tmp/%s-mix.wav' % msg_id
+        sox_args = [self.sox_path, '-M'] + word_paths \
+            + [backing_path, mix_path, 'delay'] \
+            + [str(delay) for delay in word_delays] \
+            + ['remix',
+                ','.join(str(channel) for channel in range(1, word_count + 2)),
+                'norm']
+        print(' '.join(sox_args))
+        subprocess.check_call(sox_args)
+
+        return mix_path
 
     def clean_message(self, message):
         words = []
@@ -275,36 +376,13 @@ class SmsHandler(StoppableThread):
                     words.append(word)
         return words
 
-    def render_ssml(self, word, pitch):
-        return '<s><prosody pitch="%sHz" range="x-low">%s</prosody></s>' \
-            % (pitch, word)
-
-
-class AudioPlayer(StoppableThread):
-    def __init__(self, audio_queue):
-        super().__init__()
-        self.daemon = True
-        self._sms_queue = audio_queue
-
-    def run(self):
-        while not self._stop_event.is_set():
-            try:
-                audio_path = self._sms_queue.get_nowait()
-            except queue.Empty:
-                sleep(0.1)
-                continue
-
-            self.play_audio(audio_path)
-            self._sms_queue.task_done()
-
-    def play_audio(self, path):
-        subprocess.check_call(args=('/usr/bin/play', '-q', path))
-
 
 class SmsServer:
-    def __init__(self, hostname, incoming_sms_queue):
+    def __init__(self, hostname, port, incoming_sms_queue, reply):
         self._hostname = hostname
+        self._port = port
         self._sms_queue = incoming_sms_queue
+        self._reply = reply
         self._msg_id = 0
 
     @cherrypy.expose
@@ -312,19 +390,22 @@ class SmsServer:
     def index(self, message=None, number=None):
         self._sms_queue.put(SmsMessage(self._msg_id, number, message))
         self._msg_id += 1
-        return [{'number' : number,
-            'message' : 'Thanks. More at man-up.appspot.com'}]
+        return [{'number' : number, 'message' : self._reply}]
 
     def mainloop(self):
-        cherrypy.config.update({'server.socket_host': self._hostname})
+        cherrypy.config.update({
+            'server.socket_host': self._hostname,
+            'server.socket_port': self._port})
         cherrypy.quickstart(self)
 
 
 class DummySmsServer:
-    def __init__(self, _hostname, incoming_sms_queue, message='', loop=True):
+    def __init__(self, _hostname, incoming_sms_queue, reply, message='',
+            loop=True):
         self._sms_queue = incoming_sms_queue
         self._msg = message
         self._loop = loop
+        self._reply = reply
         self._msg_id = 0
 
     def mainloop(self):
@@ -362,29 +443,63 @@ def main(argv=None):
         argv = sys.argv
 
     ap = ArgumentParser()
-    ap.add_argument('-b', '--bpm', type=int,
-        default=100,
+    ap.add_argument('-b', '--bpm',
+        type=float,
+        required=True,
         help='The BPM of the rap.')
-    ap.add_argument('-D', '--dummy-message',
-        default='',
-        help='A message to be used by the dummy server.')
+    ap.add_argument('-B', '--backing-sample',
+        required=True,
+        help='The path of the backing sample.')
     ap.add_argument('-d', '--dummy-sms-server',
         action='store_true',
         help='Use the dummy SMS server.')
-    ap.add_argument('--dummy-loop',
-        action='store_true',
-        help='Loop the dummy server')
+    ap.add_argument('-D', '--dummy-message',
+        default='',
+        help='A message to be used by the dummy server.')
     ap.add_argument('-H', '--hostname',
         required=True,
         help='The host name of the SMS server.')
-    args = ap.parse_args(args=argv[1:])
+    ap.add_argument('-m', '--melody',
+        required=True,
+        help='The melody to rap to.')
+    ap.add_argument('-p', '--port',
+        required=True,
+        type=int,
+        help='The port of the server.')
+    ap.add_argument('-r', '--reply',
+        required=True,
+        help='The reply message.')
+    ap.add_argument('-t', '--thread-pool',
+        type=int,
+        default=10,
+        help='The size of the thread pool used when rendering the rap.')
+    ap.add_argument('-T', '--threshold',
+        type=float,
+        default=0.2,
+        help='The % volume at which a word sample will start.')
+    ap.add_argument('-w', '--which-path',
+        default='/usr/bin/which',
+        help='The path of the which executable.')
+    ap.add_argument('-W', '--words',
+        default='/etc/dictionaries-common/words',
+        help='The list of acceptable words')
+    ap.add_argument('--dummy-loop',
+        action='store_true',
+        help='Loop the dummy server')
+    args = ap.parse_args(argv[1:])
+
+    finder = ExecutableFinder(args.which_path)
+    SmsHandler.dictionary_path = args.words
+    SmsHandler.ffmpeg_path = finder.find('ffmpeg')
+    SmsHandler.play_path = finder.find('play')
+    SmsHandler.sox_path = finder.find('sox')
+    SmsHandler.soxi_path = finder.find('soxi')
 
     incoming_sms = queue.Queue()
-    audio = queue.Queue()
+    swift = Swift(finder.find('swift'), finder.find('padsp'))
 
-    audio_player = AudioPlayer(audio)
-    audio_player.start()
-    sms_handler = SmsHandler(incoming_sms, audio, bpm=args.bpm)
+    sms_handler = SmsHandler(incoming_sms, swift, args.backing_sample,
+        melody=args.melody, bpm=args.bpm, thread_pool=args.thread_pool)
     sms_handler.start();
 
     if args.dummy_sms_server:
@@ -395,10 +510,13 @@ def main(argv=None):
     else:
         server = SmsServer
 
-    server(args.hostname, incoming_sms).mainloop();
+    server(
+        args.hostname,
+        args.port,
+        incoming_sms,
+        args.reply).mainloop();
 
     sms_handler.join()
-    audio_player.join()
 
     print('Exiting.')
 

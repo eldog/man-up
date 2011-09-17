@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la la
+
+python3 tts.py \
+    -b 132 \
+    -B backing.wav \
+    -H `hostname -I` \
+    -p 8080 \
+    -t 30 \
+    -T 0.2 \
+    -r 'Thanks for the text.' \
+    -m 'r_23
+                                                        B3_1/2  A3_1/2   
+        B3_1/2  Gb3_1/2 D3_1/2  Gb3_1/2 B2              B3_1/2  A3_1/2
+        B3_1/2  Gb3_1/2 D3_1/2  Gb3_1/2 B2              B3_1/2  Db4_1/2
+        D4_1/2  Db4_1/2 D4_1/2  B3_1/2  Db4_1/2 B3_1/2  Db4_1/2 A3_1/2
+        B3_1/2  A3_1/2  B3_1/2  G3_1/2  B2              B3_1/2  A3_1/2
+        B3_1/2  Gb3_1/2 D3_1/2  Gb3_1/2 B2              B3_1/2  A3_1/2
+        B3_1/2  Gb3_1/2 D3_1/2  Gb3_1/2 B2              B3_1/2  Db4_1/2
+        D4_1/2  Db4_1/2 D4_1/2  B3_1/2  Db4_1/2 B3_1/2  Db4_1/2 A3_1/2
+        B3_1/2  A3_1/2  B3_1/2  Db4_1/2 D4              Gb4_1/2 E4_1/2
+        Gb4_1/2 D4_1/2  A3_1/2  D4_1/2  Gb3             Gb4_1/2 E4_1/2
+        Gb4_1/2 D4_1/2  A3_1/2  D4_1/2  Gb3             Gb4_1/2 Ab4_1/2
+        A4_1/2  Ab4_1/2 A4_1/2  Gb4_1/2 Ab4_1/2 Gb4_1/2 Ab4_1/2 E4_1/2
+        Ab4_1/2 E4_1/2  Db4_1/2 E4_1/2  Ab4             B3_1/2  A3_1/2'
+    
+
