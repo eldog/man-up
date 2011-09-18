@@ -20,16 +20,10 @@ from swipeup.clients.signup import SignUpClient
 def _parse_argv(argv):
     p = ArgumentParser(version='%prog ver. 0.1 alpha 2011')
 
-    p.add_argument('-a', '--android-host',
+    p.add_argument('-a', '--android-address',
         dest='android_host',
         required=True,
-        help='the address of the Android device running Autograph')
-
-    p.add_argument('-A', '--android-port',
-        dest='android_port',
-        required=True,
-        type=int,
-        help='the port on which to contact the Android device on')
+        help='The MAC address of the Bluetooth adapter of the Android device running SwipeUp')
 
     p.add_argument('-d', '--dummy-reader',
         dest='dummy',
@@ -76,27 +70,25 @@ def main(argv=None):
     level = logging.INFO if args.verbose else logging.ERROR
     logging.basicConfig(level=level)
 
-    student_id_queue = Queue.Queue()
+    person_id_queue = Queue.Queue()
     signup_queue = Queue.Queue()
     manup_queue = Queue.Queue()
 
     uom_ldap_client = UomLdapClient(
         args.ldap_host,
         args.ldap_port,
-        student_id_queue,
+        person_id_queue,
         manup_queue)
     uom_ldap_client.start()
 
     card_reader_client = CardReadClient(
-        student_id_queue,
+        person_id_queue,
         signup_queue,
         dummy=args.dummy)
     card_reader_client.start()
 
-
     signup_client = SignUpClient(
-        args.android_host,
-        args.android_port,
+        args.android_address,
         signup_queue)
     signup_client.start()
 

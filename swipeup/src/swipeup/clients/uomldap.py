@@ -8,14 +8,14 @@ import ldap
 _logger = logging.getLogger('LdapClient')
 
 class UomLdapClient(threading.Thread):
-    def __init__(self, host, port, student_id_queue, manup_queue):
+    def __init__(self, host, port, person_id_queue, manup_queue):
         super(UomLdapClient, self).__init__()
         self.daemon = True
 
         self._host = host
         self._port = port
 
-        self._student_id_queue = student_id_queue
+        self._student_id_queue = person_id_queue
         self._response_queue = manup_queue
 
     def run(self):

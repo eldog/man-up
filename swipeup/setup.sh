@@ -11,6 +11,7 @@ LIB_DIR="`readlink -f $(dirname "$0")`/lib"
 sudo apt-get -y install \
     libldap-dev \
     libsasl2-dev \
+    python-bluez \
     python-dev
 
 cd /tmp

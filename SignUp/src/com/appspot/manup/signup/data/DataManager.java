@@ -14,7 +14,7 @@ import android.provider.BaseColumns;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.appspot.manup.signup.extrainfo.MemberExtraInfo;
+import com.appspot.manup.signup.extrainfo.MemberInfo;
 
 public final class DataManager
 {
@@ -274,6 +274,20 @@ public final class DataManager
                 orderBy);
     } // queryMembers(String[], String, String[], String)
 
+    public long requestSignature(final MemberInfo memberInfo)
+    {
+        final long id = requestSignature(memberInfo.getPersonId());
+        if (id == OPERATION_FAILED)
+        {
+            return OPERATION_FAILED;
+        } // if
+        if (!addExtraInfo(memberInfo))
+        {
+            Log.w(TAG, "Failed to add extract info.\n" + memberInfo);
+        } // if
+        return id;
+    } // requestSignature(MemberInfo)
+
     public long requestSignature(final String personId)
     {
         final SQLiteDatabase db = getDb();
@@ -311,17 +325,17 @@ public final class DataManager
         return id;
     } // requestSignature(String)
 
-    public boolean addExtraInfo(final MemberExtraInfo memberEntry)
+    public boolean addExtraInfo(final MemberInfo memberInfo)
     {
-        final long id = getId(memberEntry.getPersonId());
+        final long id = getId(memberInfo.getPersonId());
         if (id == OPERATION_FAILED)
         {
-            Log.e(TAG, "Failed to get internal ID of the member " + memberEntry.getPersonId());
+            Log.e(TAG, "Failed to get internal ID of the member " + memberInfo.getPersonId());
             return false;
         } // if
 
-        final ContentValues extraValues = memberEntry.getContentValues();
-        Log.v(TAG, "Adding extra info for " + memberEntry.getPersonId() + ": "
+        final ContentValues extraValues = memberInfo.getContentValues();
+        Log.v(TAG, "Adding extra info for " + memberInfo.getPersonId() + ": "
                 + extraValues.toString());
 
         // As extra information was retrieved, the person ID must be valid.
@@ -412,7 +426,6 @@ public final class DataManager
         } // for
         return memberValues.length;
     } // loadTestData()
-
 
     public String getPersonId(final long id)
     {

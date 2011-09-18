@@ -1,9 +1,12 @@
 package com.appspot.manup.signup.swipeupclient;
 
+import java.io.IOException;
+
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.os.IBinder;
+import android.util.Log;
 
 import com.appspot.manup.signup.R;
 import com.appspot.manup.signup.SignUpPreferenceActivity;
@@ -11,14 +14,13 @@ import com.appspot.manup.signup.StateReportingService;
 
 public final class SwipeUpClientService extends StateReportingService
 {
-    @SuppressWarnings("unused")
     private static final String TAG = SwipeUpClientService.class.getSimpleName();
 
     private static final int NOTIFICATION_ID = 1;
 
     public static final Object ID = new Object();
 
-    private SwipeUpThread mSwipeUpThread = null;
+    private SwipeUpClient mSwipeUpThread = null;
 
     public SwipeUpClientService()
     {
@@ -30,7 +32,15 @@ public final class SwipeUpClientService extends StateReportingService
     {
         super.onCreate();
         startForeground();
-        mSwipeUpThread = new SwipeUpThread(this);
+        try
+        {
+            mSwipeUpThread = new SwipeUpClient(this);
+        } // try
+        catch (IOException e)
+        {
+            Log.d(TAG, "Bluetooth not supported.", e);
+            return;
+        } // catch
         mSwipeUpThread.setDaemon(true);
         mSwipeUpThread.start();
         setState(STATE_STARTED);
@@ -56,7 +66,7 @@ public final class SwipeUpClientService extends StateReportingService
     @Override
     public void onDestroy()
     {
-        mSwipeUpThread.interrupt();
+        mSwipeUpThread.cancel();
         stopForeground(true);
         setState(STATE_STOPPED);
     } // onDestroy()

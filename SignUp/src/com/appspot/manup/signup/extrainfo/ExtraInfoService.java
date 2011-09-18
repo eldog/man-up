@@ -159,7 +159,7 @@ public final class ExtraInfoService extends PersistentIntentService
                     null /* attrs */,
                     false /* types only */);
 
-            final MemberExtraInfo memberEntry = extractLdapEntry(id, personId, results);
+            final MemberInfo memberEntry = extractLdapEntry(id, personId, results);
 
             if (memberEntry == null || !mDataManager.addExtraInfo(memberEntry))
             {
@@ -181,10 +181,10 @@ public final class ExtraInfoService extends PersistentIntentService
         } // finally
     } // queryLdapServer
 
-    private MemberExtraInfo extractLdapEntry(final long id, final String personId,
+    private MemberInfo extractLdapEntry(final long id, final String personId,
             final LDAPSearchResults results)
     {
-        MemberExtraInfo memberEntry = null;
+        MemberInfo memberEntry = null;
 
         /*
          * Don't use results.getCount(). It doesn't appear to work and always
@@ -195,7 +195,7 @@ public final class ExtraInfoService extends PersistentIntentService
         {
             try
             {
-                memberEntry = MemberExtraInfo.fromLdapEntry(results.next());
+                memberEntry = MemberInfo.fromLdapEntry(results.next());
             } // try
             catch (final LDAPException e)
             {

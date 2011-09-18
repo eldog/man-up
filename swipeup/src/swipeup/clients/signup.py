@@ -1,56 +1,36 @@
 from __future__ import division
 from __future__ import print_function
-import asyncore
+import json
 import logging
-import socket
 import threading
+
+import bluetooth
 
 _logger = logging.getLogger('SignUpClient')
 
-class AndroidClient(asyncore.dispatcher):
-    def __init__(self, host, port, message):
-        asyncore.dispatcher.__init__(self)
-        # I don't believe this is correct/good.
-        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.connect((host, port))
-        self.buffer = '%s\n' % message
-
-    def handle_connect(self):
-        pass
-
-    def handle_close(self):
-        self.close()
-
-    def handle_read(self):
-        print(self.recv(8192))
-
-    def writable(self):
-        return (len(self.buffer) > 0)
-
-    def handle_write(self):
-        sent = self.send(self.buffer)
-        self.buffer = self.buffer[sent:]
-
-    def handle_error(self):
-        pass
-
+SWIPE_UP_UUID = '28adccbc-41a3-4ffd-924d-1c6a70d70b4e'
 
 class SignUpClient(threading.Thread):
-    def __init__(self, host, port, signup_queue):
+    def __init__(self, address, signup_queue):
         super(SignUpClient, self).__init__()
         self.daemon = True
-
-        self._host = host
-        self._port = port
-        self._signup_queue = signup_queue
+        self._address = address
+        self._person_id_queue = signup_queue
 
     def run(self):
         while True:
-            message = self._signup_queue.get()
-            AndroidClient(self._host, self._port, message)
+            person_id = self._person_id_queue.get()
+            message = json.dumps({'umanPersonID': person_id}) + '\n'
             try:
-                asyncore.loop()
+                service_matches = bluetooth.find_service(uuid=SWIPE_UP_UUID, address=self._address)
+                first_match = service_matches[0]
+                socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
+                socket.connect((first_match["port"], first_match["host"]))
+                socket.send(message)
+                socket.close()
             except Exception as e:
-                _logger.error('Failed to connect to SignUp: %s', e)
-            self._signup_queue.task_done()
+                _logger.error("Failed to request signature from SwipeUp: %s", e)
+            else:
+                _logger.debug("Request for signature made to SwipeUp: %s", person_id)
+            self._person_id_queue.task_done()
 
