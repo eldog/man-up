@@ -25,7 +25,7 @@ class SignUpClient(threading.Thread):
                 service_matches = bluetooth.find_service(uuid=SWIPE_UP_UUID, address=self._address)
                 first_match = service_matches[0]
                 socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-                socket.connect((first_match["port"], first_match["host"]))
+                socket.connect((first_match["host"], first_match["port"]))
                 socket.send(message)
                 socket.close()
             except Exception as e:
