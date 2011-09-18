@@ -42,7 +42,7 @@ public class SwipeUpClient extends Thread
                     synchronized (mBtStateLock)
                     {
                         mBtStateLock.notifyAll();
-                    } // synchroized
+                    } // synchronized
                 } // if
             } // if
         } // onReceiver(Context, Intent)
@@ -105,8 +105,7 @@ public class SwipeUpClient extends Thread
         } // while
 
         mContext.unregisterReceiver(mBtReciever);
-
-        cancel();
+        closeSockets();
     } // run()
 
     private void handleConnection() throws IOException
@@ -114,7 +113,7 @@ public class SwipeUpClient extends Thread
         final String message = readMessageFromClient();
         try
         {
-            parseClientMessage(message);
+            handleClientMessage(message);
         } // try
         catch (final JSONException invalidMessage)
         {
@@ -139,7 +138,9 @@ public class SwipeUpClient extends Thread
                         SERVICE_UUID);
             } // synchronized
 
+            Log.v(TAG, "Waiting for connection.");
             socket = mServerSocket.accept();
+            Log.v(TAG, "Got connections.");
             mServerSocket.close();
 
             synchronized (this)
@@ -173,12 +174,12 @@ public class SwipeUpClient extends Thread
         } // catch
         finally
         {
-            cancel();
+            closeSockets();
         } // finally
 
     } // readFromClient()
 
-    private void parseClientMessage(final String message) throws JSONException
+    private void handleClientMessage(final String message) throws JSONException
     {
         final MemberInfo memberInfo = MemberInfo.fromJson(new JSONObject(message));
         Log.d(TAG, memberInfo.toString());
@@ -191,6 +192,11 @@ public class SwipeUpClient extends Thread
     public synchronized void cancel()
     {
         interrupt();
+        closeSockets();
+    } // cancel()
+
+    private synchronized void closeSockets()
+    {
         if (mServerSocket != null)
         {
             try
@@ -215,6 +221,6 @@ public class SwipeUpClient extends Thread
             } // catch
             mSocket = null;
         } // if
-    } // cancel()
+    } // closeSockets()
 
 } // class SwipeUpClient
