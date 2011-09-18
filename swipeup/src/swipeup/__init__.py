@@ -15,13 +15,11 @@ del _lib_path
 from swipeup.clients.cardreader import CardReadClient
 from swipeup.clients.uomldap import UomLdapClient
 from swipeup.clients.manup import ManUpClient
-from swipeup.clients.signup import SignUpClient
 
 def _parse_argv(argv):
     p = ArgumentParser(version='%prog ver. 0.1 alpha 2011')
 
     p.add_argument('-a', '--android-address',
-        required=True,
         help='The MAC address of the Bluetooth adapter of the Android device running SwipeUp')
 
     p.add_argument('-d', '--dummy-reader',
@@ -79,10 +77,12 @@ def main(argv=None):
         dummy=args.dummy)
     card_reader_client.start()
 
-    signup_client = SignUpClient(
-        args.android_address,
-        signup_queue)
-    signup_client.start()
+    if (hasattr(args, 'android_address')):
+        from swipeup.clients.signup import SignUpClient
+        signup_client = SignUpClient(
+            args.android_address,
+            signup_queue)
+        signup_client.start()
 
     if args.gui:
         from swipeup.interfaces.gui import SwipeUpGui
