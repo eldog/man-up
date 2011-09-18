@@ -8,9 +8,6 @@ import java.util.UUID;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.appspot.manup.signup.data.DataManager;
-import com.appspot.manup.signup.extrainfo.MemberInfo;
-
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
@@ -19,6 +16,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.util.Log;
+
+import com.appspot.manup.signup.data.DataManager;
+import com.appspot.manup.signup.extrainfo.MemberInfo;
 
 public class SwipeUpClient extends Thread
 {
@@ -52,6 +52,7 @@ public class SwipeUpClient extends Thread
     private final Context mContext;
     private final DataManager mDataManager;
     private final BluetoothAdapter mAdapter;
+    private boolean mBtRecieverRegistered = false;
     private BluetoothServerSocket mServerSocket = null;
     private BluetoothSocket mSocket = null;
 
@@ -71,7 +72,16 @@ public class SwipeUpClient extends Thread
     public void run()
     {
         final IntentFilter btFilter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
-        mContext.registerReceiver(mBtReciever, btFilter);
+
+        synchronized (this)
+        {
+            if (isInterrupted())
+            {
+                return;
+            } // if
+            mContext.registerReceiver(mBtReciever, btFilter);
+            mBtRecieverRegistered = true;
+        } // synchronized
 
         while (!isInterrupted())
         {
@@ -83,12 +93,13 @@ public class SwipeUpClient extends Thread
                 } // try
                 catch (final IOException acceptConnectionException)
                 {
-                    Log.e(TAG, "Accept connection failed.", acceptConnectionException);
+                    Log.e(TAG, "handle connection failed.", acceptConnectionException);
                 } // catch
             } // if
             else
             {
                 final Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                enableBtIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 mContext.startActivity(enableBtIntent);
                 synchronized (mBtStateLock)
                 {
@@ -104,7 +115,14 @@ public class SwipeUpClient extends Thread
             } // else
         } // while
 
-        mContext.unregisterReceiver(mBtReciever);
+        synchronized (this)
+        {
+            if (mBtRecieverRegistered)
+            {
+                mContext.unregisterReceiver(mBtReciever);
+                mBtRecieverRegistered = false;
+            } // if
+        } // synchronized
         closeSockets();
     } // run()
 
@@ -191,6 +209,8 @@ public class SwipeUpClient extends Thread
 
     public synchronized void cancel()
     {
+        mBtRecieverRegistered = false;
+        mContext.unregisterReceiver(mBtReciever);
         interrupt();
         closeSockets();
     } // cancel()

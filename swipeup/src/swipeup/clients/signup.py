@@ -11,11 +11,11 @@ _logger = logging.getLogger('SignUpClient')
 SWIPE_UP_UUID = '28adccbc-41a3-4ffd-924d-1c6a70d70b4e'
 
 class SignUpClient(threading.Thread):
-    def __init__(self, address, signup_queue):
+    def __init__(self, address, person_id_queue):
         super(SignUpClient, self).__init__()
         self.daemon = True
         self._address = address
-        self._person_id_queue = signup_queue
+        self._person_id_queue = person_id_queue
 
     def run(self):
         while True:

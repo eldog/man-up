@@ -29,12 +29,12 @@ public final class SignUpApplication extends Application implements OnChangeList
         {
             final NetworkInfo info = (NetworkInfo) intent.getParcelableExtra(
                     ConnectivityManager.EXTRA_NETWORK_INFO);
-            mIsConnected = info.isConnected();
+            mHasWiFiConnection = info.isConnected();
             controlAllServices();
         } // onReceive(Context, Intent)
     };
 
-    private volatile boolean mIsConnected = false;
+    private volatile boolean mHasWiFiConnection = false;
     private volatile boolean mExtraLookupEnabled = false;
     private volatile boolean mShouldUploadSignatures = false;
     private volatile boolean mListenForSwipeUp = false;
@@ -109,25 +109,25 @@ public final class SignUpApplication extends Application implements OnChangeList
 
     private void controlExtraInfoService()
     {
-        controlService(ExtraInfoService.class, mExtraLookupEnabled);
+        controlService(ExtraInfoService.class, mExtraLookupEnabled, mHasWiFiConnection);
     } // controlExtraInfoService()
 
     private void controlSwipeUpClientService()
     {
-        controlService(SwipeUpClientService.class, mListenForSwipeUp);
+        controlService(SwipeUpClientService.class, mListenForSwipeUp, true);
     } // controlSwipeUpService()
 
     private void controlUploadService()
     {
-        controlService(UploadService.class, mShouldUploadSignatures);
+        controlService(UploadService.class, mShouldUploadSignatures, mHasWiFiConnection);
     } // controlUploadService()
 
     private <S extends Service> void controlService(final Class<S> service,
-            final boolean startService)
+            final boolean startService, final boolean hasConnectivity)
     {
         final Intent intent = new Intent(this, service);
 
-        if (startService && mIsConnected)
+        if (startService && hasConnectivity)
         {
             startService(intent);
         } // if
