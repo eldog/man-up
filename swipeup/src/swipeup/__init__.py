@@ -73,13 +73,6 @@ def main(argv=None):
     signup_queue = Queue.Queue()
     manup_queue = Queue.Queue()
 
-    uom_ldap_client = UomLdapClient(
-        args.ldap_host,
-        args.ldap_port,
-        person_id_queue,
-        manup_queue)
-    uom_ldap_client.start()
-
     card_reader_client = CardReadClient(
         person_id_queue,
         signup_queue,
@@ -98,11 +91,18 @@ def main(argv=None):
         from swipeup.interfaces.cli import SwipeUpCli
         interface = SwipeUpCli(card_reader_client)
 
+    uom_ldap_client = UomLdapClient(
+        args.ldap_host,
+        args.ldap_port,
+        person_id_queue,
+        manup_queue,
+        interface.json_update)
+    uom_ldap_client.start()
+
     server_client = ManUpClient(
         args.webservice_host,
         args.webservice_port,
-        manup_queue,
-        interface.json_update)
+        manup_queue)
     server_client.start()
 
     interface.mainloop()

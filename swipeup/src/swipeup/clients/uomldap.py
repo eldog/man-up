@@ -8,23 +8,27 @@ import ldap
 _logger = logging.getLogger('LdapClient')
 
 class UomLdapClient(threading.Thread):
-    def __init__(self, host, port, person_id_queue, manup_queue):
+    def __init__(self, host, port, person_id_queue, manup_queue, *callbacks):
         super(UomLdapClient, self).__init__()
         self.daemon = True
 
         self._host = host
         self._port = port
 
-        self._student_id_queue = person_id_queue
+        self._person_id_queue = person_id_queue
         self._response_queue = manup_queue
+
+        self._callbacks = callbacks
 
     def run(self):
         while True:
-            student_card = self._student_id_queue.get()
+            student_card = self._person_id_queue.get()
             response = self._query_ldap_server(student_card)
             if response:
                 self._response_queue.put(response)
-                self._student_id_queue.task_done()
+                for callback in self._callbacks:
+                    callback(response)
+                self._person_id_queue.task_done()
 
     def _query_ldap_server(self, student_id):
         conn = ldap.initialize('ldap://%s:%d' % (self._host, self._port))

@@ -8,21 +8,18 @@ import urllib2
 _logger = logging.getLogger('ManUpClient')
 
 class ManUpClient(threading.Thread):
-    def __init__(self, host, port, manup_queue, *callbacks):
+    def __init__(self, host, port, manup_queue):
         super(ManUpClient, self).__init__()
         self.daemon = True
 
         self._host = host
         self._port = port
         self.response_queue = manup_queue
-        self.callbacks = callbacks
 
     def run(self):
         while True:
             response = self.response_queue.get()
             self._send(response)
-            for callback in self.callbacks:
-                callback(response)
             self.response_queue.task_done()
 
     def _send(self, json_response):
