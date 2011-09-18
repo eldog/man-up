@@ -21,7 +21,6 @@ def _parse_argv(argv):
     p = ArgumentParser(version='%prog ver. 0.1 alpha 2011')
 
     p.add_argument('-a', '--android-address',
-        dest='android_host',
         required=True,
         help='The MAC address of the Bluetooth adapter of the Android device running SwipeUp')
 
