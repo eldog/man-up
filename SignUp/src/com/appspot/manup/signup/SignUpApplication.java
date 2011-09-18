@@ -2,6 +2,7 @@ package com.appspot.manup.signup;
 
 import android.app.Application;
 import android.app.Service;
+import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -22,6 +23,21 @@ public final class SignUpApplication extends Application implements OnChangeList
     @SuppressWarnings("unused")
     private static final String TAG = SignUpApplication.class.getSimpleName();
 
+    private final BroadcastReceiver mBtReciever = new BroadcastReceiver()
+    {
+        @Override
+        public void onReceive(final Context context, final Intent intent)
+        {
+            if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(intent.getAction()))
+            {
+                final int btState = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE,
+                        BluetoothAdapter.STATE_OFF);
+                mHasBtConnection = btState == BluetoothAdapter.STATE_ON;
+                controlSwipeUpClientService();
+            } // if
+        } // onReceiver(Context, Intent)
+    };
+
     private final BroadcastReceiver mNetworkReciever = new BroadcastReceiver()
     {
         @Override
@@ -29,12 +45,13 @@ public final class SignUpApplication extends Application implements OnChangeList
         {
             final NetworkInfo info = (NetworkInfo) intent.getParcelableExtra(
                     ConnectivityManager.EXTRA_NETWORK_INFO);
-            mHasWiFiConnection = info.isConnected();
+            mHasNetworkConnection = info.isConnected();
             controlAllServices();
         } // onReceive(Context, Intent)
     };
 
-    private volatile boolean mHasWiFiConnection = false;
+    private volatile boolean mHasBtConnection = false;
+    private volatile boolean mHasNetworkConnection = false;
     private volatile boolean mExtraLookupEnabled = false;
     private volatile boolean mShouldUploadSignatures = false;
     private volatile boolean mListenForSwipeUp = false;
@@ -55,6 +72,8 @@ public final class SignUpApplication extends Application implements OnChangeList
             } // run()
         }.start();
 
+        registerReceiver(mBtReciever,
+                new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
         registerReceiver(mNetworkReciever,
                 new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
 
@@ -74,8 +93,9 @@ public final class SignUpApplication extends Application implements OnChangeList
     @Override
     public void onChange()
     {
-        controlAllServices();
-    } // onChange(DataManager)
+        controlExtraInfoService();
+        controlUploadService();
+    } // onChange()
 
     @Override
     public void onSharedPreferenceChanged(final SharedPreferences sharedPreferences,
@@ -109,17 +129,17 @@ public final class SignUpApplication extends Application implements OnChangeList
 
     private void controlExtraInfoService()
     {
-        controlService(ExtraInfoService.class, mExtraLookupEnabled, mHasWiFiConnection);
+        controlService(ExtraInfoService.class, mExtraLookupEnabled, mHasNetworkConnection);
     } // controlExtraInfoService()
 
     private void controlSwipeUpClientService()
     {
-        controlService(SwipeUpClientService.class, mListenForSwipeUp, true);
+        controlService(SwipeUpClientService.class, mListenForSwipeUp, mHasBtConnection);
     } // controlSwipeUpService()
 
     private void controlUploadService()
     {
-        controlService(UploadService.class, mShouldUploadSignatures, mHasWiFiConnection);
+        controlService(UploadService.class, mShouldUploadSignatures, mHasNetworkConnection);
     } // controlUploadService()
 
     private <S extends Service> void controlService(final Class<S> service,
