@@ -3,6 +3,7 @@ from __future__ import print_function
 import json
 import logging
 import threading
+import time
 
 import bluetooth
 
@@ -21,7 +22,7 @@ class SignUpClient(threading.Thread):
         while True:
             info = self._person_info_queue.get()
             if isinstance(info, str):
-                message = json.dumps({'umanPersonID': info}) + '\n'
+                message = json.dumps({'umanPersonID': info})
             else:
                 message = json.dumps({
                     'umanPersonID': ', '.join(info['umanPersonID']),
@@ -34,11 +35,18 @@ class SignUpClient(threading.Thread):
             _logger.info('Sending: %s', message)
             try:
                 service_matches = bluetooth.find_service(uuid=SWIPE_UP_UUID, address=self._address)
-                first_match = service_matches[0]
-                socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-                socket.connect((first_match["host"], first_match["port"]))
-                socket.send(message)
-                socket.close()
+                if service_matches:
+                    first_match = service_matches[0]
+                    if service_matches:
+                        socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
+                        socket.connect((first_match["host"], first_match["port"]))
+                        socket.send(message + '\n')
+                        socket.close()
+                        time.sleep(1)
+                    else:
+                        _logger.error('Could not find service.')
+                else:
+                    _logger.error('Service not found.')
             except Exception as e:
                 _logger.error("Failed to request signature from SwipeUp: %s", e)
             else:
