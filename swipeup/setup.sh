@@ -12,7 +12,8 @@ sudo apt-get -y install \
     libldap-dev \
     libsasl2-dev \
     python-bluez \
-    python-dev
+    python-dev \
+    python-tk
 
 cd /tmp
 wget -O - "${LDAP_URL}" | tar -xz
