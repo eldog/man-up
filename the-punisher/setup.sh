@@ -3,7 +3,7 @@ set -o errexit
 set -o nounset
 
 sudo apt-get --assume-yes install \
-    python-imagine-tk \
+    python-imaging-tk \
     python-setuptools
 
 sudo easy_install http://pypi.python.org/packages/source/s/simplejson/simplejson-2.2.1.tar.gz#md5=070c6467462bd63306f1756b01df6d70
