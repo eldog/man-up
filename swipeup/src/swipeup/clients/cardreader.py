@@ -11,20 +11,19 @@ def parse_mag_stripe(mag_stripe):
     return mag_stripe[4:-1]
 
 class CardReadClient(threading.Thread):
-    def __init__(self, person_id_queue, person_id_queue, dummy=False):
+    def __init__(self, outgoing_queues=(), dummy=False):
         super(CardReadClient, self).__init__()
         self.daemon = True
 
-        self._person_id_queue = person_id_queue
-        self.signup_queue = person_id_queue
+        self._queues = outgoing_queues
         self._get_reader = msr605.from_dummy if dummy else msr605.from_serial
 
     def run(self):
         while True:
             person_id = self._read_card()
             if person_id:
-                self._person_id_queue.put(person_id)
-                self.signup_queue.put(person_id)
+                for queue in self._queues:
+                    queue.put(person_id)
 
     def _read_card(self):
         with self._get_reader() as msr605:

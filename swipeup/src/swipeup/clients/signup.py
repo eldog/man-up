@@ -15,12 +15,23 @@ class SignUpClient(threading.Thread):
         super(SignUpClient, self).__init__()
         self.daemon = True
         self._address = address
-        self._person_id_queue = person_id_queue
+        self._person_info_queue = person_id_queue
 
     def run(self):
         while True:
-            person_id = self._person_id_queue.get()
-            message = json.dumps({'umanPersonID': person_id}) + '\n'
+            info = self._person_info_queue.get()
+            if isinstance(info, str):
+                message = json.dumps({'umanPersonID': info}) + '\n'
+            else:
+                message = json.dumps({
+                    'umanPersonID': ', '.join(info['umanPersonID']),
+                    'givenName': ', '.join(info['givenName']),
+                    'sn': ', '.join(info['sn']),
+                    'mail': ', '.join(info['mail']),
+                    'ou': ', '.join(info['ou']),
+                    'employeeType': ', '.join(info['employeeType'])
+                })
+            _logger.info('Sending: %s', message)
             try:
                 service_matches = bluetooth.find_service(uuid=SWIPE_UP_UUID, address=self._address)
                 first_match = service_matches[0]
@@ -31,6 +42,6 @@ class SignUpClient(threading.Thread):
             except Exception as e:
                 _logger.error("Failed to request signature from SwipeUp: %s", e)
             else:
-                _logger.debug("Request for signature made to SwipeUp: %s", person_id)
-            self._person_id_queue.task_done()
+                _logger.debug("Request for signature made to SwipeUp: %s", message)
+            self._person_info_queue.task_done()
 
