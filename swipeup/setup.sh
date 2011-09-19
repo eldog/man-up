@@ -6,7 +6,7 @@ LDAP_DIR='python-ldap/python-ldap'
 LDAP_URL='http://python-ldap.cvs.sourceforge.net/viewvc/python-ldap/'
 LDAP_URL="${LDAP_URL}?view=tar"
 
-LIB_DIR="`readlink -f $(dirname "$0")`/lib"
+LIB_DIR="`readlink -f $(dirname "$0")`/src/lib"
 
 sudo apt-get -y install \
     libldap-dev \
