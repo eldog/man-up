@@ -35,7 +35,7 @@ abstract class AbstractStringParsingResponseHandler<T> implements ResponseHandle
         }// catch
         catch (final Exception e)
         {
-            throw new IOException(e);
+            throw new IOException();
         } // catch
     } // handleResponse
 

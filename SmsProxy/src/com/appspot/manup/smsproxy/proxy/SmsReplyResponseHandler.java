@@ -35,7 +35,7 @@ final class SmsReplyResponseHandler implements ResponseHandler<SmsMessageInfo[]>
             } // try
             catch (final JSONException e)
             {
-                throw new IOException("Invalid JSON from server.", e);
+                throw new IOException("Invalid JSON from server.");
             } // catch
         } // for
         return replies;

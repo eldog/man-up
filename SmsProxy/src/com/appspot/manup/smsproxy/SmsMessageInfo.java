@@ -25,7 +25,7 @@ public final class SmsMessageInfo
         } // try
         catch (final NullPointerException e)
         {
-            throw new IOException("message is not valid", e);
+            throw new IOException("message is not valid");
         } // catch
     } // fromSmsMessage
 
