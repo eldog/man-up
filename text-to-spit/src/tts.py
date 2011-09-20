@@ -2,6 +2,7 @@ from argparse import ArgumentParser
 from array import array
 from collections import namedtuple
 from itertools import cycle
+import logging
 from math import ceil
 from struct import pack
 from time import sleep
@@ -14,6 +15,8 @@ import sys
 import cherrypy
 
 from threadpool import StoppableThread, ThreadPool
+
+logger = logging.getLogger(name="tts")
 
 def relpath(path):
     return os.path.join(os.path.dirname(__file__), path)
@@ -317,6 +320,7 @@ class SmsHandler(StoppableThread):
         words = self.clean_message(message)
         if words:
             self._speech.extend(words)
+            logger.error(str(len(self._speech)))
 #            self._swift.tts('<s><prosody rate="slow">%s</prosody></s>'
 #                % ' '.join(words[:20]))
 
