@@ -1,9 +1,7 @@
 from argparse import ArgumentParser
 from array import array
 from collections import namedtuple
-from itertools import cycle
 import logging
-from math import ceil
 from struct import pack
 from time import sleep
 import os
@@ -46,36 +44,24 @@ class Swift:
         bits_per_sample = 16
         bytes_per_sample = bits_per_sample // 8
         num_channels = 1
-        sample_rate = 44100
+        sample_rate = 16000
 
         samples = array('h', subprocess.check_output((
             self._swift_path,
             '-o', '-',
             '-p',
-                'audio/channels=1,'
+                'audio/channels=%s,'
                 'audio/deadair=1000,'
-                'audio/encoding=pcm16,'
+                'audio/encoding=pcm%s,'
                 'audio/output-format=raw,'
                 'audio/sampling-rate=%s,'
                 'audio/volume=%s'
-                    % (sample_rate, volume),
+                    % (num_channels, bits_per_sample, sample_rate, volume),
             ssml)))
 
         num_samples = len(samples)
-        subchunk_2_size = num_samples * num_channels * bytes_per_sample
-
-        start_sample = 0
-        previous_sample = 0
-        threshold = (2 ** 16 / 2) * self._threshold
-        for i, sample in enumerate(samples):
-            if previous_sample < 0 and sample >= 0 \
-            or previous_sample >= 0 and sample < 0:
-                start_sample = i
-            if abs(sample) > threshold:
-                break
-            previous_sample = sample
-
-        offset = -start_sample / sample_rate
+        num_blocks = num_samples // num_channels
+        subchunk_2_size = num_blocks * num_channels * bytes_per_sample
 
         with open(output_path, 'wb') as f:
             f.write(b'RIFF') # Chunk ID
@@ -93,11 +79,9 @@ class Swift:
 
             f.write(pack('<I', sample_rate)) # Sample rate (Hz)
 
-            f.write(pack('<I',
-                sample_rate * num_channels * bytes_per_sample))
+            f.write(pack('<I', sample_rate * num_channels * bytes_per_sample))
 
-            f.write(pack('<H',
-                num_channels * bytes_per_sample))
+            f.write(pack('<H', num_channels * bytes_per_sample))
 
             f.write(pack('<H', bits_per_sample)) # Bits per sample
 
@@ -109,7 +93,18 @@ class Swift:
             # Data
             samples.tofile(f)
 
-        return offset
+        start_sample = 0
+        previous_sample = 0
+        threshold = (2 ** 16 / 2) * self._threshold
+        for i, sample in enumerate(samples):
+            if previous_sample < 0 and sample >= 0 \
+            or previous_sample >= 0 and sample < 0:
+                start_sample = i
+            if abs(sample) > threshold:
+                break
+            previous_sample = sample
+
+        return -start_sample / sample_rate
 
 
 # =============================================================================
@@ -263,12 +258,10 @@ SmsMessage = namedtuple('SmsMessage', ('msg_id', 'number', 'message'))
 class SmsHandler(StoppableThread):
 
     dictionary_path = None
-    ffmpeg_path = None
     play_path = None
     sox_path = None
-    soxi_path = None
 
-    def __init__(self, sms_queue, swift, backing_sample, melody='e3', bpm=100,
+    def __init__(self, sms_queue, swift, backing_sample, melody, bpm=100,
         thread_pool=10):
         super().__init__()
         self.daemon = True
@@ -321,13 +314,17 @@ class SmsHandler(StoppableThread):
         if words:
             self._speech.extend(words)
             logger.error(str(len(self._speech)))
-#            self._swift.tts('<s><prosody rate="slow">%s</prosody></s>'
-#                % ' '.join(words[:20]))
+            self._swift.tts('<s><prosody rate="slow">%s</prosody></s>'
+                % ' '.join(words[:20]))
 
     def render_rap(self, msg_id, words):
-        if not words:
-            # No words to render!
-            return
+        # Make the length of words fit the melody
+        notes = sum(1 for pitch, beats in self._melody if pitch != REST)
+        diff = notes - len(words)
+        if diff < 0:
+            words = words[:diff]
+        else:
+            words = words + ['la'] * diff
 
         delay = 0
         offsets = {}
@@ -338,7 +335,7 @@ class SmsHandler(StoppableThread):
 
         pool = ThreadPool(min(word_count, self._thread_pool))
 
-        for pitch, beats in cycle(self._melody):
+        for pitch, beats in self._melody:
             duration = beats * self._spb
 
             if pitch != REST:
@@ -360,36 +357,16 @@ class SmsHandler(StoppableThread):
                 # that delay is updated and equals the duration of the rap.
                 break
 
-
-        rap_duration = delay
-
         pool.join_all()
 
         if not word_index:
             # Didn't render any words!
             return
 
-        # Find the minimum number of times the backing track needs to be looped
-        # so that it's length exceeds that of the rap.
-        info = subprocess.check_output((self.soxi_path, self._backing_sample))
-        info = info.decode('us-ascii')
-        info = info.split('\n')[5]
-        info = info.split()[2]
-        info = info.split(':')
-        backing_duration = int(info[0]) * 60 * 60 + int(info[1]) * 60 \
-            + float(info[2])
-        loops = int(ceil(rap_duration / backing_duration))
-
-        # Create the backing track.
-        backing_path = '/tmp/%s-backing.wav' % msg_id
-        sox_args = [self.sox_path, '--combine', 'concatenate'] \
-            + [self._backing_sample] * loops + [backing_path]
-        subprocess.check_call(sox_args)
-        print(offsets)
         # Mix the rap and the backing track
         mix_path = '/tmp/%s-mix.wav' % msg_id
         sox_args = [self.sox_path, '-M'] + word_paths \
-            + [backing_path, mix_path, 'delay'] \
+            + [self._backing_sample, mix_path, 'delay'] \
             + [str(delay + offsets[i]) for i, delay in enumerate(word_delays)] \
             + ['remix',
                 ','.join(str(channel) for channel in range(1, word_count + 2)),
@@ -523,10 +500,8 @@ def main(argv=None):
 
     finder = ExecutableFinder(args.which_path)
     SmsHandler.dictionary_path = args.words
-    SmsHandler.ffmpeg_path = finder.find('ffmpeg')
     SmsHandler.play_path = finder.find('play')
     SmsHandler.sox_path = finder.find('sox')
-    SmsHandler.soxi_path = finder.find('soxi')
 
     incoming_sms = queue.Queue()
     swift = Swift(finder.find('swift'), finder.find('padsp'))
