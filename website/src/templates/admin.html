@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block main %}
+    <p>THIS IS THE GOD PAGE. I'VE NOT WRITTEN ANY SAFETY INTO THIS, SO BE CAREFUL.</P>
+
+    <div id="tab-links">
+        <div id="general" class="tab-link">General</div>
+        <div id="badge" class="tab-link">Badge</div>
+        <div id="award" class="tab-link">Award</div>
+        <div id="talk" class="tab-link">Talk</div>
+    </div>
+
+    <div id="general-tab-page" class="tab-page" style="display: block;">
+        <h2>General</h2>
+
+        <ul>
+            <li><a href="/admin/news">Edit news articles</a></li>
+        </ul>
+
+        <form action="/admin" method="post">
+            <input type="hidden" name="kind" value="taglineform"/>
+            <table class="form">
+                <tr>
+                    <td>Tag Line:</td>
+                    <td><input type="text" name="tagline" /></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td><input type="submit" value="Submit" /></td>
+                </tr>
+            </table>
+        </form>
+    </div>
+
+    <div id="badge-tab-page" class="tab-page">
+        <h2>Badge</h2>
+        <form action="/admin" method="post">
+            <input type="hidden" name="kind" value="badge"/>
+            <table class="form">
+                <tr>
+                    <td>Name:</td>
+                    <td><input type="text" name="name"/></td>
+                </tr>
+                <tr>
+                    <td>Description:</td>
+                    <td><input type="text" name="description"/></td>
+                </tr>
+                <tr>
+                    <td>Category:</td>
+                    <td><input type="text" name="category"/></td>
+                </tr>
+                <tr>
+                    <td>Image:</td>
+                    <td><input type="text" name="image"/></td>
+                </tr>
+                <tr>
+                    <td>Value:</td>
+                    <td><input type="text" name="value"/></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td><input type="submit" value="Submit" /></td>
+                </tr>
+            </table>
+        </form>
+    </div>
+
+    <div id="award-tab-page" class="tab-page">
+        <h2>Award</h2>
+        <form action="/admin" method="post">
+            <input type="hidden" name="kind" value="award"/>
+            <table class="form">
+                <tr>
+                    <td>Member:</td>
+                    <td>
+                        <select name="members" size="20" multiple="multiple">
+                            {% for member in members %}
+                                <option value="{{ member.key.id }}">{{ member.handle }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Badge:</td>
+                    <td>
+                        <select name="badge">
+                            {% for badge in badges %}
+                                <option value="{{ badge.key.id }}">{{ badge.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Proof:</td>
+                    <td><input type="text" name="proof"/></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td><input type="submit" value="Submit" /></td>
+                </tr>
+            </table>
+        </form>
+    </div>
+
+    <div id="talk-tab-page" class="tab-page">
+        <h2>Talk</h2>
+        <form action="/admin" method="post">
+            <input type="hidden" name="kind" value="talk"/>
+            <table class="form">
+                <tr>
+                    <td>Title:</td>
+                    <td><input type="text" name="title"/></td>
+                </tr>
+                <tr>
+                    <td>Member:</td>
+                    <td>
+                        <select name="member">
+                            {% for member in members %}
+                                <option value="{{ member.key.id }}">{{ member.handle }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Date:</td>
+                    <td>
+                        <input type="text" name="date" id="talk_date" />
+                        <script>$('#talk_date').datepicker({dateFormat: 'yy-mm-dd'})</script>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Video:</td>
+                    <td><input type="text" name="video"/></td>
+                </tr>
+                <tr>
+                    <td>Description:</td>
+                    <td><textarea name="description"></textarea></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td><input type="submit" value="Submit" /></td>
+                </tr>
+            </table>
+        </form>
+    </div>
+{% endblock %}
