@@ -159,7 +159,7 @@ class _RunFrame(tk.Frame, object):
         self._stop_button = tk.Button(
             command = on_stopped,
             master = self,
-            text = 'Fuck You Punisher!')
+            text = 'Stop, have mercy...')
         self._stop_button.grid(row=2, column=0, columnspan=2, padx=5, pady=5,
             stick=tk.EW)
         self._update_timer()
