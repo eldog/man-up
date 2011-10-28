@@ -5,6 +5,8 @@ set -o nounset
 readonly REPO="$(readlink -f -- "$(dirname -- "${0}")/..")"
 readonly LIB="${REPO}/rock-bot/lib"
 
+readonly USERNAME="`id -un`"
+
 MIRROR='switch'
 
 while (( "$#" )); do
@@ -71,7 +73,7 @@ cmake .
 make
 sudo make install
 sudo ldconfig /usr/local/lib64/
-sudo adduser YOURNAME video
+sudo adduser "${USERNAME}" video
 cat << EOF >> /etc/udev/rules.d/51-kinect.rules
 # ATTR{product}=="Xbox NUI Motor"
 SUBSYSTEM=="usb", ATTR{idVendor}=="045e", ATTR{idProduct}=="02b0", MODE="0666"
