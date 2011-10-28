@@ -74,7 +74,7 @@ make
 sudo make install
 sudo ldconfig /usr/local/lib64/
 sudo adduser "${USERNAME}" video
-cat << EOF >> /etc/udev/rules.d/51-kinect.rules
+sudo cat << EOF >> /etc/udev/rules.d/51-kinect.rules
 # ATTR{product}=="Xbox NUI Motor"
 SUBSYSTEM=="usb", ATTR{idVendor}=="045e", ATTR{idProduct}=="02b0", MODE="0666"
 # ATTR{product}=="Xbox NUI Audio"
