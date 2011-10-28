@@ -9,5 +9,4 @@ sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 4E9CFF4E
 sudo apt-get update
 sudo apt-get --assume-yes install \
     spotify-client-qt \
-    spotify-client-gnome-support
 
