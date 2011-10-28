@@ -11,7 +11,7 @@ function docurl
         -d number="${number}" \
         -d message="${*}" \
         -o /dev/null \
-        "${HOSTNAME}:8080"
+        "${HOSTNAME}:80"
 
 }
 
