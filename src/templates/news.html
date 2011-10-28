@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block main %}
+    <h1>News</h1>
+
+    {% if message %}
+        <p>{{ message }}</p>
+    {% endif %}
+
+    <div class="pagedata">
+        {% if pagedata.hasPrev %}<a href="/news?page={{ pagedata.prev }}">Previous Page</a>{% endif %}
+        {% if pagedata.hasNext %}<a href="/news?page={{ pagedata.next }}">Next Page</a>{% endif %}
+    </div>
+
+    {% for news_item in content_list %}
+        <div class="newsitem">
+            <h2>{{ news_item.title }}</h2>
+            <p>Author: {{ news_item.author }}, Date: {{ news_item.date }}{% if is_admin %}, <a href="/admin/news/{{ news_item.key }}">Edit</a> {% endif %}</p>
+            {% autoescape off %}
+                {{ news_item.body }}
+            {% endautoescape %}
+        </div>
+    {% endfor %}
+
+    <div class="pagedata">
+        {% if pagedata.hasPrev %}<a href="/news?page={{ pagedata.prev }}">Previous Page</a>{% endif %}
+        {% if pagedata.hasNext %}<a href="/news?page={{ pagedata.next }}">Next Page</a>{% endif %}
+    </div>
+{% endblock %}

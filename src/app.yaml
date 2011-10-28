@@ -1,0 +1,51 @@
+application: man-up
+version: 2
+runtime: python
+api_version: 1
+
+builtins:
+  - remote_api: on
+
+handlers:
+  # Static files
+  - url: /favicon.ico
+    static_files: static/img/favicon.ico
+    upload: static/img/favicon.ico
+
+  # Static directories
+  - url: /img
+    static_dir: static/img
+
+  - url: /project-files
+    static_dir: static/project-files
+
+  - url: /javascript
+    static_dir: static/javascript
+  
+  - url: /stylesheets
+    static_dir: static/stylesheets
+    
+  - url: /jqueryui
+    static_dir: jqueryui
+  
+  # All URI's with the prefix "/admin" require the user to be an admin.
+  - url: /admin.*
+    script: main.py
+    login: admin
+    
+  # Logged in requests
+  - url: /account
+    script: main.py
+    login: required
+  
+  - url: /badge_application
+    script: main.py
+    login: required
+    
+  - url: /login
+    script: main.py
+    login: required
+     
+  # Other
+  - url: /.*
+    script: main.py 

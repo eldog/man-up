@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block main %}
+    <h1>Talks</h1>
+
+    {% if message %}
+        <p>{{ message }}</p>
+    {% endif %}
+
+    <div class="pagedata">
+        {% if pagedata.hasPrev %}<a href="/talks?page={{ pagedata.prev }}">Previous Page</a>{% endif %}
+        {% if pagedata.hasNext %}<a href="/talks?page={{ pagedata.next }}">Next Page</a>{% endif %}
+    </div>
+    {% for talk in content_list %}
+        <div class="talks">
+            <h2>{{ talk.title }}</h2>
+            <p><a href="/members/{{ talk.member.handle }}">{{ talk.member.handle }}</a> {{ talk.date }}</p>
+            <center>
+                <iframe src="{{ talk.video }}" width="400" height="300" frameborder="0"></iframe>
+            </center>
+            <div>{{ talk.description|safe }}</div>
+        </div>
+    {% endfor %}
+
+    <div class="pagedata">
+        {% if pagedata.hasPrev %}<a href="/talks?page={{ pagedata.prev }}">Previous Page</a>{% endif %}
+        {% if pagedata.hasNext %}<a href="/talks?page={{ pagedata.next }}">Next Page</a>{% endif %}
+    </div>
+{% endblock %}
