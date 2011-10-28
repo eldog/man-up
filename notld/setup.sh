@@ -2,6 +2,9 @@
 set -o errexit
 set -o nounset
 
+readonly REPO="$(readlink -f -- "$(dirname -- "${0}")/..")"
+readonly LIB="${REPO}/rock-bot/lib"
+
 MIRROR='switch'
 
 while (( "$#" )); do
@@ -15,16 +18,21 @@ readonly MIRROR
 
 readonly ARTOOLKIT='http://javacv.googlecode.com/files/ARToolKitPlus_2.1.1t.zip'
 readonly FREENECT='https://github.com/OpenKinect/libfreenect/zipball/v0.1.1'
+readonly JAVACV='http://javacv.googlecode.com/files/javacv-src-20111001.zip'
+readonly JAVACPP='http://javacpp.googlecode.com/files/javacpp-src-20111001.zip'
 readonly OPENCV="http://${MIRROR}.dl.sourceforge.net/project/opencvlibrary/opencv-unix/2.3.1/OpenCV-2.3.1a.tar.bz2"
 
 sudo apt-get --assume-yes install \
+    ant \
     cmake \
+    default-jdk \
     freeglut3-dev \
     libavcodec-dev \
     libavdevice-dev \
     libavfilter-dev \
     libavformat-dev \
     libavutil-dev \
+    libcommons-cli-java \
     libdc1394-22-dev \
     libgstreamermm-0.10-dev \
     libgtk2.0-dev \
@@ -62,18 +70,45 @@ cd OpenKinect-libfreenect-*
 cmake .
 make
 sudo make install
+sudo ldconfig /usr/local/lib64/
+sudo adduser YOURNAME video
+cat << EOF >> /etc/udev/rules.d/51-kinect.rules
+# ATTR{product}=="Xbox NUI Motor"
+SUBSYSTEM=="usb", ATTR{idVendor}=="045e", ATTR{idProduct}=="02b0", MODE="0666"
+# ATTR{product}=="Xbox NUI Audio"
+SUBSYSTEM=="usb", ATTR{idVendor}=="045e", ATTR{idProduct}=="02ad", MODE="0666"
+# ATTR{product}=="Xbox NUI Camera"
+SUBSYSTEM=="usb", ATTR{idVendor}=="045e", ATTR{idProduct}=="02ae", MODE="0666"
+EOF
 cd ..
 
 # OpenCV
-wget -O - "${OPENCV}" | tar --directory=/tmp -xj
-cd /tmp/OpenCV-*
-cmake -D WITH_TBB=ON \
-      -D WITH_V4L=ON \
-      -D BUILD_NEW_PYTHON_SUPPORT=ON \
-      -D INSTALL_C_EXAMPLES=ON \
-      -D INSTALL_PYTHON_EXAMPLES=ON \
-      -D BUILD_EXAMPLES=ON \
-      .
+cd /tmp
+wget -O - "${OPENCV}" | tar -xj
+cd OpenCV-*
+cmake .
 make
 sudo make install
+
+
+# JavaCV
+cd /tmp
+wget "${JAVACPP}"
+unzip javacpp-*
+wget "${JAVACV}"
+unzip javacv-*
+cd javacv
+ant
+
+# Build lib
+cd /tmp/javacv
+mv dist "${LIB}/javacv"
+mv src "${LIB}/javacv"
+cd "${LIB}/javacv/javadoc"
+zip -r ../javadoc.zip *
+cd ..
+rm -fr javadoc
+cd /tmp/javacpp
+mv dist "${LIB}/javacpp"
+mv src "${LIB}/javacpp"
 
