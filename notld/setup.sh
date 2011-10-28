@@ -55,7 +55,7 @@ sudo apt-get --assume-yes install \
 
 # ARTToolKit
 cd /tmp
-wget "${ARTOOLKIT}"
+wget -N "${ARTOOLKIT}"
 unzip ARToolKitPlus_*
 cd ARToolKitPlus_*
 export ARTKP="$(readlink -f .)"
@@ -66,7 +66,7 @@ cd ..
 
 # libfreenect
 cd /tmp
-wget -O libfreenect.zip "${FREENECT}"
+wget -N -O libfreenect.zip "${FREENECT}"
 unzip libfreenect.zip
 cd OpenKinect-libfreenect-*
 cmake .
@@ -86,7 +86,7 @@ cd ..
 
 # OpenCV
 cd /tmp
-wget -O - "${OPENCV}" | tar -xj
+wget -N -O - "${OPENCV}" | tar -xj
 cd OpenCV-*
 cmake .
 make
@@ -95,9 +95,9 @@ sudo make install
 
 # JavaCV
 cd /tmp
-wget "${JAVACPP}"
+wget -N "${JAVACPP}"
 unzip javacpp-*
-wget "${JAVACV}"
+wget -N "${JAVACV}"
 unzip javacv-*
 cd javacv
 ant
