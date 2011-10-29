@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-from os.path import abspath, join, split
-from multiprocessing import Process
+from os.path import abspath, join, split, splitext
+from multiprocessing import Process, Pipe
+import os
 import sys
 
 import pygame
@@ -8,6 +9,23 @@ from pygame.locals import *
 
 def rpath(p):
     return abspath(join(split(__file__)[0], p))
+
+class LiftDoor(pygame.sprite.Sprite):
+    def __init__(self, image, open_left=True):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = image
+        self.rect = self.image.get_rect()
+        self.offset = 0
+        self.open_doors = False
+        self.open_left = open_left
+        self.limit = 100
+
+    def update(self):
+        if self.open_doors and self.offset < self.limit:
+            offset = self.offset if not self.open_left else -1 * self.offset
+            self.rect.move_ip(offset, 0)
+            self.offset += 1
+
 
 class LiftGame(object):
     default_mode = (1024, 768)
@@ -19,13 +37,29 @@ class LiftGame(object):
         self.tick = tick
         self.loop = True
 
-        self.bg = pygame.image.load(rpath('elevator.png'))
+        doors = []
+        for item in os.listdir(rpath('.')):
+            name, ext = splitext(item)
+            if ext in ('.png',):
+                img = pygame.image.load(rpath(item))
+                if 'door' in name:
+                    doors.append(LiftDoor(img, open_left='left' in name))
+                elif 'background' in name:
+                    self.background = img
+        print(doors)
+        self.doors = pygame.sprite.RenderPlain(tuple(doors))
+        self.lift_music = pygame.mixer.Sound(rpath('lift-music.wav'))
 
     def handle_events(self):
         for event in pygame.event.get():
-            if event.type == QUIT or (event.type == KEYUP
-                    and event.key == K_ESCAPE):
+            if event.type == QUIT:
                 self.loop = False
+            elif event.type == KEYDOWN:
+                if event.key == K_ESCAPE:
+                    self.loop = False
+                elif event.key == K_o:
+                    for door in self.doors:
+                        door.open_doors = True
 
     def start(self):
         self.loop = True
@@ -37,9 +71,13 @@ class LiftGame(object):
 
         clock = pygame.time.Clock()
 
+        #self.lift_music.play()
+
         while self.loop:
             self.handle_events()
-            self.screen.blit(self.bg, (0, 0))
+            self.screen.blit(self.background, (0, 0))
+            self.doors.update()
+            self.doors.draw(self.screen)
             pygame.display.flip()
             clock.tick(self.tick)
 
@@ -51,14 +89,19 @@ def main_game():
     lift_game.start()
 
 
-def main_ts():
-    pass
-
 def main(argv=None):
     if argv is None:
         argv = sys.argv
-    ts = Process(target=main_ts)
-    ts.start()
+
+    sys.path.append(split(__file__)[0])
+
+    try:
+        import button_server
+        posts = Pipe()
+        ts = Process(target=button_server, args=(posts,))
+        ts.start()
+    except Exception, e:
+        print e
 
     main_game()
 
