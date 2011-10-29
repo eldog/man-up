@@ -16,7 +16,7 @@ class LiftResource(Resource):
     def render_POST(self, request):
         # save the ipv4 hostname in the post request
         host = request.host.host    
-        print(host)
+        print 'send msg %s' % host 
         self.pipe.send(host)
         return ''
 

@@ -3,12 +3,35 @@ from os.path import abspath, join, split, splitext
 from multiprocessing import Process, Pipe
 import os
 import sys
+import threading
 
 import pygame
 from pygame.locals import *
 
+import button_server
+
 def rpath(p):
     return abspath(join(split(__file__)[0], p))
+
+lock = threading.Lock()
+message_list = []
+
+class WebThread(threading.Thread):
+    def __init__(self, pipe):
+        super(WebThread, self).__init__()
+        self.pipe = pipe
+        self.daemon = True
+
+    def run(self):
+        while True:
+            message = self.pipe.recv()
+            print 'recv msg: %s' % message
+            lock.acquire()
+            try:
+                message_list.append(message)
+            finally:
+                lock.release()
+
 
 class LiftDoor(pygame.sprite.Sprite):
     def __init__(self, image, open_left=True):
@@ -60,6 +83,15 @@ class LiftGame(object):
                 elif event.key == K_o:
                     for door in self.doors:
                         door.open_doors = True
+        lock.acquire()
+        try:
+            if message_list:
+                message = message_list.pop()
+                print message
+                for door in self.doors:
+                    door.open_doors = True
+        finally:
+            lock.release()
 
     def start(self):
         self.loop = True
@@ -85,7 +117,7 @@ class LiftGame(object):
 def main_game():
     pygame.init()
 
-    lift_game = LiftGame(fullscreen=True)
+    lift_game = LiftGame(fullscreen=False)
     lift_game.start()
 
 
@@ -95,13 +127,11 @@ def main(argv=None):
 
     sys.path.append(split(__file__)[0])
 
-    try:
-        import button_server
-        posts = Pipe()
-        ts = Process(target=button_server, args=(posts,))
-        ts.start()
-    except Exception, e:
-        print e
+    game, server = Pipe(duplex=False)
+    ts = Process(target=button_server.main, args=(server,))
+    web_thread = WebThread(game)
+    web_thread.start()
+    ts.start()
 
     main_game()
 
