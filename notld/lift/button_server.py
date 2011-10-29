@@ -24,6 +24,7 @@ def main(pipe):
     root = File('static')
     root.putChild('lift', LiftResource(pipe))
     reactor.listenTCP(8080, Site(root))
+    print "setting up server at http://localhost:8080"
     reactor.run()
 
 class DummyPipe(object):
