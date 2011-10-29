@@ -34,6 +34,7 @@ class WebThread(threading.Thread):
 
 
 class LiftDoor(pygame.sprite.Sprite):
+
     def __init__(self, image, open_left=True):
         pygame.sprite.Sprite.__init__(self)
         self.image = image
@@ -45,6 +46,8 @@ class LiftDoor(pygame.sprite.Sprite):
 
     def update(self):
         if self.open_doors and self.offset < self.limit:
+            if not self.offset:
+               doors_sound.play() 
             offset = self.offset if not self.open_left else -1 * self.offset
             self.rect.move_ip(offset, 0)
             self.offset += 1
@@ -59,6 +62,7 @@ class LiftGame(object):
         self.mode = mode or self.default_mode
         self.tick = tick
         self.loop = True
+        self.lift_counter = 0        
 
         doors = []
         for item in os.listdir(rpath('.')):
@@ -87,8 +91,10 @@ class LiftGame(object):
         try:
             if message_list:
                 message = message_list.pop()
-                for door in self.doors:
-                    door.open_doors = True
+                self.lift_counter += 1
+                if self.lift_counter > 5:
+                    for door in self.doors:
+                        door.open_doors = True
         finally:
             lock.release()
 
@@ -102,7 +108,7 @@ class LiftGame(object):
 
         clock = pygame.time.Clock()
 
-        #self.lift_music.play()
+        self.lift_music.play()
 
         while self.loop:
             self.handle_events()
@@ -115,7 +121,8 @@ class LiftGame(object):
 
 def main_game():
     pygame.init()
-
+    global doors_sound
+    doors_sound = pygame.mixer.Sound(rpath('cat.wav'))
     lift_game = LiftGame(fullscreen=False)
     lift_game.start()
 
