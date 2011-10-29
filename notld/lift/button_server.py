@@ -1,3 +1,5 @@
+#!/usr/bin/env python2.7
+
 from multiprocessing import Pipe
 from pprint import pprint
 from twisted.web.server import Site
@@ -12,8 +14,11 @@ class LiftResource(Resource):
         self.pipe = pipe
 
     def render_POST(self, request):
-        self.pipe.send('button pressed')
-        print 'thanks'
+        # save the ipv4 hostname in the post request
+        host = request.host.host    
+        print(host)
+        self.pipe.send(host)
+        return ''
 
 def main(pipe):
     root = File('static')
@@ -25,6 +30,5 @@ class DummyPipe(object):
     def send(*args, **kwargs):
         pass
 
-print 'rofl'
 if __name__ == '__main__':
     main(DummyPipe())
