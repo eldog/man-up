@@ -87,7 +87,6 @@ class LiftGame(object):
         try:
             if message_list:
                 message = message_list.pop()
-                print message
                 for door in self.doors:
                     door.open_doors = True
         finally:
