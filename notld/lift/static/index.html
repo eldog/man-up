@@ -1,6 +1,15 @@
 <html>
+    <head>
+        <script type="text/javascript" src="jquery-1.6.4.min.js"></script>
     <h1>Hello world!</h1>
     <form name="button" action="." method="post">
-        <input type="button" value="Lift"/>
+        <input id="button" type="button" value="Lift"/>
     </form>
+    <script type="text/javascript">
+        $("#button").click( function() {
+                $.post('/lift', function(data) {
+                $('#button').html(data);
+            });
+        });
+    </script>
 </html>
